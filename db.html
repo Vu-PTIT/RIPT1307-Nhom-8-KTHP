@@ -1,0 +1,178 @@
+
+<style>
+#erd { overflow-x: auto; padding: 8px 0; }
+#erd svg { min-width: 900px; }
+</style>
+<h2 class="sr-only">Sơ đồ cơ sở dữ liệu hệ thống quản lý thư viện (không có member_cards)</h2>
+<div id="erd"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#3C3489' : '#EEEDFE',
+    primaryTextColor: dark ? '#CECBF6' : '#3C3489',
+    primaryBorderColor: dark ? '#534AB7' : '#534AB7',
+    secondaryColor: dark ? '#085041' : '#E1F5EE',
+    tertiaryColor: dark ? '#444441' : '#F1EFE8',
+  },
+});
+
+const diagram = `erDiagram
+  roles {
+    int id PK
+    varchar name
+    varchar description
+  }
+  users {
+    int id PK
+    int role_id FK
+    varchar username
+    varchar email
+    varchar password_hash
+    varchar tier
+    int max_books_allowed
+    int max_days_allowed
+    boolean is_active
+    timestamp created_at
+    timestamp updated_at
+  }
+  categories {
+    int id PK
+    int parent_id FK
+    varchar name
+    varchar slug
+  }
+  documents {
+    int id PK
+    int category_id FK
+    varchar title
+    varchar author
+    varchar isbn
+    text description
+    varchar cover_image
+    int total_copies
+    int available_copies
+    int created_by FK
+    timestamp created_at
+  }
+  document_copies {
+    int id PK
+    int document_id FK
+    varchar copy_code
+    varchar condition
+    varchar status
+    timestamp created_at
+  }
+  wishlists {
+    int id PK
+    int user_id FK
+    int document_id FK
+    timestamp added_at
+  }
+  borrow_cart_items {
+    int id PK
+    int user_id FK
+    int document_id FK
+    timestamp added_at
+  }
+  borrow_records {
+    int id PK
+    int reader_id FK
+    int librarian_id FK
+    date borrow_date
+    date due_date
+    varchar status
+    text notes
+    timestamp created_at
+  }
+  borrow_record_items {
+    int id PK
+    int borrow_record_id FK
+    int copy_id FK
+    date return_date
+    varchar condition_on_return
+  }
+  renewal_requests {
+    int id PK
+    int borrow_record_item_id FK
+    int requested_by FK
+    timestamp request_date
+    date new_due_date
+    varchar status
+    int reviewed_by FK
+    timestamp reviewed_at
+    text reject_reason
+  }
+  checkin_logs {
+    int id PK
+    int user_id FK
+    varchar check_type
+    varchar method
+    int handled_by FK
+    timestamp check_time
+  }
+  library_settings {
+    int id PK
+    varchar setting_key
+    text setting_value
+    varchar description
+    int updated_by FK
+    timestamp updated_at
+  }
+
+  roles ||--o{ users : "has"
+  users ||--o{ wishlists : "saves"
+  users ||--o{ borrow_cart_items : "queues"
+  users ||--o{ checkin_logs : "logs"
+  users ||--o{ borrow_records : "borrows"
+  users ||--o{ borrow_records : "processes"
+  categories ||--o{ categories : "parent of"
+  categories ||--o{ documents : "classifies"
+  users ||--o{ documents : "catalogues"
+  documents ||--o{ document_copies : "has"
+  documents ||--o{ wishlists : "saved in"
+  documents ||--o{ borrow_cart_items : "queued in"
+  document_copies ||--o{ borrow_record_items : "lent via"
+  borrow_records ||--o{ borrow_record_items : "contains"
+  borrow_record_items ||--o{ renewal_requests : "requests"
+  users ||--o{ renewal_requests : "requested by"
+  users ||--o{ renewal_requests : "reviewed by"
+`;
+
+const { svg } = await mermaid.render('erd-svg', diagram);
+document.getElementById('erd').innerHTML = svg;
+
+document.querySelectorAll('#erd svg.erDiagram .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+
+document.querySelectorAll('#erd svg.erDiagram .row-rect-odd path, #erd svg.erDiagram .row-rect-even path').forEach(p => {
+  p.setAttribute('stroke', 'none');
+});
+</script>
