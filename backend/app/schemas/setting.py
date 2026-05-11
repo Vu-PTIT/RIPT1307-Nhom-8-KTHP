@@ -1,7 +1,11 @@
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel
+from typing import Optional, Annotated
+from pydantic import BaseModel, BeforeValidator
+from odmantic import ObjectId
 from .user import User
+
+# Helper to convert ObjectId to string
+PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class LibrarySettingBase(BaseModel):
     setting_key: str
@@ -16,8 +20,8 @@ class LibrarySettingUpdate(BaseModel):
     description: Optional[str] = None
 
 class LibrarySetting(LibrarySettingBase):
-    id: str
-    updated_by: User
+    id: PyObjectId
+    updated_by_id: Optional[str] = None
     updated_at: datetime
 
     class Config:

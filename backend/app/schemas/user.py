@@ -1,6 +1,10 @@
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from typing import Optional, Any, Annotated
+from pydantic import BaseModel, EmailStr, Field, BeforeValidator
+from odmantic import ObjectId
+
+# Helper to convert ObjectId to string
+PyObjectId = Annotated[str, BeforeValidator(str)]
 
 # Role Schemas
 class RoleBase(BaseModel):
@@ -15,7 +19,7 @@ class RoleUpdate(BaseModel):
     description: Optional[str] = None
 
 class Role(RoleBase):
-    id: str
+    id: PyObjectId
 
     class Config:
         from_attributes = True
@@ -25,13 +29,18 @@ class UserBase(BaseModel):
     username: str
     email: EmailStr
     tier: str = "standard"
-    max_books_allowed: int = 5
-    max_days_allowed: int = 14
+    max_books_allowed: Optional[int] = None
+    max_days_allowed: Optional[int] = None
     is_active: bool = True
 
 class UserCreate(UserBase):
     password: str
     role_id: str
+
+class UserRegister(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
@@ -44,7 +53,7 @@ class UserUpdate(BaseModel):
     role_id: Optional[str] = None
 
 class User(UserBase):
-    id: str
+    id: PyObjectId
     role: Role
     created_at: datetime
     updated_at: datetime

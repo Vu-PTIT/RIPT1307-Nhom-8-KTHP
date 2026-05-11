@@ -7,7 +7,7 @@ class LibrarySetting(Model):
     setting_key: str = Field(unique=True)
     setting_value: str
     description: str
-    updated_by: User = Reference()
+    updated_by_id: str | None = Field(default=None)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     model_config = {

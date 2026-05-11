@@ -17,8 +17,8 @@ class User(Model):
     email: str = Field(unique=True)
     password_hash: str
     tier: str = Field(default="standard")
-    max_books_allowed: int = Field(default=5)
-    max_days_allowed: int = Field(default=14)
+    max_books_allowed: int | None = Field(default=None)
+    max_days_allowed: int | None = Field(default=None)
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

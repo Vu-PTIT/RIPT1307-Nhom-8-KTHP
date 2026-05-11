@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from app.api.endpoints import health
+from app.api.endpoints import health, auth, settings
 
 api_router = APIRouter()
 api_router.include_router(health.router)
-# You can include more routers here as you develop
-# api_router.include_router(users.router, prefix="/users", tags=["users"])
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(settings.router, prefix="/settings", tags=["settings"])

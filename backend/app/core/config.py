@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     MONGODB_URL: str = "mongodb://localhost:27017"
     DATABASE_NAME: str = "app_db"
 
+    # Security
+    SECRET_KEY: str = "secret"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+
     model_config = SettingsConfigDict(
         case_sensitive=True, 
         env_file=os.path.join(ROOT, ".env")

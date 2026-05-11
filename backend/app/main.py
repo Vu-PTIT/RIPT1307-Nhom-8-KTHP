@@ -19,3 +19,10 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+@app.on_event("startup")
+async def startup_event():
+    from app.crud.setting import initialize_library_settings
+    from app.db.session import engine
+    await initialize_library_settings(engine)
+
