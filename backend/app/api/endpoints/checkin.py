@@ -8,7 +8,7 @@ from app.crud import log as log_crud
 
 router = APIRouter()
 
-@router.post("/", response_model=log_schema.CheckinLogResponse)
+@router.post("", response_model=log_schema.CheckinLogResponse)
 async def checkin_checkout(
     log_in: log_schema.CheckinLogBase,
     current_user: User = Depends(deps.get_current_reader)
@@ -58,7 +58,7 @@ async def get_checkin_history(
 
 # ===================== LIBRARIAN ENDPOINTS =====================
 
-@router.get("/librarian/all", response_model=List[log_schema.CheckinLogListItem], tags=["librarian"])
+@router.get("/librarian/all", response_model=List[log_schema.CheckinLogListItem])
 async def list_checkin_logs(
     user_id: Optional[str] = None, check_type: Optional[str] = None,
     page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200),
@@ -85,7 +85,7 @@ async def list_checkin_logs(
     return response
 
 
-@router.post("/librarian/manual", response_model=log_schema.CheckinLogListItem, tags=["librarian"])
+@router.post("/librarian/manual", response_model=log_schema.CheckinLogListItem)
 async def manual_checkin(
     log_in: log_schema.CheckinLogCreate,
     current_user: User = Depends(deps.get_current_librarian),

@@ -8,7 +8,7 @@ from app.crud import borrow as borrow_crud
 
 router = APIRouter()
 
-@router.post("/", response_model=borrow_schema.RenewalRequestResponse)
+@router.post("", response_model=borrow_schema.RenewalRequestResponse)
 async def request_renewal(
     renewal_in: borrow_schema.RenewalRequestCreate,
     current_user: User = Depends(deps.get_current_reader)
@@ -41,7 +41,7 @@ async def request_renewal(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/", response_model=List[borrow_schema.RenewalRequestResponse])
+@router.get("", response_model=List[borrow_schema.RenewalRequestResponse])
 async def get_my_renewals(
     current_user: User = Depends(deps.get_current_reader)
 ) -> Any:
@@ -71,7 +71,7 @@ async def get_my_renewals(
 
 # ===================== LIBRARIAN ENDPOINTS =====================
 
-@router.get("/librarian/pending", response_model=List[borrow_schema.RenewalRequestResponse], tags=["librarian"])
+@router.get("/librarian/pending", response_model=List[borrow_schema.RenewalRequestResponse])
 async def list_pending_renewals(
     status: str = Query("pending"),
     current_user: User = Depends(deps.get_current_librarian),
@@ -94,7 +94,7 @@ async def list_pending_renewals(
     return response
 
 
-@router.put("/librarian/{id}", response_model=borrow_schema.RenewalRequestResponse, tags=["librarian"])
+@router.put("/librarian/{id}", response_model=borrow_schema.RenewalRequestResponse)
 async def review_renewal(
     id: str, review_in: borrow_schema.RenewalReviewRequest,
     current_user: User = Depends(deps.get_current_librarian),
@@ -105,7 +105,25 @@ async def review_renewal(
             engine, renewal_id=id, librarian_id=str(current_user.id),
             new_status=review_in.status, reject_reason=review_in.reject_reason
         )
-        return await list_pending_renewals(status=renewal.status, current_user=current_user)
+        
+        # Load related data for response
+        from app.models.borrow import BorrowRecordItem, BorrowRecord
+        from app.models.document import Document, DocumentCopy
+        
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == renewal.borrow_record_item.id)
+        record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
+        doc = await engine.find_one(Document, Document.id == copy.document.id)
+        
+        return borrow_schema.RenewalRequestResponse(
+            id=renewal.id,
+            document_title=doc.title,
+            old_due_date=record.due_date,
+            new_due_date=renewal.new_due_date,
+            status=renewal.status,
+            request_date=renewal.request_date,
+            reject_reason=renewal.reject_reason
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

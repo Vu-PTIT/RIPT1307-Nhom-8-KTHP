@@ -8,7 +8,7 @@ from app.models.user import User
 
 router = APIRouter()
 
-@router.get("/", response_model=List[setting_schema.LibrarySetting])
+@router.get("", response_model=List[setting_schema.LibrarySetting])
 async def get_settings() -> Any:
     """
     Retrieve library settings.

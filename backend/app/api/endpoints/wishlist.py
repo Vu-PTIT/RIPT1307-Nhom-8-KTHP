@@ -8,7 +8,7 @@ from app.crud import borrow as borrow_crud
 
 router = APIRouter()
 
-@router.get("/", response_model=List[borrow_schema.WishlistResponse])
+@router.get("", response_model=List[borrow_schema.WishlistResponse])
 async def get_my_wishlist(
     current_user: User = Depends(deps.get_current_reader)
 ) -> Any:
@@ -31,7 +31,7 @@ async def get_my_wishlist(
         ))
     return response
 
-@router.post("/", response_model=borrow_schema.WishlistResponse)
+@router.post("", response_model=borrow_schema.WishlistResponse)
 async def add_to_wishlist(
     wishlist_in: borrow_schema.WishlistCreate,
     current_user: User = Depends(deps.get_current_reader)

@@ -8,7 +8,7 @@ from app.crud import document as document_crud
 
 router = APIRouter()
 
-@router.get("/", response_model=document_schema.DocumentSearchResponse)
+@router.get("", response_model=document_schema.DocumentSearchResponse)
 async def search_documents(
     keyword: Optional[str] = None,
     category_id: Optional[str] = None,
@@ -24,9 +24,10 @@ async def search_documents(
     
     # Map to summary schema
     items = []
+    from app.models.document import Category
     for doc in docs:
         # Need to fetch category for name if not loaded
-        category = await engine.find_one(doc.category.model, doc.category.model.id == doc.category.id)
+        category = await engine.find_one(Category, Category.id == doc.category.id)
         items.append(document_schema.DocumentSummary(
             id=doc.id,
             title=doc.title,
@@ -44,13 +45,6 @@ async def search_documents(
         "page_size": page_size
     }
 
-@router.get("/categories", response_model=List[document_schema.Category])
-async def get_categories() -> Any:
-    """
-    Get all document categories.
-    """
-    return await document_crud.get_categories(engine)
-
 @router.get("/{id}", response_model=document_schema.Document)
 async def get_document(id: str) -> Any:
     """
@@ -64,7 +58,7 @@ async def get_document(id: str) -> Any:
 
 # ===================== LIBRARIAN ENDPOINTS =====================
 
-@router.post("/", response_model=document_schema.DocumentSummary, tags=["librarian"])
+@router.post("", response_model=document_schema.DocumentSummary)
 async def create_document(
     doc_in: document_schema.DocumentCreate,
     current_user: User = Depends(deps.get_current_librarian),
@@ -87,7 +81,7 @@ async def create_document(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put("/{id}", response_model=document_schema.DocumentSummary, tags=["librarian"])
+@router.put("/{id}", response_model=document_schema.DocumentSummary)
 async def update_document(
     id: str, doc_in: document_schema.DocumentUpdate,
     current_user: User = Depends(deps.get_current_librarian),
@@ -107,11 +101,11 @@ async def update_document(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.delete("/{id}", tags=["librarian"])
+@router.delete("/{id}")
 async def delete_document(
     id: str, current_user: User = Depends(deps.get_current_librarian),
 ) -> Any:
-    """Delete a document and all its copies."""
+    """Delete a document and all its copies (Librarian/Admin only)."""
     try:
         await document_crud.delete_document(engine, id)
         return {"message": "Document deleted successfully"}
@@ -119,12 +113,12 @@ async def delete_document(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/{doc_id}/copies", response_model=document_schema.DocumentCopySummary, tags=["librarian"])
+@router.post("/{doc_id}/copies", response_model=document_schema.DocumentCopySummary)
 async def create_copy(
     doc_id: str, copy_in: document_schema.DocumentCopyCreate,
     current_user: User = Depends(deps.get_current_librarian),
 ) -> Any:
-    """Add a new copy to a document."""
+    """Add a new copy to a document (Librarian/Admin only)."""
     try:
         copy = await document_crud.create_document_copy(
             engine, doc_id=doc_id, copy_code=copy_in.copy_code, condition=copy_in.condition
@@ -137,11 +131,11 @@ async def create_copy(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/{doc_id}/copies", response_model=List[document_schema.DocumentCopySummary], tags=["librarian"])
+@router.get("/{doc_id}/copies", response_model=List[document_schema.DocumentCopySummary])
 async def list_copies(
     doc_id: str, current_user: User = Depends(deps.get_current_librarian),
 ) -> Any:
-    """List all copies of a document."""
+    """List all copies of a document (Librarian/Admin only)."""
     copies = await document_crud.get_document_copies(engine, doc_id)
     return [
         document_schema.DocumentCopySummary(
@@ -151,12 +145,12 @@ async def list_copies(
     ]
 
 
-@router.put("/copies/{id}", response_model=document_schema.DocumentCopySummary, tags=["librarian"])
+@router.put("/copies/{id}", response_model=document_schema.DocumentCopySummary)
 async def update_copy(
     id: str, copy_in: document_schema.DocumentCopyUpdate,
     current_user: User = Depends(deps.get_current_librarian),
 ) -> Any:
-    """Update a document copy."""
+    """Update a document copy (Librarian/Admin only)."""
     try:
         update_data = copy_in.model_dump(exclude_unset=True)
         copy = await document_crud.update_document_copy(engine, id, update_data)
@@ -168,53 +162,13 @@ async def update_copy(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.delete("/copies/{id}", tags=["librarian"])
+@router.delete("/copies/{id}")
 async def delete_copy(
     id: str, current_user: User = Depends(deps.get_current_librarian),
 ) -> Any:
-    """Delete a document copy."""
+    """Delete a document copy (Librarian/Admin only)."""
     try:
         await document_crud.delete_document_copy(engine, id)
         return {"message": "Document copy deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/categories/librarian", response_model=document_schema.Category, tags=["librarian"])
-async def create_category(
-    cat_in: document_schema.CategoryCreate,
-    current_user: User = Depends(deps.get_current_librarian),
-) -> Any:
-    """Create a new category."""
-    try:
-        return await document_crud.create_category(
-            engine, name=cat_in.name, slug=cat_in.slug, parent_id=cat_in.parent_id
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.put("/categories/{id}", response_model=document_schema.Category, tags=["librarian"])
-async def update_category(
-    id: str, cat_in: document_schema.CategoryUpdate,
-    current_user: User = Depends(deps.get_current_librarian),
-) -> Any:
-    """Update a category."""
-    try:
-        update_data = cat_in.model_dump(exclude_unset=True)
-        return await document_crud.update_category(engine, id, update_data)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.delete("/categories/{id}", tags=["librarian"])
-async def delete_category(
-    id: str, current_user: User = Depends(deps.get_current_librarian),
-) -> Any:
-    """Delete a category."""
-    try:
-        await document_crud.delete_category(engine, id)
-        return {"message": "Category deleted successfully"}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-

@@ -39,7 +39,7 @@ async def _get_borrow_detail_logic(record_id: str):
         status=record.status, items=item_summaries
     )
 
-@router.get("/", response_model=List[borrow_schema.BorrowRecord])
+@router.get("", response_model=List[borrow_schema.BorrowRecord])
 async def get_my_borrows(
     status: Optional[str] = None,
     current_user: User = Depends(deps.get_current_reader)
@@ -64,7 +64,7 @@ async def get_borrow_detail(
 
 # ===================== LIBRARIAN ENDPOINTS =====================
 
-@router.post("/librarian", response_model=borrow_schema.BorrowRecordDetailResponse, tags=["librarian"])
+@router.post("/librarian", response_model=borrow_schema.BorrowRecordDetailResponse)
 async def create_borrow_librarian(
     borrow_in: borrow_schema.LibrarianBorrowCreate,
     current_user: User = Depends(deps.get_current_librarian),
@@ -80,7 +80,7 @@ async def create_borrow_librarian(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/librarian/all", response_model=List[borrow_schema.BorrowRecordListItem], tags=["librarian"])
+@router.get("/librarian/all", response_model=List[borrow_schema.BorrowRecordListItem])
 async def list_borrow_records_librarian(
     status: Optional[str] = None, reader_id: Optional[str] = None,
     page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
@@ -104,7 +104,7 @@ async def list_borrow_records_librarian(
     return response
 
 
-@router.post("/librarian/return", tags=["librarian"])
+@router.post("/librarian/return")
 async def return_book_librarian(
     return_in: borrow_schema.LibrarianReturnRequest,
     current_user: User = Depends(deps.get_current_librarian),

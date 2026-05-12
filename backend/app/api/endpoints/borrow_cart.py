@@ -8,7 +8,7 @@ from app.crud import borrow as borrow_crud
 
 router = APIRouter()
 
-@router.get("/", response_model=List[borrow_schema.BorrowCartItemResponse])
+@router.get("", response_model=List[borrow_schema.BorrowCartItemResponse])
 async def get_my_cart(
     current_user: User = Depends(deps.get_current_reader)
 ) -> Any:
@@ -30,7 +30,7 @@ async def get_my_cart(
         ))
     return response
 
-@router.post("/", response_model=borrow_schema.BorrowCartItemResponse)
+@router.post("", response_model=borrow_schema.BorrowCartItemResponse)
 async def add_to_cart(
     item_in: borrow_schema.BorrowCartItemCreate,
     current_user: User = Depends(deps.get_current_reader)
@@ -65,7 +65,7 @@ async def remove_from_cart(
         raise HTTPException(status_code=404, detail="Cart item not found")
     return {"status": "success"}
 
-@router.delete("/")
+@router.delete("")
 async def clear_cart(
     current_user: User = Depends(deps.get_current_reader)
 ) -> Any:
