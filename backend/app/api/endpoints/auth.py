@@ -45,7 +45,6 @@ async def register(user_in: user_schema.UserRegister) -> Any:
         email=user_in.email,
         password=user_in.password,
         role_id=str(role.id),
-        tier="standard",
         max_books_allowed=None,
         max_days_allowed=None,
         is_active=True

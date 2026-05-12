@@ -39,7 +39,7 @@ Hệ thống được xây dựng trên kiến trúc hiện đại, đảm bảo
 
 ### 3. Dành cho Quản trị viên (Admin)
 - **Quản lý người dùng**: Phân quyền (Admin/Librarian/Member), khóa/mở khóa tài khoản.
-- **Thiết lập hệ thống**: Cấu hình quy định thư viện (Số lượng sách mượn tối đa, số ngày mượn, các hạng thẻ Reader Tier).
+- **Thiết lập hệ thống**: Cấu hình quy định thư viện (Số lượng sách mượn tối đa, số ngày mượn).
 - **Dashboard & Báo cáo**: 
   - Thống kê lưu lượng người ra vào theo thời gian thực.
   - Top sách được mượn nhiều nhất.

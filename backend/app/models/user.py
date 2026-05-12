@@ -16,7 +16,6 @@ class User(Model):
     username: str = Field(unique=True)
     email: str = Field(unique=True)
     password_hash: str
-    tier: str = Field(default="standard")
     max_books_allowed: int | None = Field(default=None)
     max_days_allowed: int | None = Field(default=None)
     is_active: bool = Field(default=True)

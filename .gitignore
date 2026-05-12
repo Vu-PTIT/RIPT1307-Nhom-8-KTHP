@@ -47,4 +47,4 @@ yarn-error.log*
 
 # Project specific
 backend/scratch/
-backend/tests/.pytest_cache/
+backend/tests/

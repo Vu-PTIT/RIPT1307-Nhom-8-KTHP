@@ -28,7 +28,6 @@ class Role(RoleBase):
 class UserBase(BaseModel):
     username: str
     email: EmailStr
-    tier: str = "standard"
     max_books_allowed: Optional[int] = None
     max_days_allowed: Optional[int] = None
     is_active: bool = True
@@ -46,7 +45,6 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
-    tier: Optional[str] = None
     max_books_allowed: Optional[int] = None
     max_days_allowed: Optional[int] = None
     is_active: Optional[bool] = None

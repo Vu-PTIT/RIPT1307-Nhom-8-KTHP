@@ -22,7 +22,6 @@ async def create_user(engine: AIOEngine, user_in: UserCreate) -> User:
         email=user_in.email,
         password_hash=get_password_hash(user_in.password),
         role=role,
-        tier=user_in.tier,
         max_books_allowed=user_in.max_books_allowed,
         max_days_allowed=user_in.max_days_allowed,
         is_active=user_in.is_active
