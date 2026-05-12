@@ -51,3 +51,14 @@ async def get_current_active_admin(
             detail="The user doesn't have enough privileges"
         )
     return current_user
+
+async def get_current_reader(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    role = await engine.find_one(User.role.model, User.role.model.id == current_user.role.id)
+    if not role or role.name != "Member":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="This action is for readers only"
+        )
+    return current_user

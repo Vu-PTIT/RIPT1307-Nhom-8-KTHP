@@ -1,8 +1,8 @@
 from datetime import datetime, date
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
-from .user import User
-from .document import Document, DocumentCopy
+from .user import User, PyObjectId
+from .document import Document, DocumentCopy, DocumentSummary
 
 # Wishlist Schemas
 class WishlistBase(BaseModel):
@@ -12,13 +12,21 @@ class WishlistCreate(WishlistBase):
     document_id: str
 
 class Wishlist(WishlistBase):
-    id: str
+    id: PyObjectId
     user: User
     document: Document
     added_at: datetime
 
     class Config:
         from_attributes = True
+
+class WishlistResponse(BaseModel):
+    id: PyObjectId
+    document_id: PyObjectId
+    document_title: str
+    author: str
+    cover_image: Optional[str] = None
+    added_at: datetime
 
 # BorrowCartItem Schemas
 class BorrowCartItemBase(BaseModel):
@@ -28,13 +36,21 @@ class BorrowCartItemCreate(BorrowCartItemBase):
     document_id: str
 
 class BorrowCartItem(BorrowCartItemBase):
-    id: str
+    id: PyObjectId
     user: User
     document: Document
     added_at: datetime
 
     class Config:
         from_attributes = True
+
+class BorrowCartItemResponse(BaseModel):
+    id: PyObjectId
+    document_id: PyObjectId
+    document_title: str
+    author: str
+    cover_image: Optional[str] = None
+    added_at: datetime
 
 # BorrowRecord Schemas
 class BorrowRecordBase(BaseModel):
@@ -54,7 +70,7 @@ class BorrowRecordUpdate(BaseModel):
     notes: Optional[str] = None
 
 class BorrowRecord(BorrowRecordBase):
-    id: str
+    id: PyObjectId
     reader: User
     librarian: User
     created_at: datetime
@@ -76,12 +92,28 @@ class BorrowRecordItemUpdate(BaseModel):
     condition_on_return: Optional[str] = None
 
 class BorrowRecordItem(BorrowRecordItemBase):
-    id: str
+    id: PyObjectId
     borrow_record: BorrowRecord
     document_copy: DocumentCopy
 
     class Config:
         from_attributes = True
+
+class BorrowRecordItemSummary(BaseModel):
+    id: PyObjectId
+    copy_code: str
+    document_title: str
+    borrow_date: date
+    due_date: date
+    return_date: Optional[date] = None
+    status: str
+
+class BorrowRecordDetailResponse(BaseModel):
+    id: PyObjectId
+    borrow_date: date
+    due_date: date
+    status: str
+    items: List[BorrowRecordItemSummary]
 
 # RenewalRequest Schemas
 class RenewalRequestBase(BaseModel):
@@ -99,7 +131,7 @@ class RenewalRequestUpdate(BaseModel):
     reject_reason: Optional[str] = None
 
 class RenewalRequest(RenewalRequestBase):
-    id: str
+    id: PyObjectId
     borrow_record_item: BorrowRecordItem
     requested_by: User
     request_date: datetime
@@ -108,3 +140,12 @@ class RenewalRequest(RenewalRequestBase):
 
     class Config:
         from_attributes = True
+
+class RenewalRequestResponse(BaseModel):
+    id: PyObjectId
+    document_title: str
+    old_due_date: date
+    new_due_date: date
+    status: str
+    request_date: datetime
+    reject_reason: Optional[str] = None

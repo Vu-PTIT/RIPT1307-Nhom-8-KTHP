@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field
-from .user import User
+from typing import Optional, Annotated
+from pydantic import BaseModel, Field, BeforeValidator
+from .user import User, PyObjectId
 
 # Category Schemas
 class CategoryBase(BaseModel):
@@ -17,7 +17,7 @@ class CategoryUpdate(BaseModel):
     parent_id: Optional[str] = None
 
 class Category(CategoryBase):
-    id: str
+    id: PyObjectId
     parent: Optional["Category"] = None
 
     class Config:
@@ -47,7 +47,7 @@ class DocumentUpdate(BaseModel):
     category_id: Optional[str] = None
 
 class Document(DocumentBase):
-    id: str
+    id: PyObjectId
     category: Category
     created_by: User
     created_at: datetime
@@ -70,9 +70,24 @@ class DocumentCopyUpdate(BaseModel):
     status: Optional[str] = None
 
 class DocumentCopy(DocumentCopyBase):
-    id: str
+    id: PyObjectId
     document: Document
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+class DocumentSummary(BaseModel):
+    id: PyObjectId
+    title: str
+    author: str
+    isbn: Optional[str] = None
+    cover_image: Optional[str] = None
+    available_copies: int
+    category_name: str
+
+class DocumentSearchResponse(BaseModel):
+    items: list[DocumentSummary]
+    total: int
+    page: int
+    page_size: int

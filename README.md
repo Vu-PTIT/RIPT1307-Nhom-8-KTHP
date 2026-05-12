@@ -31,7 +31,7 @@ Hệ thống được xây dựng trên kiến trúc hiện đại, đảm bảo
 - **Check-in/Check-out**: Tự động ghi lại nhật ký ra vào thư viện.
 
 ### 2. Dành cho Thủ thư (Librarian)
-- **Xử lý mượn trả**: Quét mã QR/Mã vạch để xác nhận giao dịch mượn/trả sách.
+- **Xử lý mượn trả**: Nhập mã để xác nhận giao dịch mượn/trả sách.
 - **Kiểm soát ra vào**: Theo dõi màn hình check-in trực tiếp, xử lý các trường hợp ngoại lệ.
 - **Phê duyệt gia hạn**: Xem xét và duyệt/từ chối các yêu cầu gia hạn từ độc giả.
 - **Quản lý kho tài liệu**: Thêm mới sách, quản lý các bản sao (Document Copy), cập nhật tình trạng sách.
