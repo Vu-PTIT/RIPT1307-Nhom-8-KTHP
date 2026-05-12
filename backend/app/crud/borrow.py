@@ -1,3 +1,4 @@
+from __future__ import annotations
 from datetime import datetime, date, timedelta
 from typing import Optional, List
 from odmantic import AIOEngine, ObjectId
@@ -107,3 +108,190 @@ async def create_renewal_request(engine: AIOEngine, item_id: str, user_id: str, 
 
 async def get_my_renewals(engine: AIOEngine, user_id: str) -> List[RenewalRequest]:
     return await engine.find(RenewalRequest, RenewalRequest.requested_by == ObjectId(user_id), sort=RenewalRequest.request_date.desc())
+
+
+# ===================== LIBRARIAN OPERATIONS =====================
+
+async def create_borrow_record(
+    engine: AIOEngine,
+    reader_id: str,
+    librarian_id: str,
+    copy_codes: List[str],
+    notes: Optional[str] = None,
+) -> BorrowRecord:
+    """Create a borrow record with items from copy codes."""
+    reader = await engine.find_one(User, User.id == ObjectId(reader_id))
+    if not reader:
+        raise ValueError("Reader not found")
+
+    librarian = await engine.find_one(User, User.id == ObjectId(librarian_id))
+    if not librarian:
+        raise ValueError("Librarian not found")
+
+    # Get library settings for limits
+    from app.crud.setting import get_setting
+    max_books_setting = await get_setting(engine, "default_max_books")
+    max_days_setting = await get_setting(engine, "default_max_days")
+    max_books = int(max_books_setting.setting_value) if max_books_setting else 5
+    max_days = int(max_days_setting.setting_value) if max_days_setting else 14
+
+    # Use per-user override if set
+    if reader.max_books_allowed is not None:
+        max_books = reader.max_books_allowed
+    if reader.max_days_allowed is not None:
+        max_days = reader.max_days_allowed
+
+    # Check current active borrows count
+    active_records = await engine.find(
+        BorrowRecord,
+        (BorrowRecord.reader == reader.id) & (BorrowRecord.status == "borrowed")
+    )
+    current_borrowed = 0
+    for rec in active_records:
+        items = await engine.find(
+            BorrowRecordItem,
+            (BorrowRecordItem.borrow_record == rec.id) & (BorrowRecordItem.return_date == None)
+        )
+        current_borrowed += len(items)
+
+    if current_borrowed + len(copy_codes) > max_books:
+        raise ValueError(
+            f"Exceeds borrow limit. Currently borrowing {current_borrowed}, limit is {max_books}"
+        )
+
+    # Validate all copies
+    copies = []
+    for code in copy_codes:
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.copy_code == code)
+        if not copy:
+            raise ValueError(f"Copy with code '{code}' not found")
+        if copy.status != "available":
+            raise ValueError(f"Copy '{code}' is not available")
+        copies.append(copy)
+
+    # Create the borrow record
+    record = BorrowRecord(
+        reader=reader,
+        librarian=librarian,
+        borrow_date=date.today(),
+        due_date=date.today() + timedelta(days=max_days),
+        status="borrowed",
+        notes=notes,
+    )
+    await engine.save(record)
+
+    # Create items and update copy/document
+    for copy in copies:
+        item = BorrowRecordItem(borrow_record=record, document_copy=copy)
+        await engine.save(item)
+        copy.status = "borrowed"
+        await engine.save(copy)
+
+        doc = await engine.find_one(Document, Document.id == copy.document.id)
+        if doc:
+            doc.available_copies = max(0, doc.available_copies - 1)
+            await engine.save(doc)
+
+    return record
+
+
+async def process_return(
+    engine: AIOEngine,
+    copy_code: str,
+    condition_on_return: str = "good",
+) -> BorrowRecordItem:
+    """Process a book return by copy code."""
+    copy = await engine.find_one(DocumentCopy, DocumentCopy.copy_code == copy_code)
+    if not copy or copy.status != "borrowed":
+        raise ValueError(f"Copy '{copy_code}' is not currently borrowed")
+
+    item = await engine.find_one(
+        BorrowRecordItem,
+        (BorrowRecordItem.document_copy == copy.id) & (BorrowRecordItem.return_date == None)
+    )
+    if not item:
+        raise ValueError(f"No active borrow record found for copy '{copy_code}'")
+
+    item.return_date = date.today()
+    item.condition_on_return = condition_on_return
+    await engine.save(item)
+
+    copy.status = "available"
+    copy.condition = condition_on_return
+    await engine.save(copy)
+
+    doc = await engine.find_one(Document, Document.id == copy.document.id)
+    if doc:
+        doc.available_copies += 1
+        await engine.save(doc)
+
+    # Auto-close record if all items returned
+    record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
+    if record:
+        all_items = await engine.find(BorrowRecordItem, BorrowRecordItem.borrow_record == record.id)
+        if all(i.return_date is not None for i in all_items):
+            record.status = "returned"
+            await engine.save(record)
+
+    return item
+
+
+async def get_all_borrow_records(
+    engine: AIOEngine,
+    status: Optional[str] = None,
+    reader_id: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 20,
+) -> Tuple[List[BorrowRecord], int]:
+    """Get all borrow records (librarian view)."""
+    filters = []
+    if status:
+        filters.append(BorrowRecord.status == status)
+    if reader_id:
+        filters.append(BorrowRecord.reader == ObjectId(reader_id))
+
+    total = await engine.count(BorrowRecord, *filters)
+    records = await engine.find(
+        BorrowRecord, *filters,
+        skip=(page - 1) * page_size, limit=page_size,
+        sort=BorrowRecord.created_at.desc()
+    )
+    return records, total
+
+
+async def review_renewal(
+    engine: AIOEngine,
+    renewal_id: str,
+    librarian_id: str,
+    new_status: str,
+    reject_reason: Optional[str] = None,
+) -> RenewalRequest:
+    """Approve or reject a renewal request."""
+    renewal = await engine.find_one(RenewalRequest, RenewalRequest.id == ObjectId(renewal_id))
+    if not renewal or renewal.status != "pending":
+        raise ValueError("Renewal request not found or not pending")
+
+    renewal.status = new_status
+    renewal.reviewed_by_id = librarian_id
+    renewal.reviewed_at = datetime.utcnow()
+    if new_status == "rejected":
+        renewal.reject_reason = reject_reason
+    elif new_status == "approved":
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == renewal.borrow_record_item.id)
+        if item:
+            record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
+            if record:
+                record.due_date = renewal.new_due_date
+                await engine.save(record)
+
+    await engine.save(renewal)
+    return renewal
+
+
+async def get_pending_renewals(
+    engine: AIOEngine,
+    status_filter: str = "pending",
+) -> List[RenewalRequest]:
+    """Get renewal requests for review."""
+    return await engine.find(RenewalRequest, RenewalRequest.status == status_filter, sort=RenewalRequest.request_date.desc())
+

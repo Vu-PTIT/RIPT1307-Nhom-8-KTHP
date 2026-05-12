@@ -1,5 +1,5 @@
 from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.db.session import engine
 from app.api import deps
 from app.models.user import User
@@ -67,3 +67,45 @@ async def get_my_renewals(
             reject_reason=req.reject_reason
         ))
     return response
+
+
+# ===================== LIBRARIAN ENDPOINTS =====================
+
+@router.get("/librarian/pending", response_model=List[borrow_schema.RenewalRequestResponse], tags=["librarian"])
+async def list_pending_renewals(
+    status: str = Query("pending"),
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """List renewal requests (default: pending)."""
+    requests = await borrow_crud.get_pending_renewals(engine, status_filter=status)
+    response = []
+    from app.models.borrow import BorrowRecordItem, BorrowRecord
+    from app.models.document import Document, DocumentCopy
+    for req in requests:
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == req.borrow_record_item.id)
+        record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
+        doc = await engine.find_one(Document, Document.id == copy.document.id)
+        response.append(borrow_schema.RenewalRequestResponse(
+            id=req.id, document_title=doc.title, old_due_date=record.due_date,
+            new_due_date=req.new_due_date, status=req.status,
+            request_date=req.request_date, reject_reason=req.reject_reason
+        ))
+    return response
+
+
+@router.put("/librarian/{id}", response_model=borrow_schema.RenewalRequestResponse, tags=["librarian"])
+async def review_renewal(
+    id: str, review_in: borrow_schema.RenewalReviewRequest,
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """Approve or reject a renewal request."""
+    try:
+        renewal = await borrow_crud.review_renewal(
+            engine, renewal_id=id, librarian_id=str(current_user.id),
+            new_status=review_in.status, reject_reason=review_in.reject_reason
+        )
+        return await list_pending_renewals(status=renewal.status, current_user=current_user)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

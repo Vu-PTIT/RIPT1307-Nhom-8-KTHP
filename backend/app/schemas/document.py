@@ -91,3 +91,11 @@ class DocumentSearchResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+class DocumentCopySummary(BaseModel):
+    id: PyObjectId
+    copy_code: str
+    condition: str
+    status: str
+    created_at: datetime
+

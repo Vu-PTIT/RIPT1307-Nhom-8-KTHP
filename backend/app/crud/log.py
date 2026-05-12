@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Tuple, Optional
 from odmantic import AIOEngine, ObjectId
 from app.models.log import CheckinLog
@@ -43,3 +44,44 @@ async def get_my_checkin_logs(
         sort=CheckinLog.check_time.desc()
     )
     return logs, total
+
+
+# ===================== LIBRARIAN OPERATIONS =====================
+
+async def get_all_checkin_logs(
+    engine: AIOEngine,
+    user_id: Optional[str] = None,
+    check_type: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 50,
+) -> Tuple[List[CheckinLog], int]:
+    """Get all check-in logs for monitoring."""
+    filters = []
+    if user_id:
+        filters.append(CheckinLog.user == ObjectId(user_id))
+    if check_type:
+        filters.append(CheckinLog.check_type == check_type)
+
+    total = await engine.count(CheckinLog, *filters)
+    logs = await engine.find(
+        CheckinLog, *filters,
+        skip=(page - 1) * page_size, limit=page_size,
+        sort=CheckinLog.check_time.desc()
+    )
+    return logs, total
+
+
+async def manual_checkin(
+    engine: AIOEngine,
+    user_id: str,
+    check_type: str,
+    handled_by_id: str,
+) -> CheckinLog:
+    """Create a manual check-in log by librarian."""
+    user = await engine.find_one(User, User.id == ObjectId(user_id))
+    if not user: raise ValueError("User not found")
+    librarian = await engine.find_one(User, User.id == ObjectId(handled_by_id))
+    log = CheckinLog(user=user, check_type=check_type, method="manual", handled_by=librarian)
+    await engine.save(log)
+    return log
+

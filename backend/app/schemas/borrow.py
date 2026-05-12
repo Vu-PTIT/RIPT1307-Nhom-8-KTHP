@@ -149,3 +149,33 @@ class RenewalRequestResponse(BaseModel):
     status: str
     request_date: datetime
     reject_reason: Optional[str] = None
+
+# ====== Librarian Schemas ======
+
+class LibrarianBorrowCreate(BaseModel):
+    """Schema for librarian to create a borrow record at the counter."""
+    reader_id: str
+    copy_codes: List[str]
+    notes: Optional[str] = None
+
+class LibrarianReturnRequest(BaseModel):
+    """Schema for librarian to process a book return."""
+    copy_code: str
+    condition_on_return: str = "good"
+
+class RenewalReviewRequest(BaseModel):
+    """Schema for librarian to approve/reject a renewal request."""
+    status: str  # "approved" or "rejected"
+    reject_reason: Optional[str] = None
+
+class BorrowRecordListItem(BaseModel):
+    """Schema for listing borrow records (librarian view, includes reader info)."""
+    id: PyObjectId
+    reader_username: str
+    reader_email: str
+    borrow_date: date
+    due_date: date
+    status: str
+    item_count: int
+    created_at: datetime
+

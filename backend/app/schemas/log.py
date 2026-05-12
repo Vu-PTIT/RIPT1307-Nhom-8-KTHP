@@ -24,3 +24,14 @@ class CheckinLogResponse(CheckinLogBase):
     id: PyObjectId
     check_time: datetime
     handled_by_name: Optional[str] = None
+
+class CheckinLogListItem(BaseModel):
+    """Schema for librarian to view check-in logs with user details."""
+    id: PyObjectId
+    username: str
+    email: str
+    check_type: str
+    method: str
+    check_time: datetime
+    handled_by_name: Optional[str] = None
+

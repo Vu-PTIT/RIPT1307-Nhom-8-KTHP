@@ -47,17 +47,61 @@ async def get_checkin_history(
     
     response = []
     for log in logs:
-        handled_by_name = None
-        if log.handled_by and str(log.handled_by.id) != str(current_user.id):
-            # Fetch librarian name if handled by someone else
-            librarian = await engine.find_one(User, User.id == log.handled_by.id)
-            handled_by_name = librarian.username if librarian else "Librarian"
-            
         response.append(log_schema.CheckinLogResponse(
             id=log.id,
             check_type=log.check_type,
             method=log.method,
-            check_time=log.check_time,
+            check_time=log.check_time
+        ))
+    return response
+
+
+# ===================== LIBRARIAN ENDPOINTS =====================
+
+@router.get("/librarian/all", response_model=List[log_schema.CheckinLogListItem], tags=["librarian"])
+async def list_checkin_logs(
+    user_id: Optional[str] = None, check_type: Optional[str] = None,
+    page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200),
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """List all check-in logs for monitoring (Librarian/Admin only)."""
+    logs, total = await log_crud.get_all_checkin_logs(
+        engine, user_id=user_id, check_type=check_type, page=page, page_size=page_size
+    )
+    response = []
+    for log in logs:
+        user = await engine.find_one(User, User.id == log.user.id)
+        handled_by_name = None
+        if log.handled_by:
+            handler = await engine.find_one(User, User.id == log.handled_by.id)
+            handled_by_name = handler.username if handler else None
+
+        response.append(log_schema.CheckinLogListItem(
+            id=log.id, username=user.username if user else "Unknown",
+            email=user.email if user else "", check_type=log.check_type,
+            method=log.method, check_time=log.check_time,
             handled_by_name=handled_by_name
         ))
     return response
+
+
+@router.post("/librarian/manual", response_model=log_schema.CheckinLogListItem, tags=["librarian"])
+async def manual_checkin(
+    log_in: log_schema.CheckinLogCreate,
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """Create a manual check-in log by librarian."""
+    try:
+        log = await log_crud.manual_checkin(
+            engine, user_id=log_in.user_id, check_type=log_in.check_type,
+            handled_by_id=str(current_user.id)
+        )
+        user = await engine.find_one(User, User.id == log.user.id)
+        return log_schema.CheckinLogListItem(
+            id=log.id, username=user.username if user else "Unknown",
+            email=user.email if user else "", check_type=log.check_type,
+            method=log.method, check_time=log.check_time,
+            handled_by_name=current_user.username
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
