@@ -1,7 +1,17 @@
 fastapi
 uvicorn[standard]
 pydantic-settings
+pydantic[email]
 motor
 odmantic
+pymongo
 python-dotenv
 python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+cryptography
+pyopenssl
+email-validator
+httpx
+pytest
