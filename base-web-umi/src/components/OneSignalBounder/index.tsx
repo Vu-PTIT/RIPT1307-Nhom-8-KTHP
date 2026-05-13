@@ -2,12 +2,10 @@ import { initOneSignal } from '@/services/base/api';
 import { AppModules } from '@/services/base/constant';
 import { currentRole, oneSignalClient, oneSignalRole } from '@/utils/ip';
 import { useEffect, useState } from 'react';
-import { useAuth } from 'react-oidc-context';
 import OneSignal from 'react-onesignal';
 
 const OneSignalBounder = (props: { children: React.ReactNode }) => {
 	const [oneSignalId, setOneSignalId] = useState<string | null | undefined>();
-	const auth = useAuth();
 	const iframeSource = AppModules[oneSignalRole].url;
 	// let iframe: HTMLIFrameElement | null = null;
 
@@ -82,8 +80,9 @@ const OneSignalBounder = (props: { children: React.ReactNode }) => {
 	 * Init OneSignal playerId with auth User
 	 */
 	useEffect(() => {
+		const token = localStorage.getItem('token');
 		if (oneSignalId) {
-			if (auth.user?.access_token) {
+			if (token) {
 				try {
 					initOneSignal({ playerId: oneSignalId });
 				} catch (er) {
@@ -91,7 +90,7 @@ const OneSignalBounder = (props: { children: React.ReactNode }) => {
 				}
 			}
 		}
-	}, [oneSignalId, auth.user?.access_token]);
+	}, [oneSignalId]);
 
 	return <>{props.children}</>;
 };

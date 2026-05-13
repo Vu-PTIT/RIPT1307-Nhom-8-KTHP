@@ -83,3 +83,13 @@ async def get_roles() -> Any:
     """
     roles = await engine.find(Role)
     return roles
+
+from app.api import deps
+@router.get("/me", response_model=user_schema.User)
+async def read_user_me(
+    current_user: user_schema.User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Get current user.
+    """
+    return current_user

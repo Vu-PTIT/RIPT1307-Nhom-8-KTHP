@@ -6,6 +6,7 @@ import {
 	keycloakTokenEndpoint,
 	keycloakUserInfoEndpoint,
 	resourceServerClientId,
+	ipLibrary,
 } from '@/utils/ip';
 import queryString from 'query-string';
 import type { ESettingKey } from './constant';
@@ -16,11 +17,24 @@ import type { ISetting } from './typing';
 // }
 
 export async function getUserInfo() {
-	return axios.get(keycloakUserInfoEndpoint);
+	return axios.get(`${ipLibrary}/auth/me`);
 }
 
 export async function adminlogin(payload: { username?: string; password?: string }) {
-	return axios.post(`${ip3}/auth/login`, { ...payload, platform: 'Web' });
+	const data = {
+		username: payload.username ?? '',
+		password: payload.password ?? '',
+	};
+	return axios({
+		url: `${ipLibrary}/auth/login`,
+		method: 'POST',
+		headers: { 'content-type': 'application/x-www-form-urlencoded' },
+		data: queryString.stringify(data),
+	});
+}
+
+export async function register(payload: { username?: string; email?: string; password?: string }) {
+	return axios.post(`${ipLibrary}/auth/register`, payload);
 }
 
 export async function refreshAccesssToken(payload: { refreshToken: string }) {

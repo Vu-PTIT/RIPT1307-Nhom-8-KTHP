@@ -6,11 +6,8 @@ import type { RequestConfig, RunTimeLayoutConfig } from 'umi';
 import { getIntl, getLocale, history } from 'umi';
 import type { RequestOptionsInit, ResponseError } from 'umi-request';
 import ErrorBoundary from './components/ErrorBoundary';
-// import LoadingPage from './components/Loading';
-import { OIDCBounder } from './components/OIDCBounder';
 import { unCheckPermissionPaths } from './components/OIDCBounder/constant';
 import OneSignalBounder from './components/OneSignalBounder';
-import TechnicalSupportBounder from './components/TechnicalSupportBounder';
 import NotAccessible from './pages/exception/403';
 import NotFoundContent from './pages/exception/404';
 import type { IInitialState } from './services/base/typing';
@@ -24,16 +21,24 @@ export const initialStateConfig = {
 
 /**
  * @see  https://umijs.org/zh-CN/plugins/plugin-initial-state
- * // Tobe removed
  * */
 export async function getInitialState(): Promise<IInitialState> {
 	return {
-		permissionLoading: true,
+		permissionLoading: false,
 	};
 }
 
-// Tobe removed
-const authHeaderInterceptor = (url: string, options: RequestOptionsInit) => ({});
+const authHeaderInterceptor = (url: string, options: RequestOptionsInit) => {
+	const token = localStorage.getItem('token');
+	if (token) {
+		const headers = {
+			...options.headers,
+			Authorization: `Bearer ${token}`,
+		};
+		return { url, options: { ...options, headers } };
+	}
+	return { url, options };
+};
 
 /**
  * @see https://beta-pro.ant.design/docs/request-cn
@@ -45,6 +50,11 @@ export const request: RequestConfig = {
 
 		if (response && response.status) {
 			const { status, statusText, url } = response;
+			if (status === 401) {
+				localStorage.removeItem('token');
+				history.replace('/user/login');
+				return;
+			}
 			const requestErrorMessage = messages['app.request.error'];
 			const errorMessage = `${requestErrorMessage} ${status}: ${url}`;
 			const errorDescription = messages[`app.request.${status}`] || statusText;
@@ -68,13 +78,7 @@ export const request: RequestConfig = {
 // ProLayout  https://procomponents.ant.design/components/layout
 export const layout: RunTimeLayoutConfig = ({ initialState }) => {
 	return {
-		unAccessible: (
-			<OIDCBounder>
-				<TechnicalSupportBounder>
-					<NotAccessible />
-				</TechnicalSupportBounder>
-			</OIDCBounder>
-		),
+		unAccessible: <NotAccessible />,
 		noFound: <NotFoundContent />,
 		rightContentRender: () => <RightContent />,
 		disableContentMargin: false,
@@ -82,8 +86,16 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
 		footerRender: () => <Footer />,
 
 		onPageChange: () => {
-			if (initialState?.currentUser) {
-				const { location } = history;
+			const token = localStorage.getItem('token');
+			const { location } = history;
+			
+			// Redirect to login if not authenticated and trying to access a protected route
+			if (!token && !location.pathname.includes('/user/')) {
+				history.replace('/user/login');
+				return;
+			}
+
+			if (token) {
 				const isUncheckPath = unCheckPermissionPaths.some((path) => window.location.pathname.includes(path));
 
 				if (location.pathname === '/') {
@@ -93,8 +105,9 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
 					currentRole &&
 					initialState?.authorizedPermissions?.length &&
 					!initialState?.authorizedPermissions?.find((item) => item.rsname === currentRole)
-				)
-					history.replace('/403');
+				) {
+					// history.replace('/403');
+				}
 			}
 		},
 
@@ -114,13 +127,9 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
 		),
 
 		childrenRender: (dom) => (
-			<OIDCBounder>
-				<ErrorBoundary>
-					{/* <TechnicalSupportBounder> */}
-					<OneSignalBounder>{dom}</OneSignalBounder>
-					{/* </TechnicalSupportBounder> */}
-				</ErrorBoundary>
-			</OIDCBounder>
+			<ErrorBoundary>
+				<OneSignalBounder>{dom}</OneSignalBounder>
+			</ErrorBoundary>
 		),
 		menuHeaderRender: undefined,
 		...initialState?.settings,

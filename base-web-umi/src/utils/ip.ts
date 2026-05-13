@@ -8,6 +8,7 @@ const ip3 = ipRoot + 'slink'; // ip dev
 // Ip khác
 const ipNotif = ipRoot + 'notification'; // ip dev
 const ipSlink = ipRoot + 'slink'; // ip dev
+const ipLibrary = APP_CONFIG_LIBRARY_API;
 
 const currentRole = EModuleKey.CONNECT;
 const oneSignalRole = EModuleKey.CONNECT;
@@ -26,6 +27,7 @@ export {
 	ip3,
 	ipNotif,
 	ipSlink,
+	ipLibrary,
 	currentRole,
 	oneSignalRole,
 	keycloakClientID,

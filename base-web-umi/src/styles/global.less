@@ -13,6 +13,7 @@ body,
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+	--primary-color: @primary-color;
 }
 
 a {
@@ -135,6 +136,25 @@ a {
 
 .ant-input:focus {
 	border-color: var(--primary-color);
+}
+
+.ant-btn-primary {
+	background-color: var(--primary-color) !important;
+	border-color: var(--primary-color) !important;
+}
+
+.ant-btn-primary:hover,
+.ant-btn-primary:focus {
+	opacity: 0.85;
+}
+
+.ant-btn-link {
+	color: var(--primary-color) !important;
+}
+
+.ant-btn-link:hover,
+.ant-btn-link:focus {
+	opacity: 0.85;
 }
 
 .btn-success {
