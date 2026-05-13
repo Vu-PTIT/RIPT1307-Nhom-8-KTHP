@@ -50,6 +50,14 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     role_id: Optional[str] = None
 
+class AdminUserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    max_books_allowed: Optional[int] = None
+    max_days_allowed: Optional[int] = None
+    is_active: Optional[bool] = None
+    role_id: Optional[str] = None
+
 class User(UserBase):
     id: PyObjectId
     role: Role
@@ -58,3 +66,17 @@ class User(UserBase):
 
     class Config:
         from_attributes = True
+
+class UserListItem(BaseModel):
+    id: PyObjectId
+    username: str
+    email: str
+    role_name: str
+    is_active: bool
+    created_at: datetime
+
+class UserListResponse(BaseModel):
+    items: list[UserListItem]
+    total: int
+    page: int
+    page_size: int

@@ -15,3 +15,5 @@ pyopenssl
 email-validator
 httpx
 pytest
+pandas
+openpyxl
