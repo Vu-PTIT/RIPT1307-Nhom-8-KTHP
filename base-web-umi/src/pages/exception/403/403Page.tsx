@@ -12,7 +12,7 @@ const NotAccessible = () => {
 
 	useEffect(() => {
 		if (currentRole && initialState?.authorizedPermissions?.find((item) => item.rsname === currentRole))
-			history.replace('/dashboard');
+			history.replace('/tai-lieu');
 	}, [initialState?.authorizedPermissions]);
 
 	const onLogout = (): void => OIDCBounder?.getActions()?.dangXuat();

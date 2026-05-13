@@ -1,3 +1,10 @@
+import bcrypt
+# Monkeypatch bcrypt for passlib compatibility
+if not hasattr(bcrypt, "__about__"):
+    class About:
+        __version__ = getattr(bcrypt, "__version__", "4.0.1")
+    bcrypt.__about__ = About()
+
 from datetime import datetime, timedelta
 from typing import Any, Union
 from jose import jwt

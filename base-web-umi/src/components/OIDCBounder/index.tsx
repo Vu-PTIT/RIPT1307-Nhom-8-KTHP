@@ -36,7 +36,7 @@ const OIDCBounder_: FC = ({ children }) => {
 		// Reload trang để cập nhật access token mới
 		const pathname =
 			window.location.pathname === '/' || window.location.pathname === '/user/login'
-				? '/dashboard'
+				? '/tai-lieu'
 				: window.location.pathname;
 		window.location.replace(`${pathname}${newSearch}${window.location.hash}`);
 		// window.history.replaceState({}, document.title, `${pathname}${newSearch}${window.location.hash}`);

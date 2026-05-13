@@ -12,6 +12,7 @@ import NotAccessible from './pages/exception/403';
 import NotFoundContent from './pages/exception/404';
 import type { IInitialState } from './services/base/typing';
 import './styles/global.less';
+import { getUserInfo } from './services/base/api';
 import { currentRole } from './utils/ip';
 
 /**  loading */
@@ -23,8 +24,27 @@ export const initialStateConfig = {
  * @see  https://umijs.org/zh-CN/plugins/plugin-initial-state
  * */
 export async function getInitialState(): Promise<IInitialState> {
+	const fetchUserInfo = async () => {
+		try {
+			const info = await getUserInfo();
+			return info.data;
+		} catch (error) {
+			// history.push('/user/login');
+		}
+		return undefined;
+	};
+
+	// If not on login page, fetch user info
+	if (!history.location.pathname.startsWith('/user/')) {
+		const currentUser = await fetchUserInfo();
+		return {
+			currentUser,
+			settings: {},
+		};
+	}
+
 	return {
-		permissionLoading: false,
+		settings: {},
 	};
 }
 
@@ -99,14 +119,14 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
 				const isUncheckPath = unCheckPermissionPaths.some((path) => window.location.pathname.includes(path));
 
 				if (location.pathname === '/') {
-					history.replace('/dashboard');
-				} else if (
-					!isUncheckPath &&
-					currentRole &&
-					initialState?.authorizedPermissions?.length &&
-					!initialState?.authorizedPermissions?.find((item) => item.rsname === currentRole)
-				) {
-					// history.replace('/403');
+					const roleName = initialState?.currentUser?.role?.name;
+					if (roleName === 'Admin') {
+						history.replace('/quan-tri/thong-ke');
+					} else if (roleName === 'Librarian') {
+						history.replace('/thu-thu/muon-tra');
+					} else {
+						history.replace('/tai-lieu');
+					}
 				}
 			}
 		},

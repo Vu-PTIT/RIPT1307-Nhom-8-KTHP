@@ -18,16 +18,27 @@ const Login: React.FC = () => {
 
 		try {
 			const info = await getUserInfo();
+			const userData = info?.data;
 			setInitialState({
 				...initialState,
-				currentUser: info?.data?.data || info?.data,
+				currentUser: userData,
 			});
+
+			message.success('Đăng nhập thành công');
+
+			// Redirect based on role
+			const roleName = userData?.role?.name;
+			if (roleName === 'Admin') {
+				history.push('/quan-tri/thong-ke');
+			} else if (roleName === 'Librarian') {
+				history.push('/thu-thu/muon-tra');
+			} else {
+				history.push('/tai-lieu');
+			}
 		} catch (e) {
 			console.error('Failed to get user info', e);
+			message.error('Không thể lấy thông tin người dùng');
 		}
-
-		message.success('Đăng nhập thành công');
-		history.push('/dashboard');
 	};
 
 	const handleSubmit = async (values: any) => {

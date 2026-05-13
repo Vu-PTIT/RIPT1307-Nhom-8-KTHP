@@ -124,3 +124,12 @@ erDiagram
    ```bash
    npm run dev
    ```
+
+
+---
+
+### Tài khoản test:
+
+User: test123/123456
+Admin: admin / admin123
+Library: library / library123
