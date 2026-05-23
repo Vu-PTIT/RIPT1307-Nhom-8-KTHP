@@ -63,7 +63,7 @@ async def get_top_borrowed_books(engine: AIOEngine, limit: int = 5) -> List[TopB
     return items
 
 async def get_overdue_stats(engine: AIOEngine) -> OverdueStats:
-    today = date.today()
+    today = datetime.utcnow()
     # Find active borrow items that are overdue
     active_records = await engine.find(BorrowRecord, (BorrowRecord.status == "borrowed") & (BorrowRecord.due_date < today))
     
@@ -76,13 +76,13 @@ async def get_overdue_stats(engine: AIOEngine) -> OverdueStats:
             copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
             doc = await engine.find_one(Document, Document.id == copy.document.id)
             
-            days_overdue = (today - record.due_date).days
+            days_overdue = (today.date() - record.due_date.date()).days
             
             overdue_items.append(OverdueItem(
                 borrow_id=record.id,
                 reader_username=reader.username if reader else "Unknown",
                 document_title=doc.title if doc else "Unknown",
-                due_date=datetime.combine(record.due_date, datetime.min.time()),
+                due_date=record.due_date,
                 days_overdue=days_overdue
             ))
             

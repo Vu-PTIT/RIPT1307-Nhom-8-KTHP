@@ -45,6 +45,42 @@ async def search_documents(
         "page_size": page_size
     }
 
+@router.get("/search", response_model=document_schema.DocumentSearchResponse)
+async def search_documents_path(
+    keyword: Optional[str] = None,
+    category_id: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100)
+) -> Any:
+    """
+    Search for documents with filters (path version for /search endpoint).
+    """
+    docs, total = await document_crud.search_documents(
+        engine, keyword=keyword, category_id=category_id, page=page, page_size=page_size
+    )
+    
+    # Map to summary schema
+    items = []
+    from app.models.document import Category
+    for doc in docs:
+        category = await engine.find_one(Category, Category.id == doc.category.id)
+        items.append(document_schema.DocumentSummary(
+            id=doc.id,
+            title=doc.title,
+            author=doc.author,
+            isbn=doc.isbn,
+            cover_image=doc.cover_image,
+            available_copies=doc.available_copies,
+            category_name=category.name if category else "Unknown"
+        ))
+        
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size
+    }
+
 @router.get("/{id}", response_model=document_schema.Document)
 async def get_document(id: str) -> Any:
     """

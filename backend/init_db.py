@@ -11,6 +11,8 @@ from app.models.document import Category, Document, DocumentCopy
 from app.models.borrow import Wishlist, BorrowCartItem, BorrowRecord, BorrowRecordItem, RenewalRequest
 from app.models.setting import LibrarySetting
 from app.models.log import CheckinLog
+from app.crud import user as user_crud
+from app.schemas.user import UserCreate
 
 async def init_db():
     print("--- Database Initialization ---")
@@ -54,6 +56,48 @@ async def init_db():
             member_role = Role(name="Member", description="Library Member")
             await engine.save_all([admin_role, member_role])
             print(f"Successfully created roles: Admin, Member")
+        else:
+            print(f"Roles present: {roles_count}")
+
+        # Ensure test users exist (admin and test user)
+        try:
+            admin_role = await engine.find_one(Role, Role.name == "Admin")
+            member_role = await engine.find_one(Role, Role.name == "Member")
+            users_to_ensure = [
+                {"username": "admin", "email": "admin@example.com", "password": "admin123", "role": admin_role},
+                {"username": "test123", "email": "test123@example.com", "password": "123456", "role": member_role},
+            ]
+            for u in users_to_ensure:
+                existing = await engine.find_one(User, User.username == u["username"])
+                if not u["role"]:
+                    print(f"Skipping creation of {u['username']} - role missing")
+                    continue
+                user_in = UserCreate(
+                    username=u["username"],
+                    email=u["email"],
+                    password=u["password"],
+                    role_id=str(u["role"].id),
+                )
+                try:
+                    if existing:
+                        await user_crud.update_user(
+                            engine,
+                            str(existing.id),
+                            {
+                                "email": u["email"],
+                                "password": u["password"],
+                                "role_id": str(u["role"].id),
+                                "is_active": True,
+                            },
+                        )
+                        print(f"Updated seeded user: {u['username']}")
+                    else:
+                        created = await user_crud.create_user(engine, user_in)
+                        print(f"Created user: {created.username}")
+                except Exception as e:
+                    print(f"Failed creating/updating user {u['username']}: {e}")
+        except Exception as e:
+            print(f"ERROR ensuring test users: {e}")
         
         print("--- Initialization complete! ---")
         

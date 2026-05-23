@@ -9,10 +9,17 @@ from app.crud import borrow as borrow_crud
 
 router = APIRouter()
 
+
+def _as_date(value):
+    return value.date() if isinstance(value, datetime) else value
+
 async def _get_borrow_detail_logic(record_id: str):
     """Internal helper to get borrow detail without role dependency check."""
-    from app.models.borrow import BorrowRecord
-    record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
+    from app.models.borrow import BorrowRecord, BorrowRecordItem
+    from app.models.document import Document, DocumentCopy
+    from odmantic import ObjectId
+
+    record = await engine.find_one(BorrowRecord, BorrowRecord.id == ObjectId(record_id))
     if not record:
         return None
         
@@ -21,31 +28,43 @@ async def _get_borrow_detail_logic(record_id: str):
     
     item_summaries = []
     for item in items:
-        copy = await engine.find_one(item.document_copy.model, item.document_copy.model.id == item.document_copy.id)
-        doc = await engine.find_one(copy.document.model, copy.document.model.id == copy.document.id)
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
+        doc = await engine.find_one(Document, Document.id == copy.document.id) if copy else None
+        if not copy or not doc:
+            continue
         
         status = "returned" if item.return_date else "borrowed"
-        if not item.return_date and record.due_date < datetime.now().date():
+        if not item.return_date and _as_date(record.due_date) < datetime.now().date():
             status = "overdue"
             
         item_summaries.append(borrow_schema.BorrowRecordItemSummary(
             id=item.id, copy_code=copy.copy_code, document_title=doc.title,
-            borrow_date=record.borrow_date, due_date=record.due_date,
-            return_date=item.return_date, status=status
+            borrow_date=_as_date(record.borrow_date), due_date=_as_date(record.due_date),
+            return_date=_as_date(item.return_date) if item.return_date else None, status=status
         ))
         
     return borrow_schema.BorrowRecordDetailResponse(
-        id=record.id, borrow_date=record.borrow_date, due_date=record.due_date,
+        id=record.id, borrow_date=_as_date(record.borrow_date), due_date=_as_date(record.due_date),
         status=record.status, items=item_summaries
     )
 
-@router.get("", response_model=List[borrow_schema.BorrowRecord])
+@router.get("", response_model=List[borrow_schema.BorrowRecordSummary])
 async def get_my_borrows(
     status: Optional[str] = None,
     current_user: User = Depends(deps.get_current_reader)
 ) -> Any:
     """Get current user's borrow records."""
-    return await borrow_crud.get_my_borrow_records(engine, str(current_user.id), status=status)
+    records = await borrow_crud.get_my_borrow_records(engine, str(current_user.id), status=status)
+    return [
+        borrow_schema.BorrowRecordSummary(
+            id=record.id,
+            borrow_date=_as_date(record.borrow_date),
+            due_date=_as_date(record.due_date),
+            status=record.status,
+            notes=record.notes,
+        )
+        for record in records
+    ]
 
 @router.get("/{id}", response_model=borrow_schema.BorrowRecordDetailResponse)
 async def get_borrow_detail(
@@ -55,11 +74,25 @@ async def get_borrow_detail(
     """Get detailed information about a specific borrow record (Reader)."""
     # Check if this record belongs to the user
     from app.models.borrow import BorrowRecord
-    record = await engine.find_one(BorrowRecord, (BorrowRecord.id == id) & (BorrowRecord.reader == current_user.id))
+    from odmantic import ObjectId
+
+    record = await engine.find_one(BorrowRecord, (BorrowRecord.id == ObjectId(id)) & (BorrowRecord.reader == current_user.id))
     if not record:
         raise HTTPException(status_code=404, detail="Borrow record not found or access denied")
     
     return await _get_borrow_detail_logic(id)
+
+
+@router.post("/checkout", response_model=borrow_schema.BorrowRecordDetailResponse)
+async def checkout_cart(
+    current_user: User = Depends(deps.get_current_reader),
+) -> Any:
+    """Checkout current user's borrow cart and create a borrow record."""
+    try:
+        record = await borrow_crud.create_borrow_from_cart(engine, str(current_user.id))
+        return await _get_borrow_detail_logic(str(record.id))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ===================== LIBRARIAN ENDPOINTS =====================

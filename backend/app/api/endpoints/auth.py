@@ -53,7 +53,7 @@ async def register(user_in: user_schema.UserRegister) -> Any:
     try:
         user = await user_crud.create_user(engine, user_create)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
         
     return user
 

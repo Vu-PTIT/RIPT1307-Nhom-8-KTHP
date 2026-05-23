@@ -26,8 +26,8 @@ class BorrowCartItem(Model):
 class BorrowRecord(Model):
     reader: User = Reference()
     librarian: User = Reference()
-    borrow_date: date
-    due_date: date
+    borrow_date: datetime
+    due_date: datetime
     status: str = Field(default="borrowed")
     notes: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -39,7 +39,7 @@ class BorrowRecord(Model):
 class BorrowRecordItem(Model):
     borrow_record: BorrowRecord = Reference()
     document_copy: DocumentCopy = Reference()
-    return_date: date | None = Field(default=None)
+    return_date: datetime | None = Field(default=None)
     condition_on_return: str | None = Field(default=None)
 
     model_config = {
@@ -50,7 +50,7 @@ class RenewalRequest(Model):
     borrow_record_item: BorrowRecordItem = Reference()
     requested_by: User = Reference()
     request_date: datetime = Field(default_factory=datetime.utcnow)
-    new_due_date: date
+    new_due_date: datetime
     status: str = Field(default="pending")
     reviewed_by_id: str | None = Field(default=None)
     reviewed_at: datetime | None = Field(default=None)

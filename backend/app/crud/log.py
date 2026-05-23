@@ -34,15 +34,11 @@ async def get_my_checkin_logs(
     page: int = 1, 
     page_size: int = 20
 ) -> Tuple[List[CheckinLog], int]:
-    filters = [CheckinLog.user == ObjectId(user_id)]
-    total = await engine.count(CheckinLog, *filters)
-    logs = await engine.find(
-        CheckinLog, 
-        *filters, 
-        skip=(page - 1) * page_size, 
-        limit=page_size,
-        sort=CheckinLog.check_time.desc()
-    )
+    collection = engine.get_collection(CheckinLog)
+    query = {"user": ObjectId(user_id)}
+    total = await collection.count_documents(query)
+    raw = await collection.find(query).sort("check_time", -1).skip((page - 1) * page_size).limit(page_size).to_list(length=page_size)
+    logs = [engine.database_to_model(CheckinLog, doc) for doc in raw]
     return logs, total
 
 
@@ -56,18 +52,16 @@ async def get_all_checkin_logs(
     page_size: int = 50,
 ) -> Tuple[List[CheckinLog], int]:
     """Get all check-in logs for monitoring."""
-    filters = []
+    collection = engine.get_collection(CheckinLog)
+    query = {}
     if user_id:
-        filters.append(CheckinLog.user == ObjectId(user_id))
+        query["user"] = ObjectId(user_id)
     if check_type:
-        filters.append(CheckinLog.check_type == check_type)
-
-    total = await engine.count(CheckinLog, *filters)
-    logs = await engine.find(
-        CheckinLog, *filters,
-        skip=(page - 1) * page_size, limit=page_size,
-        sort=CheckinLog.check_time.desc()
-    )
+        query["check_type"] = check_type
+    
+    total = await collection.count_documents(query)
+    raw = await collection.find(query).sort("check_time", -1).skip((page - 1) * page_size).limit(page_size).to_list(length=page_size)
+    logs = [engine.database_to_model(CheckinLog, doc) for doc in raw]
     return logs, total
 
 

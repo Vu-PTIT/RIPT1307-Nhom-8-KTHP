@@ -35,6 +35,13 @@ import data from './data';
 // Add a request interceptor
 axios.interceptors.request.use(
   (config) => {
+		try {
+			const m = (config.method || 'get').toUpperCase();
+			// don't log Authorization value
+			console.debug('[API request]', m, config.url);
+		} catch (e) {
+			// ignore
+		}
     if (!config.headers.Authorization) {
       const token = localStorage.getItem('token');
       if (token) {
@@ -49,10 +56,17 @@ axios.interceptors.request.use(
 
 // Add a response interceptor
 axios.interceptors.response.use(
-	(response) =>
-		// Do something with response data
-		response,
-	(error) => {
+		(response) => {
+			try {
+				console.debug('[API response]', response.config?.method?.toUpperCase(), response.config?.url, response.status);
+			} catch (e) {}
+			return response;
+		},
+		(error) => {
+			try {
+				const cfg = error?.config || {};
+				console.debug('[API error]', (cfg.method || '').toUpperCase(), cfg.url, error?.response?.status);
+			} catch (e) {}
 		let er = error?.response?.data;
 		// Convert response data to JSON
 		if ((error?.response?.config?.responseType as string)?.toLowerCase() === 'arraybuffer') {
@@ -69,11 +83,13 @@ axios.interceptors.response.use(
 			  er?.message ||
 			  er?.errorDescription;
 
-		const originalRequest = error.config;
+		const originalRequest = error.config || {};
 		let originData = originalRequest?.data;
-		if (typeof originData === 'string') originData = JSON.parse(originData);
-		if (typeof originData !== 'object' || !Object.keys(originData ?? {}).includes('silent') || !originData?.silent)
-			switch (error?.response?.status) {
+		if (typeof originData === 'string') {
+			try { originData = JSON.parse(originData); } catch (e) { originData = undefined; }
+		}
+		const silent = !!(originalRequest?.silent || originData?.silent || originalRequest?.params?.silent);
+		if (!silent) switch (error?.response?.status) {
 				case 400:
 					notification.error({
 						message: 'Dữ liệu chưa đúng (004)',

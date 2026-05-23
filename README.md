@@ -23,12 +23,13 @@ Hệ thống được xây dựng trên kiến trúc hiện đại, đảm bảo
 ## 🛠️ Tính năng cốt lõi
 
 ### 1. Dành cho Độc giả (Reader)
-- **Tra cứu tài liệu**: Tìm kiếm, lọc và xem thông tin chi tiết sách.
-- **Danh sách quan tâm (Wishlist)**: Lưu lại các tài liệu muốn mượn trong tương lai.
-- **Giỏ mượn sách (Borrow Cart)**: Đăng ký mượn sách trực tuyến trước khi đến quầy.
-- **Quản lý mượn trả**: Theo dõi trạng thái sách đang mượn, lịch sử mượn trả.
-- **Gia hạn trực tuyến**: Gửi yêu cầu gia hạn thời gian mượn (đang chờ duyệt).
-- **Check-in/Check-out**: Tự động ghi lại nhật ký ra vào thư viện.
+- **Phần của tôi**:
+    - **Tra cứu tài liệu**: Tìm kiếm, lọc và xem thông tin chi tiết tài liệu.
+    - **Danh sách quan tâm (Wishlist)**: Lưu lại các tài liệu muốn đọc/mượn trong tương lai.
+    - **Giỏ mượn sách (Borrow Cart)**: Đưa sách vào giỏ mượn ảo trước khi đem ra quầy quét mã.
+    - **Theo dõi mượn sách hiện tại**: Xem trạng thái các sách đang mượn và gửi yêu cầu gia hạn trực tuyến.
+- **Phần còn lại của thành viên khác**:
+    - **Check-in/Check-out**: Tự động ghi lại nhật ký ra vào thư viện.
 
 ### 2. Dành cho Thủ thư (Librarian)
 - **Xử lý mượn trả**: Nhập mã để xác nhận giao dịch mượn/trả sách.
@@ -133,3 +134,17 @@ erDiagram
 User: test123/123456
 Admin: admin / admin123
 Library: library / library123
+
+---
+
+## Kiểm tra nhanh API (diagnostic)
+
+Nếu trang frontend báo "Hệ thống đang cập nhật" hoặc không tải được dữ liệu, bạn có thể chạy script kiểm tra nhanh:
+
+```bash
+# tại thư mục gốc của repo
+chmod +x scripts/check_endpoints.sh
+./scripts/check_endpoints.sh
+```
+
+Script sẽ in mã trạng thái HTTP cho các endpoint chính và thử đăng nhập `test123` để thu diagnostic.

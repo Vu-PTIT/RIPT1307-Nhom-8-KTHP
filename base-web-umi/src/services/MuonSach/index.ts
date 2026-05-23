@@ -3,57 +3,62 @@ import { ipLibrary } from '@/utils/ip';
 
 // Wishlist
 export async function getMyWishlist() {
-  return axios.get(`${ipLibrary}/wishlist`);
+	return axios.get(`${ipLibrary}/wishlist`, { silent: true });
 }
 
 export async function addToWishlist(document_id: string) {
-  return axios.post(`${ipLibrary}/wishlist`, { document_id });
+	return axios.post(`${ipLibrary}/wishlist`, { document_id });
 }
 
 export async function removeFromWishlist(id: string) {
-  return axios.delete(`${ipLibrary}/wishlist/${id}`);
+	return axios.delete(`${ipLibrary}/wishlist/${id}`);
 }
 
 // Cart
 export async function getMyCart() {
-  return axios.get(`${ipLibrary}/cart`);
+	return axios.get(`${ipLibrary}/cart`, { silent: true });
 }
 
 export async function addToCart(document_id: string) {
-  return axios.post(`${ipLibrary}/cart`, { document_id });
+	return axios.post(`${ipLibrary}/cart`, { document_id });
 }
 
 export async function removeFromCart(id: string) {
-  return axios.delete(`${ipLibrary}/cart/${id}`);
+	return axios.delete(`${ipLibrary}/cart/${id}`);
 }
 
 export async function clearCart() {
-  return axios.delete(`${ipLibrary}/cart`);
+	return axios.delete(`${ipLibrary}/cart`);
 }
 
 // Borrows
 export async function getMyBorrows(status?: string) {
-  return axios.get(`${ipLibrary}/borrows`, { params: { status } });
+	return axios.get(`${ipLibrary}/borrows`, { params: { status }, silent: true });
 }
 
 export async function getBorrowDetail(id: string) {
-  return axios.get(`${ipLibrary}/borrows/${id}`);
+	return axios.get(`${ipLibrary}/borrows/${id}`);
 }
 
 // Renewals
 export async function requestRenewal(data: { borrow_record_item_id: string; new_due_date: string }) {
-  return axios.post(`${ipLibrary}/renewals`, data);
+	return axios.post(`${ipLibrary}/renewals`, data);
 }
 
 export async function getMyRenewals() {
-  return axios.get(`${ipLibrary}/renewals`);
+	return axios.get(`${ipLibrary}/renewals`, { silent: true });
+}
+
+// Checkout cart (create borrow record from current user's cart)
+export async function checkoutCart() {
+	return axios.post(`${ipLibrary}/borrows/checkout`);
 }
 
 // Checkin
 export async function selfCheckin(data: { check_type: string; method: string }) {
-  return axios.post(`${ipLibrary}/checkin`, data);
+	return axios.post(`${ipLibrary}/checkin`, data);
 }
 
 export async function getCheckinHistory(params: { page?: number; page_size?: number }) {
-  return axios.get(`${ipLibrary}/checkin/history`, { params });
+	return axios.get(`${ipLibrary}/checkin/history`, { params, silent: true });
 }
