@@ -115,6 +115,13 @@ class BorrowRecordDetailResponse(BaseModel):
     status: str
     items: List[BorrowRecordItemSummary]
 
+class BorrowRecordSummaryResponse(BaseModel):
+    id: PyObjectId
+    borrow_date: date
+    due_date: date
+    status: str
+    notes: Optional[str] = None
+
 # RenewalRequest Schemas
 class RenewalRequestBase(BaseModel):
     new_due_date: date
@@ -123,6 +130,9 @@ class RenewalRequestBase(BaseModel):
 
 class RenewalRequestCreate(BaseModel):
     borrow_record_item_id: str
+    new_due_date: date
+
+class RenewalRequestModify(BaseModel):
     new_due_date: date
 
 class RenewalRequestUpdate(BaseModel):
@@ -143,6 +153,7 @@ class RenewalRequest(RenewalRequestBase):
 
 class RenewalRequestResponse(BaseModel):
     id: PyObjectId
+    borrow_record_item_id: str
     document_title: str
     old_due_date: date
     new_due_date: date

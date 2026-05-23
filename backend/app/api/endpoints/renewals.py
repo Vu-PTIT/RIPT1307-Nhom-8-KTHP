@@ -1,12 +1,18 @@
 from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, Query
+from odmantic import ObjectId
 from app.db.session import engine
 from app.api import deps
+from app.models.borrow import BorrowRecordItem, BorrowRecord
+from app.models.document import Document, DocumentCopy
 from app.models.user import User
 from app.schemas import borrow as borrow_schema
 from app.crud import borrow as borrow_crud
 
 router = APIRouter()
+
+def _resolve_reference_id(ref):
+    return ref.id if hasattr(ref, "id") else ref
 
 @router.post("", response_model=borrow_schema.RenewalRequestResponse)
 async def request_renewal(
@@ -25,13 +31,18 @@ async def request_renewal(
         )
         
         # Load related data for response
-        item = await engine.find_one(request.borrow_record_item.model, request.borrow_record_item.model.id == request.borrow_record_item.id)
-        record = await engine.find_one(item.borrow_record.model, item.borrow_record.model.id == item.borrow_record.id)
-        copy = await engine.find_one(item.document_copy.model, item.document_copy.model.id == item.document_copy.id)
-        doc = await engine.find_one(copy.document.model, copy.document.model.id == copy.document.id)
+        item_id = _resolve_reference_id(request.borrow_record_item)
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == item_id)
+        record_id = _resolve_reference_id(item.borrow_record)
+        record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
+        copy_id = _resolve_reference_id(item.document_copy)
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_id)
+        doc_id = _resolve_reference_id(copy.document)
+        doc = await engine.find_one(Document, Document.id == doc_id)
         
         return borrow_schema.RenewalRequestResponse(
             id=request.id,
+            borrow_record_item_id=str(item.id),
             document_title=doc.title,
             old_due_date=record.due_date,
             new_due_date=request.new_due_date,
@@ -52,13 +63,18 @@ async def get_my_renewals(
     
     response = []
     for req in requests:
-        item = await engine.find_one(req.borrow_record_item.model, req.borrow_record_item.model.id == req.borrow_record_item.id)
-        record = await engine.find_one(item.borrow_record.model, item.borrow_record.model.id == item.borrow_record.id)
-        copy = await engine.find_one(item.document_copy.model, item.document_copy.model.id == item.document_copy.id)
-        doc = await engine.find_one(copy.document.model, copy.document.model.id == copy.document.id)
+        item_id = _resolve_reference_id(req.borrow_record_item)
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == item_id)
+        record_id = _resolve_reference_id(item.borrow_record)
+        record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
+        copy_id = _resolve_reference_id(item.document_copy)
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_id)
+        doc_id = _resolve_reference_id(copy.document)
+        doc = await engine.find_one(Document, Document.id == doc_id)
         
         response.append(borrow_schema.RenewalRequestResponse(
             id=req.id,
+            borrow_record_item_id=str(item.id),
             document_title=doc.title,
             old_due_date=record.due_date,
             new_due_date=req.new_due_date,
@@ -67,6 +83,65 @@ async def get_my_renewals(
             reject_reason=req.reject_reason
         ))
     return response
+
+@router.put("/{id}", response_model=borrow_schema.RenewalRequestResponse)
+async def modify_renewal_request(
+    id: str,
+    renewal_in: borrow_schema.RenewalRequestModify,
+    current_user: User = Depends(deps.get_current_reader),
+) -> Any:
+    """Modify an existing pending renewal request."""
+    try:
+        renewal = await borrow_crud.update_renewal_request(engine, id, str(current_user.id), renewal_in.new_due_date)
+        item_id = _resolve_reference_id(renewal.borrow_record_item)
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == item_id)
+        record_id = _resolve_reference_id(item.borrow_record)
+        record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
+        copy_id = _resolve_reference_id(item.document_copy)
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_id)
+        doc_id = _resolve_reference_id(copy.document)
+        doc = await engine.find_one(Document, Document.id == doc_id)
+        return borrow_schema.RenewalRequestResponse(
+            id=renewal.id,
+            borrow_record_item_id=str(item.id),
+            document_title=doc.title,
+            old_due_date=record.due_date,
+            new_due_date=renewal.new_due_date,
+            status=renewal.status,
+            request_date=renewal.request_date,
+            reject_reason=renewal.reject_reason,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/{id}", response_model=borrow_schema.RenewalRequestResponse)
+async def cancel_renewal_request(
+    id: str,
+    current_user: User = Depends(deps.get_current_reader),
+) -> Any:
+    """Cancel a pending renewal request."""
+    try:
+        renewal = await borrow_crud.cancel_renewal_request(engine, id, str(current_user.id))
+        item_id = _resolve_reference_id(renewal.borrow_record_item)
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == item_id)
+        record_id = _resolve_reference_id(item.borrow_record)
+        record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
+        copy_id = _resolve_reference_id(item.document_copy)
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_id)
+        doc_id = _resolve_reference_id(copy.document)
+        doc = await engine.find_one(Document, Document.id == doc_id)
+        return borrow_schema.RenewalRequestResponse(
+            id=renewal.id,
+            borrow_record_item_id=str(item.id),
+            document_title=doc.title,
+            old_due_date=record.due_date,
+            new_due_date=renewal.new_due_date,
+            status=renewal.status,
+            request_date=renewal.request_date,
+            reject_reason=renewal.reject_reason,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ===================== LIBRARIAN ENDPOINTS =====================
@@ -79,17 +154,24 @@ async def list_pending_renewals(
     """List renewal requests (default: pending)."""
     requests = await borrow_crud.get_pending_renewals(engine, status_filter=status)
     response = []
-    from app.models.borrow import BorrowRecordItem, BorrowRecord
-    from app.models.document import Document, DocumentCopy
     for req in requests:
-        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == req.borrow_record_item.id)
-        record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
-        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
-        doc = await engine.find_one(Document, Document.id == copy.document.id)
+        item_id = _resolve_reference_id(req.borrow_record_item)
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == item_id)
+        record_id = _resolve_reference_id(item.borrow_record)
+        record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
+        copy_id = _resolve_reference_id(item.document_copy)
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_id)
+        doc_id = _resolve_reference_id(copy.document)
+        doc = await engine.find_one(Document, Document.id == doc_id)
         response.append(borrow_schema.RenewalRequestResponse(
-            id=req.id, document_title=doc.title, old_due_date=record.due_date,
-            new_due_date=req.new_due_date, status=req.status,
-            request_date=req.request_date, reject_reason=req.reject_reason
+            id=req.id,
+            borrow_record_item_id=str(item.id),
+            document_title=doc.title,
+            old_due_date=record.due_date,
+            new_due_date=req.new_due_date,
+            status=req.status,
+            request_date=req.request_date,
+            reject_reason=req.reject_reason
         ))
     return response
 
@@ -110,10 +192,14 @@ async def review_renewal(
         from app.models.borrow import BorrowRecordItem, BorrowRecord
         from app.models.document import Document, DocumentCopy
         
-        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == renewal.borrow_record_item.id)
-        record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
-        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
-        doc = await engine.find_one(Document, Document.id == copy.document.id)
+        item_id = _resolve_reference_id(renewal.borrow_record_item)
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == item_id)
+        record_id = _resolve_reference_id(item.borrow_record)
+        record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
+        copy_id = _resolve_reference_id(item.document_copy)
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_id)
+        doc_id = _resolve_reference_id(copy.document)
+        doc = await engine.find_one(Document, Document.id == doc_id)
         
         return borrow_schema.RenewalRequestResponse(
             id=renewal.id,

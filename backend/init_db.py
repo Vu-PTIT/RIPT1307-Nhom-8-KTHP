@@ -6,6 +6,7 @@ import os
 sys.path.append(os.getcwd())
 
 from app.db.session import engine
+from app.core.security import get_password_hash
 from app.models.user import Role, User
 from app.models.document import Category, Document, DocumentCopy
 from app.models.borrow import Wishlist, BorrowCartItem, BorrowRecord, BorrowRecordItem, RenewalRequest
@@ -47,14 +48,52 @@ async def init_db():
                 print(f"Collection {coll_name} already exists.")
 
         # Initialize default roles if they don't exist
-        roles_count = await engine.count(Role)
-        if roles_count == 0:
-            print("Creating default roles...")
-            admin_role = Role(name="Admin", description="System Administrator")
-            member_role = Role(name="Member", description="Library Member")
-            await engine.save_all([admin_role, member_role])
-            print(f"Successfully created roles: Admin, Member")
-        
+        existing_roles = {role.name: role for role in await engine.find(Role)}
+        if not existing_roles.get("Admin"):
+            existing_roles["Admin"] = Role(name="Admin", description="System Administrator")
+        if not existing_roles.get("Member"):
+            existing_roles["Member"] = Role(name="Member", description="Library Member")
+        if not existing_roles.get("Librarian"):
+            existing_roles["Librarian"] = Role(name="Librarian", description="Library Staff")
+        await engine.save_all(list(existing_roles.values()))
+        print(f"Successfully ensured roles: {', '.join(existing_roles.keys())}")
+
+        # Seed demo users if they do not exist
+        demo_users = [
+            {
+                "username": "admin",
+                "email": "admin@example.com",
+                "password": "admin123",
+                "role": existing_roles["Admin"],
+            },
+            {
+                "username": "library",
+                "email": "library@example.com",
+                "password": "library123",
+                "role": existing_roles["Librarian"],
+            },
+            {
+                "username": "test123",
+                "email": "test123@example.com",
+                "password": "123456",
+                "role": existing_roles["Member"],
+            },
+        ]
+
+        for demo in demo_users:
+            existing_user = await engine.find_one(User, User.username == demo["username"])
+            if existing_user:
+                continue
+            user_obj = User(
+                username=demo["username"],
+                email=demo["email"],
+                password_hash=get_password_hash(demo["password"]),
+                role=demo["role"],
+                is_active=True,
+            )
+            await engine.save(user_obj)
+            print(f"Created demo user: {demo['username']}")
+
         print("--- Initialization complete! ---")
         
     except Exception as e:

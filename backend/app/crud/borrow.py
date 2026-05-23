@@ -1,10 +1,14 @@
 from __future__ import annotations
 from datetime import datetime, date, timedelta
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from odmantic import AIOEngine, ObjectId
 from app.models.borrow import Wishlist, BorrowCartItem, BorrowRecord, BorrowRecordItem, RenewalRequest
 from app.models.document import Document, DocumentCopy
 from app.models.user import User
+
+
+def _resolve_reference_id(ref):
+    return ref.id if hasattr(ref, "id") else ref
 
 # Wishlist
 async def get_wishlists(engine: AIOEngine, user_id: str) -> List[Wishlist]:
@@ -78,6 +82,26 @@ async def get_borrow_record_detail(engine: AIOEngine, record_id: str, user_id: s
 async def get_record_items(engine: AIOEngine, record_id: str) -> List[BorrowRecordItem]:
     return await engine.find(BorrowRecordItem, BorrowRecordItem.borrow_record == ObjectId(record_id))
 
+async def update_borrow_record_notes(engine: AIOEngine, record_id: str, user_id: str, notes: Optional[str]) -> BorrowRecord:
+    record = await engine.find_one(BorrowRecord, (BorrowRecord.id == ObjectId(record_id)) & (BorrowRecord.reader == ObjectId(user_id)))
+    if not record:
+        raise ValueError("Borrow record not found or access denied")
+    record.notes = notes
+    await engine.save(record)
+    return record
+
+async def delete_borrow_record(engine: AIOEngine, record_id: str, user_id: str) -> bool:
+    record = await engine.find_one(BorrowRecord, (BorrowRecord.id == ObjectId(record_id)) & (BorrowRecord.reader == ObjectId(user_id)))
+    if not record:
+        raise ValueError("Borrow record not found or access denied")
+    if record.status != "returned":
+        raise ValueError("Chỉ có thể xóa lịch sử khi tất cả sách đã được trả")
+    items = await engine.find(BorrowRecordItem, BorrowRecordItem.borrow_record == record.id)
+    for item in items:
+        await engine.delete(item)
+    await engine.delete(record)
+    return True
+
 # Renewal
 async def create_renewal_request(engine: AIOEngine, item_id: str, user_id: str, new_due_date: date) -> RenewalRequest:
     # Find the item and ensure it belongs to the user
@@ -86,17 +110,29 @@ async def create_renewal_request(engine: AIOEngine, item_id: str, user_id: str, 
         raise ValueError("Borrow record item not found")
         
     # Check if record belongs to user
-    record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
+    record_id = _resolve_reference_id(item.borrow_record)
+    record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
     if not record or str(record.reader.id) != user_id:
         raise ValueError("Unauthorized access to this borrow record")
-        
+
+    if item.return_date is not None:
+        raise ValueError("Cannot renew an item that has already been returned")
+
+    if record.status != "borrowed":
+        raise ValueError("Renewal is only allowed for currently borrowed records")
+
     user = await engine.find_one(User, User.id == ObjectId(user_id))
-    
+    if not user:
+        raise ValueError("Requesting user not found")
+
     # Check if there is already a pending request
-    existing = await engine.find_one(RenewalRequest, (RenewalRequest.borrow_record_item == item.id) & (RenewalRequest.status == "pending"))
+    existing = await engine.find_one(
+        RenewalRequest,
+        (RenewalRequest.borrow_record_item == item.id) & (RenewalRequest.status == "pending")
+    )
     if existing:
         raise ValueError("A renewal request is already pending for this item")
-        
+
     db_obj = RenewalRequest(
         borrow_record_item=item,
         requested_by=user,
@@ -108,6 +144,28 @@ async def create_renewal_request(engine: AIOEngine, item_id: str, user_id: str, 
 
 async def get_my_renewals(engine: AIOEngine, user_id: str) -> List[RenewalRequest]:
     return await engine.find(RenewalRequest, RenewalRequest.requested_by == ObjectId(user_id), sort=RenewalRequest.request_date.desc())
+
+async def update_renewal_request(engine: AIOEngine, renewal_id: str, user_id: str, new_due_date: date) -> RenewalRequest:
+    renewal = await engine.find_one(RenewalRequest, RenewalRequest.id == ObjectId(renewal_id))
+    if not renewal or str(_resolve_reference_id(renewal.requested_by)) != user_id:
+        raise ValueError("Renewal request not found or access denied")
+    if renewal.status != "pending":
+        raise ValueError("Chỉ có thể sửa yêu cầu đang chờ xử lý")
+    renewal.new_due_date = new_due_date
+    await engine.save(renewal)
+    return renewal
+
+async def cancel_renewal_request(engine: AIOEngine, renewal_id: str, user_id: str) -> RenewalRequest:
+    renewal = await engine.find_one(RenewalRequest, RenewalRequest.id == ObjectId(renewal_id))
+    if not renewal or str(_resolve_reference_id(renewal.requested_by)) != user_id:
+        raise ValueError("Renewal request not found or access denied")
+    if renewal.status != "pending":
+        raise ValueError("Chỉ có thể hủy yêu cầu đang chờ xử lý")
+    renewal.status = "cancelled"
+    renewal.reject_reason = "Hủy bởi người dùng"
+    renewal.reviewed_at = datetime.utcnow()
+    await engine.save(renewal)
+    return renewal
 
 
 # ===================== LIBRARIAN OPERATIONS =====================
@@ -187,7 +245,8 @@ async def create_borrow_record(
         copy.status = "borrowed"
         await engine.save(copy)
 
-        doc = await engine.find_one(Document, Document.id == copy.document.id)
+        document_id = _resolve_reference_id(copy.document)
+        doc = await engine.find_one(Document, Document.id == document_id)
         if doc:
             doc.available_copies = max(0, doc.available_copies - 1)
             await engine.save(doc)
@@ -220,7 +279,8 @@ async def process_return(
     copy.condition = condition_on_return
     await engine.save(copy)
 
-    doc = await engine.find_one(Document, Document.id == copy.document.id)
+    document_id = _resolve_reference_id(copy.document)
+    doc = await engine.find_one(Document, Document.id == document_id)
     if doc:
         doc.available_copies += 1
         await engine.save(doc)
@@ -277,9 +337,11 @@ async def review_renewal(
     if new_status == "rejected":
         renewal.reject_reason = reject_reason
     elif new_status == "approved":
-        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == renewal.borrow_record_item.id)
+        item_id = _resolve_reference_id(renewal.borrow_record_item)
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == item_id)
         if item:
-            record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
+            record_id = _resolve_reference_id(item.borrow_record)
+            record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
             if record:
                 record.due_date = renewal.new_due_date
                 await engine.save(record)

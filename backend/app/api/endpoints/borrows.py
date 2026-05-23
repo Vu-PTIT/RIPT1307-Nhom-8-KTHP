@@ -1,18 +1,23 @@
 from datetime import datetime
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
+from odmantic import ObjectId
 from app.db.session import engine
 from app.api import deps
+from app.models.document import Document, DocumentCopy
 from app.models.user import User
 from app.schemas import borrow as borrow_schema
 from app.crud import borrow as borrow_crud
 
 router = APIRouter()
 
+def _resolve_reference_id(ref):
+    return ref.id if hasattr(ref, "id") else ref
+
 async def _get_borrow_detail_logic(record_id: str):
     """Internal helper to get borrow detail without role dependency check."""
     from app.models.borrow import BorrowRecord
-    record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
+    record = await engine.find_one(BorrowRecord, BorrowRecord.id == ObjectId(record_id))
     if not record:
         return None
         
@@ -21,8 +26,10 @@ async def _get_borrow_detail_logic(record_id: str):
     
     item_summaries = []
     for item in items:
-        copy = await engine.find_one(item.document_copy.model, item.document_copy.model.id == item.document_copy.id)
-        doc = await engine.find_one(copy.document.model, copy.document.model.id == copy.document.id)
+        copy_id = _resolve_reference_id(item.document_copy)
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_id)
+        doc_id = _resolve_reference_id(copy.document)
+        doc = await engine.find_one(Document, Document.id == doc_id)
         
         status = "returned" if item.return_date else "borrowed"
         if not item.return_date and record.due_date < datetime.now().date():
@@ -45,7 +52,13 @@ async def get_my_borrows(
     current_user: User = Depends(deps.get_current_reader)
 ) -> Any:
     """Get current user's borrow records."""
-    return await borrow_crud.get_my_borrow_records(engine, str(current_user.id), status=status)
+    try:
+        return await borrow_crud.get_my_borrow_records(engine, str(current_user.id), status=status)
+    except Exception as e:
+        # Log the exception and return a readable error for debugging
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
 
 @router.get("/{id}", response_model=borrow_schema.BorrowRecordDetailResponse)
 async def get_borrow_detail(
@@ -55,11 +68,40 @@ async def get_borrow_detail(
     """Get detailed information about a specific borrow record (Reader)."""
     # Check if this record belongs to the user
     from app.models.borrow import BorrowRecord
-    record = await engine.find_one(BorrowRecord, (BorrowRecord.id == id) & (BorrowRecord.reader == current_user.id))
+    record = await engine.find_one(
+        BorrowRecord,
+        (BorrowRecord.id == ObjectId(id)) & (BorrowRecord.reader == current_user.id)
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Borrow record not found or access denied")
     
     return await _get_borrow_detail_logic(id)
+
+@router.put("/{id}", response_model=borrow_schema.BorrowRecord)
+async def update_my_borrow_record(
+    id: str,
+    borrow_update: borrow_schema.BorrowRecordUpdate,
+    current_user: User = Depends(deps.get_current_reader)
+) -> Any:
+    """Update notes on a borrow record belonging to the current user."""
+    try:
+        if borrow_update.notes is None:
+            raise ValueError("Chỉ có thể cập nhật ghi chú")
+        return await borrow_crud.update_borrow_record_notes(engine, id, str(current_user.id), borrow_update.notes)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/{id}")
+async def delete_my_borrow_record(
+    id: str,
+    current_user: User = Depends(deps.get_current_reader)
+) -> Any:
+    """Delete a returned borrow record from the user's history."""
+    try:
+        await borrow_crud.delete_borrow_record(engine, id, str(current_user.id))
+        return {"message": "Borrow record deleted"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ===================== LIBRARIAN ENDPOINTS =====================

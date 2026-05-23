@@ -2,6 +2,7 @@ from __future__ import annotations
 from datetime import datetime, date
 from typing import Optional
 from odmantic import Model, Field, Reference
+from pydantic import model_validator
 from .user import User
 from .document import Document, DocumentCopy
 
@@ -36,6 +37,15 @@ class BorrowRecord(Model):
         "collection": "borrow_records"
     }
 
+    @model_validator(mode="before")
+    def _coerce_dates(cls, values: dict):
+        # Some stored documents contain datetimes for date-only fields; coerce them to date
+        for k in ("borrow_date", "due_date"):
+            v = values.get(k)
+            if isinstance(v, datetime):
+                values[k] = v.date()
+        return values
+
 class BorrowRecordItem(Model):
     borrow_record: BorrowRecord = Reference()
     document_copy: DocumentCopy = Reference()
@@ -45,6 +55,13 @@ class BorrowRecordItem(Model):
     model_config = {
         "collection": "borrow_record_items"
     }
+
+    @model_validator(mode="before")
+    def _coerce_return_date(cls, values: dict):
+        v = values.get("return_date")
+        if isinstance(v, datetime):
+            values["return_date"] = v.date()
+        return values
 
 class RenewalRequest(Model):
     borrow_record_item: BorrowRecordItem = Reference()
@@ -59,3 +76,10 @@ class RenewalRequest(Model):
     model_config = {
         "collection": "renewal_requests"
     }
+
+    @model_validator(mode="before")
+    def _coerce_new_due_date(cls, values: dict):
+        v = values.get("new_due_date")
+        if isinstance(v, datetime):
+            values["new_due_date"] = v.date()
+        return values
