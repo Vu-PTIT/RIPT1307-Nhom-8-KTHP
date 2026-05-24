@@ -24,7 +24,9 @@ export default function DocumentDetailPage(props: any) {
 		}
 	};
 
-	useEffect(() => { load(); }, [id]);
+	useEffect(() => {
+		load();
+	}, [id]);
 
 	const handleAddToWishlist = async () => {
 		if (!document?.id) return;
@@ -53,20 +55,20 @@ export default function DocumentDetailPage(props: any) {
 	};
 
 	return (
-		<PageSkeleton title="Chi tiết tài liệu">
+		<PageSkeleton title='Chi tiết tài liệu'>
 			<Card>
 				<Spin spinning={loading}>
 					{!document ? (
-						<Empty description="Không tìm thấy tài liệu" />
+						<Empty description='Không tìm thấy tài liệu' />
 					) : (
-						<Space direction="vertical" size={16} style={{ width: '100%' }}>
-							<Space align="start" size={16} style={{ width: '100%', justifyContent: 'space-between' }}>
-								<Space direction="vertical" size={4}>
+						<Space direction='vertical' size={16} style={{ width: '100%' }}>
+							<Space align='start' size={16} style={{ width: '100%', justifyContent: 'space-between' }}>
+								<Space direction='vertical' size={4}>
 									<h2 style={{ marginBottom: 0 }}>{document.title}</h2>
 									<div>{document.author}</div>
 								</Space>
 								<Space wrap>
-									{document.category?.name ? <Tag color="geekblue">{document.category.name}</Tag> : null}
+									{document.category?.name ? <Tag color='geekblue'>{document.category.name}</Tag> : null}
 									<Tag color={Number(document.available_copies || 0) > 0 ? 'green' : 'volcano'}>
 										Còn {document.available_copies || 0} bản
 									</Tag>
@@ -81,18 +83,20 @@ export default function DocumentDetailPage(props: any) {
 								/>
 							) : null}
 
-							<Descriptions bordered column={1} size="small">
-								<Descriptions.Item label="ISBN">{document.isbn || 'Chưa có'}</Descriptions.Item>
-								<Descriptions.Item label="Danh mục">{document.category?.name || 'Chưa có'}</Descriptions.Item>
-								<Descriptions.Item label="Mô tả">{document.description || 'Chưa có mô tả'}</Descriptions.Item>
-								<Descriptions.Item label="Tổng bản">{document.total_copies ?? 0}</Descriptions.Item>
-								<Descriptions.Item label="Bản còn lại">{document.available_copies ?? 0}</Descriptions.Item>
-								<Descriptions.Item label="Người tạo">{document.created_by?.full_name || document.created_by?.username || 'Không rõ'}</Descriptions.Item>
-								<Descriptions.Item label="Ngày tạo">{document.created_at || 'Không rõ'}</Descriptions.Item>
+							<Descriptions bordered column={1} size='small'>
+								<Descriptions.Item label='ISBN'>{document.isbn || 'Chưa có'}</Descriptions.Item>
+								<Descriptions.Item label='Danh mục'>{document.category?.name || 'Chưa có'}</Descriptions.Item>
+								<Descriptions.Item label='Mô tả'>{document.description || 'Chưa có mô tả'}</Descriptions.Item>
+								<Descriptions.Item label='Tổng bản'>{document.total_copies ?? 0}</Descriptions.Item>
+								<Descriptions.Item label='Bản còn lại'>{document.available_copies ?? 0}</Descriptions.Item>
+								<Descriptions.Item label='Người tạo'>
+									{document.created_by?.full_name || document.created_by?.username || 'Không rõ'}
+								</Descriptions.Item>
+								<Descriptions.Item label='Ngày tạo'>{document.created_at || 'Không rõ'}</Descriptions.Item>
 							</Descriptions>
 
 							<Space>
-								<Button type="primary" loading={actionLoading === 'cart'} onClick={handleAddToCart}>
+								<Button type='primary' loading={actionLoading === 'cart'} onClick={handleAddToCart}>
 									Đưa vào giỏ mượn
 								</Button>
 								<Button loading={actionLoading === 'wishlist'} onClick={handleAddToWishlist}>

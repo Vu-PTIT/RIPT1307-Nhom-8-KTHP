@@ -23,7 +23,9 @@ export default function WishlistPage() {
 		}
 	};
 
-	useEffect(() => { load(); }, []);
+	useEffect(() => {
+		load();
+	}, []);
 
 	const handleRemove = async (id: string) => {
 		setBusyId(id);
@@ -51,11 +53,11 @@ export default function WishlistPage() {
 	};
 
 	return (
-		<PageSkeleton title="Danh sách yêu thích">
+		<PageSkeleton title='Danh sách yêu thích'>
 			<Card>
-				{error ? <Alert type="error" message={error} style={{ marginBottom: 12 }} /> : null}
+				{error ? <Alert type='error' message={error} style={{ marginBottom: 12 }} /> : null}
 				{items.length === 0 ? (
-					<Empty description="Danh sách trống" />
+					<Empty description='Danh sách trống' />
 				) : (
 					<List
 						loading={loading}
@@ -63,17 +65,23 @@ export default function WishlistPage() {
 						renderItem={(it: any) => (
 							<List.Item
 								actions={[
-									<Button size="small" onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>Chi tiết</Button>,
-									<Button size="small" loading={busyId === it.id} onClick={() => handleMoveToCart(it)}>Đưa vào giỏ</Button>,
-									<Button size="small" danger loading={busyId === it.id} onClick={() => handleRemove(it.id)}>Xoá</Button>,
+									<Button size='small' onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>
+										Chi tiết
+									</Button>,
+									<Button size='small' loading={busyId === it.id} onClick={() => handleMoveToCart(it)}>
+										Đưa vào giỏ
+									</Button>,
+									<Button size='small' danger loading={busyId === it.id} onClick={() => handleRemove(it.id)}>
+										Xoá
+									</Button>,
 								]}
 							>
 								<List.Item.Meta
 									title={<a onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>{it.document_title}</a>}
 									description={
-										<Space direction="vertical" size={2}>
+										<Space direction='vertical' size={2}>
 											<span>{it.author}</span>
-											<Tag color="magenta">Đã lưu {it.added_at || ''}</Tag>
+											<Tag color='magenta'>Đã lưu {it.added_at || ''}</Tag>
 										</Space>
 									}
 								/>

@@ -19,10 +19,12 @@ export default function BorrowHistoryPage() {
 		}
 	};
 
-	useEffect(() => { load(); }, []);
+	useEffect(() => {
+		load();
+	}, []);
 
 	return (
-		<PageSkeleton title="Lịch sử mượn">
+		<PageSkeleton title='Lịch sử mượn'>
 			<Card>
 				<List
 					loading={loading}

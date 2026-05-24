@@ -1,12 +1,15 @@
 # Hệ thống Quản lý Thư viện Thông minh (Smart Library Management System)
 
 ## 📌 Giới thiệu
+
 Dự án là một nền tảng quản lý thư viện toàn diện, tập trung vào việc số hóa quy trình vận hành và tối ưu hóa trải nghiệm mượn/trả tài liệu. Hệ thống tích hợp kiểm soát an ninh ra vào tự động và quản lý vòng đời tài liệu chặt chẽ giữa độc giả và thư viện.
 
 ## 🚀 Công nghệ sử dụng
+
 Hệ thống được xây dựng trên kiến trúc hiện đại, đảm bảo tính hiệu năng và khả năng mở rộng:
 
 ### Backend
+
 - **Ngôn ngữ**: Python 3.10+
 - **Framework**: FastAPI (High performance Python API framework)
 - **Database**: MongoDB (NoSQL database for flexibility)
@@ -14,6 +17,7 @@ Hệ thống được xây dựng trên kiến trúc hiện đại, đảm bảo
 - **Authentication**: JWT (JSON Web Tokens)
 
 ### Frontend
+
 - **Framework**: React / UmiJS
 - **UI Component**: Ant Design (Premium UI Kit)
 - **State Management**: Model-based architecture (Umi/Dva)
@@ -23,15 +27,17 @@ Hệ thống được xây dựng trên kiến trúc hiện đại, đảm bảo
 ## 🛠️ Tính năng cốt lõi
 
 ### 1. Dành cho Độc giả (Reader)
+
 - **Phần của tôi**:
-    - **Tra cứu tài liệu**: Tìm kiếm, lọc và xem thông tin chi tiết tài liệu.
-    - **Danh sách quan tâm (Wishlist)**: Lưu lại các tài liệu muốn đọc/mượn trong tương lai.
-    - **Giỏ mượn sách (Borrow Cart)**: Đưa sách vào giỏ mượn ảo trước khi đem ra quầy quét mã.
-    - **Theo dõi mượn sách hiện tại**: Xem trạng thái các sách đang mượn và gửi yêu cầu gia hạn trực tuyến.
+  - **Tra cứu tài liệu**: Tìm kiếm, lọc và xem thông tin chi tiết tài liệu.
+  - **Danh sách quan tâm (Wishlist)**: Lưu lại các tài liệu muốn đọc/mượn trong tương lai.
+  - **Giỏ mượn sách (Borrow Cart)**: Đưa sách vào giỏ mượn ảo trước khi đem ra quầy quét mã.
+  - **Theo dõi mượn sách hiện tại**: Xem trạng thái các sách đang mượn và gửi yêu cầu gia hạn trực tuyến.
 - **Phần còn lại của thành viên khác**:
-    - **Check-in/Check-out**: Tự động ghi lại nhật ký ra vào thư viện.
+  - **Check-in/Check-out**: Tự động ghi lại nhật ký ra vào thư viện.
 
 ### 2. Dành cho Thủ thư (Librarian)
+
 - **Xử lý mượn trả**: Nhập mã để xác nhận giao dịch mượn/trả sách.
 - **Kiểm soát ra vào**: Theo dõi màn hình check-in trực tiếp, xử lý các trường hợp ngoại lệ.
 - **Phê duyệt gia hạn**: Xem xét và duyệt/từ chối các yêu cầu gia hạn từ độc giả.
@@ -39,9 +45,10 @@ Hệ thống được xây dựng trên kiến trúc hiện đại, đảm bảo
 - **Phân loại**: Quản lý danh mục, thể loại và vị trí kệ sách.
 
 ### 3. Dành cho Quản trị viên (Admin)
+
 - **Quản lý người dùng**: Phân quyền (Admin/Librarian/Member), khóa/mở khóa tài khoản.
 - **Thiết lập hệ thống**: Cấu hình quy định thư viện (Số lượng sách mượn tối đa, số ngày mượn).
-- **Dashboard & Báo cáo**: 
+- **Dashboard & Báo cáo**:
   - Thống kê lưu lượng người ra vào theo thời gian thực.
   - Top sách được mượn nhiều nhất.
   - Tỷ lệ trả muộn và báo cáo vi phạm.
@@ -99,6 +106,7 @@ erDiagram
 ## 🛠️ Hướng dẫn cài đặt
 
 ### Backend
+
 1. Yêu cầu: Python 3.10+, MongoDB.
 2. Cài đặt thư viện:
    ```bash
@@ -116,6 +124,7 @@ erDiagram
    ```
 
 ### Frontend
+
 1. Cài đặt dependencies:
    ```bash
    cd base-web-umi
@@ -125,7 +134,6 @@ erDiagram
    ```bash
    npm run dev
    ```
-
 
 ---
 

@@ -19,10 +19,12 @@ export default function RenewalsPage() {
 		}
 	};
 
-	useEffect(() => { load(); }, []);
+	useEffect(() => {
+		load();
+	}, []);
 
 	return (
-		<PageSkeleton title="Yêu cầu gia hạn">
+		<PageSkeleton title='Yêu cầu gia hạn'>
 			<Card>
 				<List
 					loading={loading}

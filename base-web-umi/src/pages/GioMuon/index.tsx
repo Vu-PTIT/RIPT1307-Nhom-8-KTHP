@@ -22,7 +22,9 @@ export default function BorrowCartPage() {
 		}
 	};
 
-	useEffect(() => { load(); }, []);
+	useEffect(() => {
+		load();
+	}, []);
 
 	const handleRemove = async (id: string) => {
 		setLoading(true);
@@ -65,17 +67,19 @@ export default function BorrowCartPage() {
 	};
 
 	return (
-		<PageSkeleton title="Giỏ mượn sách">
+		<PageSkeleton title='Giỏ mượn sách'>
 			<Card>
-				{error ? <Alert type="error" message={error} style={{ marginBottom: 12 }} /> : null}
+				{error ? <Alert type='error' message={error} style={{ marginBottom: 12 }} /> : null}
 				{items.length === 0 ? (
-					<Empty description="Giỏ mượn trống" />
+					<Empty description='Giỏ mượn trống' />
 				) : (
 					<>
 						<Space style={{ marginBottom: 12 }} wrap>
-							<Tag color="blue">{items.length} tài liệu</Tag>
+							<Tag color='blue'>{items.length} tài liệu</Tag>
 							<Button onClick={() => history.push('/tai-lieu')}>Tiếp tục chọn tài liệu</Button>
-							<Button onClick={handleClearCart} danger loading={loading}>Xoá toàn bộ giỏ</Button>
+							<Button onClick={handleClearCart} danger loading={loading}>
+								Xoá toàn bộ giỏ
+							</Button>
 						</Space>
 						<List
 							loading={loading}
@@ -83,16 +87,20 @@ export default function BorrowCartPage() {
 							renderItem={(it: any) => (
 								<List.Item
 									actions={[
-										<Button size="small" onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>Chi tiết</Button>,
-										<Button size="small" danger onClick={() => handleRemove(it.id)}>Xoá</Button>,
+										<Button size='small' onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>
+											Chi tiết
+										</Button>,
+										<Button size='small' danger onClick={() => handleRemove(it.id)}>
+											Xoá
+										</Button>,
 									]}
 								>
 									<List.Item.Meta
 										title={<a onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>{it.document_title}</a>}
 										description={
-											<Space direction="vertical" size={2}>
+											<Space direction='vertical' size={2}>
 												<span>{it.author}</span>
-												<Tag color="gold">Đã thêm {it.added_at || ''}</Tag>
+												<Tag color='gold'>Đã thêm {it.added_at || ''}</Tag>
 											</Space>
 										}
 									/>
@@ -100,7 +108,7 @@ export default function BorrowCartPage() {
 							)}
 						/>
 						<div style={{ textAlign: 'right', marginTop: 12 }}>
-							<Button type="primary" onClick={handleCheckout} loading={loading} disabled={items.length === 0}>
+							<Button type='primary' onClick={handleCheckout} loading={loading} disabled={items.length === 0}>
 								Tạo phiếu mượn
 							</Button>
 						</div>

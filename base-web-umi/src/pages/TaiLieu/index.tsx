@@ -31,7 +31,9 @@ export default function DocumentsPage() {
 		}
 	};
 
-	useEffect(() => { load(1, pageSize, keyword); }, []);
+	useEffect(() => {
+		load(1, pageSize, keyword);
+	}, []);
 
 	const onSearch = (val: string) => {
 		setKeyword(val);
@@ -68,14 +70,14 @@ export default function DocumentsPage() {
 	};
 
 	return (
-		<PageSkeleton title="Danh sách tài liệu">
+		<PageSkeleton title='Danh sách tài liệu'>
 			<Card>
-				<Row gutter={12} style={{ marginBottom: 12 }} align="middle">
+				<Row gutter={12} style={{ marginBottom: 12 }} align='middle'>
 					<Col xs={24} sm={16} md={18} lg={20}>
-						<Search placeholder="Tìm theo tiêu đề, tác giả, ISBN..." enterButton onSearch={onSearch} />
+						<Search placeholder='Tìm theo tiêu đề, tác giả, ISBN...' enterButton onSearch={onSearch} />
 					</Col>
 					<Col xs={24} sm={8} md={6} lg={4} style={{ textAlign: 'right' }}>
-						<Tag color="blue">{total} tài liệu</Tag>
+						<Tag color='blue'>{total} tài liệu</Tag>
 					</Col>
 				</Row>
 
@@ -91,47 +93,46 @@ export default function DocumentsPage() {
 								return (
 									<List.Item
 										actions={[
-										<Button
-											size="small"
-											onClick={() => history.push(`/tai-lieu/${it.id}`)}
-										>
-											Chi tiết
-										</Button>,
-										<Button
-											size="small"
-											loading={isBusy && actionType === 'wishlist'}
-											onClick={() => handleAddToWishlist(it)}
-										>
-											Yêu thích
-										</Button>,
-										<Button
-											type="primary"
-											size="small"
-											loading={isBusy && actionType === 'cart'}
-											onClick={() => handleAddToCart(it)}
-										>
-											Đưa vào giỏ
-										</Button>,
-									]}
-								>
-									<List.Item.Meta
-										title={
-											<a onClick={() => history.push(`/tai-lieu/${it.id}`)}>{it.title || it.document_title || 'Không có tiêu đề'}</a>
-										}
-										description={
-											<Space direction="vertical" size={2}>
-												<span>{it.author || it.authors || 'Không rõ tác giả'}</span>
-												<Space wrap size={8}>
-													{it.isbn ? <Tag>ISBN: {it.isbn}</Tag> : null}
-													{it.category_name ? <Tag color="geekblue">{it.category_name}</Tag> : null}
-													<Tag color={Number(it.available_copies || 0) > 0 ? 'green' : 'volcano'}>
-														Còn {it.available_copies || 0} bản
-													</Tag>
+											<Button size='small' onClick={() => history.push(`/tai-lieu/${it.id}`)}>
+												Chi tiết
+											</Button>,
+											<Button
+												size='small'
+												loading={isBusy && actionType === 'wishlist'}
+												onClick={() => handleAddToWishlist(it)}
+											>
+												Yêu thích
+											</Button>,
+											<Button
+												type='primary'
+												size='small'
+												loading={isBusy && actionType === 'cart'}
+												onClick={() => handleAddToCart(it)}
+											>
+												Đưa vào giỏ
+											</Button>,
+										]}
+									>
+										<List.Item.Meta
+											title={
+												<a onClick={() => history.push(`/tai-lieu/${it.id}`)}>
+													{it.title || it.document_title || 'Không có tiêu đề'}
+												</a>
+											}
+											description={
+												<Space direction='vertical' size={2}>
+													<span>{it.author || it.authors || 'Không rõ tác giả'}</span>
+													<Space wrap size={8}>
+														{it.isbn ? <Tag>ISBN: {it.isbn}</Tag> : null}
+														{it.category_name ? <Tag color='geekblue'>{it.category_name}</Tag> : null}
+														<Tag color={Number(it.available_copies || 0) > 0 ? 'green' : 'volcano'}>
+															Còn {it.available_copies || 0} bản
+														</Tag>
+													</Space>
 												</Space>
-											</Space>
-										}
-									/>
-								</List.Item>
+											}
+										/>
+									</List.Item>
 								);
 							}}
 						/>

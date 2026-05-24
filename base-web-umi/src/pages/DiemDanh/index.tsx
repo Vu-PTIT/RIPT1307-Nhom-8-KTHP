@@ -19,7 +19,9 @@ export default function CheckinPage() {
 		}
 	};
 
-	useEffect(() => { load(); }, []);
+	useEffect(() => {
+		load();
+	}, []);
 
 	const doCheck = async (type: 'in' | 'out') => {
 		try {
@@ -35,22 +37,27 @@ export default function CheckinPage() {
 	};
 
 	return (
-		<PageSkeleton title="Check-in / Check-out">
+		<PageSkeleton title='Check-in / Check-out'>
 			<Card>
 				<div style={{ marginBottom: 12 }}>
-					<Button type="primary" onClick={() => doCheck('in')} style={{ marginRight: 8 }}>Check-in</Button>
+					<Button type='primary' onClick={() => doCheck('in')} style={{ marginRight: 8 }}>
+						Check-in
+					</Button>
 					<Button onClick={() => doCheck('out')}>Check-out</Button>
 				</div>
 
 				{history.length === 0 ? (
-					<Empty description="Chưa có lịch sử" />
+					<Empty description='Chưa có lịch sử' />
 				) : (
 					<List
 						loading={loading}
 						dataSource={history}
 						renderItem={(it: any) => (
 							<List.Item>
-								<List.Item.Meta title={it.action || it.check_type} description={it.created_at || it.time || JSON.stringify(it)} />
+								<List.Item.Meta
+									title={it.action || it.check_type}
+									description={it.created_at || it.time || JSON.stringify(it)}
+								/>
 							</List.Item>
 						)}
 					/>

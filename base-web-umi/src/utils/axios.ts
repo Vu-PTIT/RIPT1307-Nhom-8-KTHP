@@ -34,7 +34,7 @@ import data from './data';
  */
 // Add a request interceptor
 axios.interceptors.request.use(
-  (config) => {
+	(config) => {
 		try {
 			const m = (config.method || 'get').toUpperCase();
 			// don't log Authorization value
@@ -42,31 +42,31 @@ axios.interceptors.request.use(
 		} catch (e) {
 			// ignore
 		}
-    if (!config.headers.Authorization) {
-      const token = localStorage.getItem('token');
-      if (token) {
-        // eslint-disable-next-line no-param-reassign
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
-    return config;
-  },
-  (error) => Promise.reject(error),
+		if (!config.headers.Authorization) {
+			const token = localStorage.getItem('token');
+			if (token) {
+				// eslint-disable-next-line no-param-reassign
+				config.headers.Authorization = `Bearer ${token}`;
+			}
+		}
+		return config;
+	},
+	(error) => Promise.reject(error),
 );
 
 // Add a response interceptor
 axios.interceptors.response.use(
-		(response) => {
-			try {
-				console.debug('[API response]', response.config?.method?.toUpperCase(), response.config?.url, response.status);
-			} catch (e) {}
-			return response;
-		},
-		(error) => {
-			try {
-				const cfg = error?.config || {};
-				console.debug('[API error]', (cfg.method || '').toUpperCase(), cfg.url, error?.response?.status);
-			} catch (e) {}
+	(response) => {
+		try {
+			console.debug('[API response]', response.config?.method?.toUpperCase(), response.config?.url, response.status);
+		} catch (e) {}
+		return response;
+	},
+	(error) => {
+		try {
+			const cfg = error?.config || {};
+			console.debug('[API error]', (cfg.method || '').toUpperCase(), cfg.url, error?.response?.status);
+		} catch (e) {}
 		let er = error?.response?.data;
 		// Convert response data to JSON
 		if ((error?.response?.config?.responseType as string)?.toLowerCase() === 'arraybuffer') {
@@ -86,10 +86,15 @@ axios.interceptors.response.use(
 		const originalRequest = error.config || {};
 		let originData = originalRequest?.data;
 		if (typeof originData === 'string') {
-			try { originData = JSON.parse(originData); } catch (e) { originData = undefined; }
+			try {
+				originData = JSON.parse(originData);
+			} catch (e) {
+				originData = undefined;
+			}
 		}
 		const silent = !!(originalRequest?.silent || originData?.silent || originalRequest?.params?.silent);
-		if (!silent) switch (error?.response?.status) {
+		if (!silent)
+			switch (error?.response?.status) {
 				case 400:
 					notification.error({
 						message: 'Dữ liệu chưa đúng (004)',

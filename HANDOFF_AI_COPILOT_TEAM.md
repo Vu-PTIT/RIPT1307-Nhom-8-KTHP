@@ -5,12 +5,14 @@ Tài liệu này tóm tắt những gì đã xử lý trong nhánh hiện tại,
 ## 1) Trạng thái hiện tại
 
 Backend reader flow đã được sửa để chạy ổn hơn:
+
 - Đăng nhập demo hoạt động.
 - Wishlist và giỏ mượn hoạt động.
 - Checkout "Tạo phiếu mượn" đã chạy thành công.
 - Lịch sử mượn đã được sửa để không còn lỗi validate response.
 
 Frontend các trang reader chính đã có luồng cơ bản:
+
 - `Tài liệu`
 - `Yêu thích`
 - `Giỏ mượn`
@@ -23,6 +25,7 @@ Frontend các trang reader chính đã có luồng cơ bản:
 ### Backend
 
 #### Xác thực và quyền truy cập
+
 - `backend/app/core/security.py`
   - Chỉnh lại cơ chế hash/verify mật khẩu để tránh lỗi bcrypt/passlib.
 - `backend/app/api/deps.py`
@@ -31,10 +34,12 @@ Frontend các trang reader chính đã có luồng cơ bản:
   - Seed lại dữ liệu demo và reset mật khẩu demo để luôn đăng nhập được.
 
 #### Documents
+
 - `backend/app/api/endpoints/documents.py`
   - Sắp xếp lại route `/search` trước `/{id}` để tránh route bị bắt nhầm.
 
 #### Wishlist / Cart
+
 - `backend/app/crud/borrow.py`
 - `backend/app/api/endpoints/wishlist.py`
 - `backend/app/api/endpoints/borrow_cart.py`
@@ -43,6 +48,7 @@ Frontend các trang reader chính đã có luồng cơ bản:
   - Sửa cách đọc `Reference` của document để không còn 500.
 
 #### Checkout / Borrow record
+
 - `backend/app/crud/borrow.py`
 - `backend/app/api/endpoints/borrows.py`
 - `backend/app/api/endpoints/renewals.py`
@@ -58,6 +64,7 @@ Frontend các trang reader chính đã có luồng cơ bản:
 ### Frontend
 
 Các file frontend đã được chỉnh để khớp backend reader flow:
+
 - `base-web-umi/src/services/MuonSach/index.ts`
   - Có các hàm gọi API wishlist/cart/borrows/renewals/checkin.
 - `base-web-umi/src/pages/TaiLieu/index.tsx`
@@ -80,6 +87,7 @@ Các file frontend đã được chỉnh để khớp backend reader flow:
 ## 4) Những việc còn nên làm tiếp
 
 ### Backend
+
 - Kiểm tra thêm luồng `check-in` và `gia hạn` bằng test thật từ frontend.
 - Rà soát các file còn dùng `engine.database_to_model()` để xem file nào thực sự còn cần, file nào nên chuyển dần sang query/model explicit.
 - Nếu xuất hiện lỗi response validation ở các endpoint khác, sửa theo cùng nguyên tắc:
@@ -87,6 +95,7 @@ Các file frontend đã được chỉnh để khớp backend reader flow:
   - API trả kiểu đúng schema
 
 ### Frontend
+
 - Kiểm tra lại 3 trang reader đã thuộc phạm vi làm việc:
   - `Tài liệu`
   - `Yêu thích`
@@ -97,6 +106,7 @@ Các file frontend đã được chỉnh để khớp backend reader flow:
 ## 5) File nên ưu tiên đọc khi tiếp tục
 
 ### Backend lõi
+
 - `backend/app/crud/borrow.py`
 - `backend/app/api/endpoints/borrows.py`
 - `backend/app/api/endpoints/renewals.py`
@@ -104,11 +114,13 @@ Các file frontend đã được chỉnh để khớp backend reader flow:
 - `backend/app/schemas/borrow.py`
 
 ### Auth / base
+
 - `backend/app/core/security.py`
 - `backend/app/api/deps.py`
 - `backend/init_db.py`
 
 ### Frontend reader flow
+
 - `base-web-umi/src/services/MuonSach/index.ts`
 - `base-web-umi/src/pages/GioMuon/index.tsx`
 - `base-web-umi/src/pages/LichSuMuon/index.tsx`
@@ -129,6 +141,7 @@ Các file frontend đã được chỉnh để khớp backend reader flow:
 ## 7) Cách kiểm tra nhanh sau khi ghép
 
 Chạy các test API cơ bản:
+
 - Login demo
 - GET `/api/v1/borrows`
 - POST `/api/v1/borrows/checkout`
@@ -140,6 +153,7 @@ Nếu muốn kiểm tra nhanh bằng CLI, có thể dùng tài khoản demo đã
 ## 8) Ghi chú cuối
 
 Hiện tại luồng mượn đã đi qua được, nên phần tiếp theo nên tập trung vào:
+
 - ổn định giao diện 3 trang reader
 - kiểm tra check-in/gia hạn
 - dọn các chỗ còn dùng pattern cũ nếu phát sinh lỗi mới
