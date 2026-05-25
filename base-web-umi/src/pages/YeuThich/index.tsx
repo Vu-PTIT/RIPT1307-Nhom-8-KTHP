@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { List, Card, Empty, Alert, Button, Space, Tag, message } from 'antd';
+import { Card, Empty, Alert, Button, Space, Tag, message, Row, Col } from 'antd';
 import { history } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import * as MuonSach from '@/services/MuonSach';
+import DocumentCard from '@/components/DocumentCard';
 
 export default function WishlistPage() {
 	const [items, setItems] = useState<any[]>([]);
@@ -59,35 +60,27 @@ export default function WishlistPage() {
 				{items.length === 0 ? (
 					<Empty description='Danh sách trống' />
 				) : (
-					<List
-						loading={loading}
-						dataSource={items}
-						renderItem={(it: any) => (
-							<List.Item
-								actions={[
-									<Button size='small' onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>
-										Chi tiết
-									</Button>,
-									<Button size='small' loading={busyId === it.id} onClick={() => handleMoveToCart(it)}>
-										Đưa vào giỏ
-									</Button>,
-									<Button size='small' danger loading={busyId === it.id} onClick={() => handleRemove(it.id)}>
-										Xoá
-									</Button>,
-								]}
-							>
-								<List.Item.Meta
-									title={<a onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>{it.document_title}</a>}
-									description={
-										<Space direction='vertical' size={2}>
-											<span>{it.author}</span>
-											<Tag color='magenta'>Đã lưu {it.added_at || ''}</Tag>
-										</Space>
-									}
+					<Row gutter={[16, 16]}>
+						{items.map((it: any) => (
+							<Col xs={24} key={it.id}>
+								<DocumentCard
+									item={it}
+									onDetail={(id) => history.push(`/tai-lieu/${id}`)}
+									onWishlist={() => {}}
+									onCart={() => handleMoveToCart(it)}
+									accent={true}
+									actions={[
+										<Button key='add' type='primary' onClick={() => handleMoveToCart(it)}>
+											Thêm vào giỏ
+										</Button>,
+										<Button key='del' danger onClick={() => handleRemove(it.id)}>
+											Xóa
+										</Button>,
+									]}
 								/>
-							</List.Item>
-						)}
-					/>
+							</Col>
+						))}
+					</Row>
 				)}
 			</Card>
 		</PageSkeleton>

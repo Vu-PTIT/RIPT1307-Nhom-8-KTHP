@@ -59,22 +59,19 @@ const Login: React.FC = () => {
 	return (
 		<div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
 			<div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px 12px' }}>
-				<Card 
+				<Card
 					style={{ width: '100%', maxWidth: 440, borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
 					bodyStyle={{ padding: '32px 24px' }}
 					bordered={false}
 				>
 					<div style={{ textAlign: 'center', marginBottom: 32 }}>
 						<img alt='logo' src='/logo-full.svg' style={{ height: 50, marginBottom: 24 }} />
-						<Title level={3} style={{ margin: 0, color: 'var(--primary-color)' }}>Đăng nhập hệ thống</Title>
+						<Title level={3} style={{ margin: 0, color: 'var(--primary-color)' }}>
+							Hệ thống Thư viện
+						</Title>
 					</div>
 
-					<Form
-						form={form}
-						onFinish={handleSubmit}
-						layout='vertical'
-						size='large'
-					>
+					<Form form={form} onFinish={handleSubmit} layout='vertical' size='large'>
 						<Form.Item name='login' rules={[...rules.required]}>
 							<Input
 								placeholder='Nhập tên đăng nhập'

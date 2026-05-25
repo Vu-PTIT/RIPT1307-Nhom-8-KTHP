@@ -138,6 +138,35 @@ Các file frontend đã được chỉnh để khớp backend reader flow:
   - Schema trong `backend/app/schemas/`
 - Khi merge, ưu tiên giữ format hiện có của project thay vì reformat toàn bộ file.
 
+### Tiêu chí để biết ghép đã khít
+
+Ghép được xem là ổn khi thỏa cả 4 điều sau:
+
+1. Không còn file nào trong nhóm reader bị hai người cùng sửa chồng lên nhau.
+2. Chạy lại được chuỗi luồng chính mà không ra 500 hoặc ResponseValidationError:
+
+- login
+- thêm/xóa wishlist
+- thêm/xóa giỏ mượn
+- checkout tạo phiếu mượn
+- xem lịch sử mượn
+
+3. Frontend gọi đúng response backend và không cần thêm patch tạm ở component để né lỗi.
+4. Nếu diff cuối cùng chỉ nằm trong đúng các file đã phân công thì merge an toàn hơn; nếu đụng sang file ngoài phạm vi thì cần review lại trước khi ghép.
+
+### Cách chia trách nhiệm khi thành viên còn lại làm xong
+
+- Người đã làm frontend reader flow nên giữ nguyên các file trong `base-web-umi/src/pages/` đã được bàn giao.
+- Người còn lại nên ưu tiên backend hoặc các phần chưa chạm tới, không quay lại chỉnh cùng một hàm trong `backend/app/crud/borrow.py` nếu không thật sự cần.
+- Nếu cần sửa tiếp một endpoint, chỉ sửa theo một hướng duy nhất: hoặc sửa CRUD + schema, hoặc sửa endpoint + mapping response, tránh sửa lặp cả hai phía cho cùng một lỗi.
+
+### Dấu hiệu merge chưa khít
+
+- Trang frontend vẫn báo lỗi nhưng API đã trả 200.
+- API trả 200 nhưng response bị thiếu field hoặc sai kiểu ngày.
+- Có thêm `.model` hoặc `database_to_model()` mới xuất hiện ở flow reader.
+- Hai người cùng sửa một file lớn rồi mỗi bên giữ một kiểu dữ liệu khác nhau.
+
 ## 7) Cách kiểm tra nhanh sau khi ghép
 
 Chạy các test API cơ bản:
@@ -147,6 +176,8 @@ Chạy các test API cơ bản:
 - POST `/api/v1/borrows/checkout`
 - GET `/api/v1/wishlist`
 - GET `/api/v1/cart`
+
+Nếu cả 5 test này đều xanh trên đúng cổng backend mà frontend đang dùng thì ghép gần như đã khớp.
 
 Nếu muốn kiểm tra nhanh bằng CLI, có thể dùng tài khoản demo đã seed trong `init_db.py`.
 

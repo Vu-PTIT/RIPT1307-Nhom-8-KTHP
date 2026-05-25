@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Button, List, Card, message, Empty, Alert, Space, Tag } from 'antd';
+import { Button, Card, message, Empty, Alert, Space, Tag, Row, Col } from 'antd';
 import { history } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import * as MuonSach from '@/services/MuonSach';
+import DocumentCard from '@/components/DocumentCard';
 
 export default function BorrowCartPage() {
 	const [items, setItems] = useState<any[]>([]);
@@ -81,32 +82,29 @@ export default function BorrowCartPage() {
 								Xoá toàn bộ giỏ
 							</Button>
 						</Space>
-						<List
-							loading={loading}
-							dataSource={items}
-							renderItem={(it: any) => (
-								<List.Item
-									actions={[
-										<Button size='small' onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>
-											Chi tiết
-										</Button>,
-										<Button size='small' danger onClick={() => handleRemove(it.id)}>
-											Xoá
-										</Button>,
-									]}
-								>
-									<List.Item.Meta
-										title={<a onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>{it.document_title}</a>}
-										description={
-											<Space direction='vertical' size={2}>
-												<span>{it.author}</span>
-												<Tag color='gold'>Đã thêm {it.added_at || ''}</Tag>
-											</Space>
-										}
+
+						<Row gutter={[16, 16]}>
+							{items.map((it: any) => (
+								<Col xs={24} key={it.id}>
+									<DocumentCard
+										item={it}
+										onDetail={(id) => history.push(`/tai-lieu/${id}`)}
+										onWishlist={() => {}}
+										onCart={() => {}}
+										accent={true}
+										actions={[
+											<Button key='detail' onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>
+												Chi tiết
+											</Button>,
+											<Button key='remove' danger onClick={() => handleRemove(it.id)}>
+												Xoá khỏi giỏ
+											</Button>,
+										]}
 									/>
-								</List.Item>
-							)}
-						/>
+								</Col>
+							))}
+						</Row>
+
 						<div style={{ textAlign: 'right', marginTop: 12 }}>
 							<Button type='primary' onClick={handleCheckout} loading={loading} disabled={items.length === 0}>
 								Tạo phiếu mượn

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Card, List, Input, Row, Col, message, Empty, Pagination, Space, Button, Tag } from 'antd';
+import { Card, Input, Row, Col, message, Empty, Pagination, Space, Button, Tag } from 'antd';
 import { history } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import * as TaiLieuService from '@/services/TaiLieu';
 import * as MuonSach from '@/services/MuonSach';
+import DocumentCard from '@/components/DocumentCard';
 
 const { Search } = Input;
 
@@ -85,57 +86,19 @@ export default function DocumentsPage() {
 					<Empty description={loading ? 'Đang tải tài liệu' : 'Không có tài liệu'} />
 				) : (
 					<>
-						<List
-							loading={loading}
-							dataSource={items}
-							renderItem={(it: any) => {
-								const isBusy = actionLoadingId === it.id;
-								return (
-									<List.Item
-										actions={[
-											<Button size='small' onClick={() => history.push(`/tai-lieu/${it.id}`)}>
-												Chi tiết
-											</Button>,
-											<Button
-												size='small'
-												loading={isBusy && actionType === 'wishlist'}
-												onClick={() => handleAddToWishlist(it)}
-											>
-												Yêu thích
-											</Button>,
-											<Button
-												type='primary'
-												size='small'
-												loading={isBusy && actionType === 'cart'}
-												onClick={() => handleAddToCart(it)}
-											>
-												Đưa vào giỏ
-											</Button>,
-										]}
-									>
-										<List.Item.Meta
-											title={
-												<a onClick={() => history.push(`/tai-lieu/${it.id}`)}>
-													{it.title || it.document_title || 'Không có tiêu đề'}
-												</a>
-											}
-											description={
-												<Space direction='vertical' size={2}>
-													<span>{it.author || it.authors || 'Không rõ tác giả'}</span>
-													<Space wrap size={8}>
-														{it.isbn ? <Tag>ISBN: {it.isbn}</Tag> : null}
-														{it.category_name ? <Tag color='geekblue'>{it.category_name}</Tag> : null}
-														<Tag color={Number(it.available_copies || 0) > 0 ? 'green' : 'volcano'}>
-															Còn {it.available_copies || 0} bản
-														</Tag>
-													</Space>
-												</Space>
-											}
-										/>
-									</List.Item>
-								);
-							}}
-						/>
+						<Row gutter={[16, 16]}>
+							{items.map((it: any) => (
+								<Col xs={24} sm={12} md={8} lg={8} key={it.id || it.document_id}>
+									<DocumentCard
+										item={it}
+										onDetail={(id) => history.push(`/tai-lieu/${id}`)}
+										onWishlist={(i) => handleAddToWishlist(i)}
+										onCart={(i) => handleAddToCart(i)}
+										accent={true}
+									/>
+								</Col>
+							))}
+						</Row>
 						<div style={{ textAlign: 'right', marginTop: 12 }}>
 							<Pagination
 								current={page}

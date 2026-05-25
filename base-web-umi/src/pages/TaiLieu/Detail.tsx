@@ -4,6 +4,7 @@ import { history } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import * as TaiLieuService from '@/services/TaiLieu';
 import * as MuonSach from '@/services/MuonSach';
+import getCoverForTitle from '@/utils/coverMap';
 
 export default function DocumentDetailPage(props: any) {
 	const id = props?.match?.params?.id;
@@ -75,13 +76,21 @@ export default function DocumentDetailPage(props: any) {
 								</Space>
 							</Space>
 
-							{document.cover_image ? (
-								<img
-									alt={document.title}
-									src={document.cover_image}
-									style={{ maxWidth: 220, borderRadius: 12, display: 'block' }}
-								/>
-							) : null}
+							{/* show cover: prefer explicit, then mapped by title, then thumbnail, then default */}
+							{(() => {
+								const cover =
+									document.cover_image ||
+									getCoverForTitle(document.title) ||
+									document.thumbnail ||
+									'/default-cover.png';
+								return (
+									<img
+										alt={document.title}
+										src={cover}
+										style={{ maxWidth: 360, width: '100%', height: 'auto', borderRadius: 12, display: 'block' }}
+									/>
+								);
+							})()}
 
 							<Descriptions bordered column={1} size='small'>
 								<Descriptions.Item label='ISBN'>{document.isbn || 'Chưa có'}</Descriptions.Item>
