@@ -69,7 +69,7 @@ export default function BorrowCartPage() {
 
 	return (
 		<PageSkeleton title='Giỏ mượn sách'>
-			<Card>
+			<Card style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
 				{error ? <Alert type='error' message={error} style={{ marginBottom: 12 }} /> : null}
 				{items.length === 0 ? (
 					<Empty description='Giỏ mượn trống' />
@@ -83,7 +83,7 @@ export default function BorrowCartPage() {
 							</Button>
 						</Space>
 
-						<Row gutter={[16, 16]}>
+						<Row gutter={[24, 24]}>
 							{items.map((it: any) => (
 								<Col xs={24} key={it.id}>
 									<DocumentCard
@@ -92,6 +92,7 @@ export default function BorrowCartPage() {
 										onWishlist={() => {}}
 										onCart={() => {}}
 										accent={true}
+										layout='list'
 										actions={[
 											<Button key='detail' onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>
 												Chi tiết

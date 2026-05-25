@@ -55,12 +55,12 @@ export default function WishlistPage() {
 
 	return (
 		<PageSkeleton title='Danh sách yêu thích'>
-			<Card>
+			<Card style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
 				{error ? <Alert type='error' message={error} style={{ marginBottom: 12 }} /> : null}
 				{items.length === 0 ? (
 					<Empty description='Danh sách trống' />
 				) : (
-					<Row gutter={[16, 16]}>
+					<Row gutter={[24, 24]}>
 						{items.map((it: any) => (
 							<Col xs={24} key={it.id}>
 								<DocumentCard
@@ -69,6 +69,7 @@ export default function WishlistPage() {
 									onWishlist={() => {}}
 									onCart={() => handleMoveToCart(it)}
 									accent={true}
+									layout='list'
 									actions={[
 										<Button key='add' type='primary' onClick={() => handleMoveToCart(it)}>
 											Thêm vào giỏ

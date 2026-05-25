@@ -5,6 +5,7 @@ import PageSkeleton from '@/components/PageSkeleton';
 import * as TaiLieuService from '@/services/TaiLieu';
 import * as MuonSach from '@/services/MuonSach';
 import getCoverForTitle from '@/utils/coverMap';
+import { ipLibrary } from '@/utils/ip';
 
 export default function DocumentDetailPage(props: any) {
 	const id = props?.match?.params?.id;
@@ -78,11 +79,17 @@ export default function DocumentDetailPage(props: any) {
 
 							{/* show cover: prefer explicit, then mapped by title, then thumbnail, then default */}
 							{(() => {
-								const cover =
+								let cover =
 									document.cover_image ||
 									getCoverForTitle(document.title) ||
 									document.thumbnail ||
 									'/default-cover.png';
+
+								// If cover is a GridFS ObjectId (24 hex chars), serve via backend endpoint
+								const objIdRegex = /^[a-fA-F0-9]{24}$/;
+								if (typeof cover === 'string' && objIdRegex.test(cover)) {
+									cover = `${ipLibrary}/documents/covers/${cover}`;
+								}
 								return (
 									<img
 										alt={document.title}

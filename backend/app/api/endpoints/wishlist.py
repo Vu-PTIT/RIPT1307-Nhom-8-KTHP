@@ -29,6 +29,7 @@ async def get_my_wishlist(
             document_title=doc.title,
             author=doc.author,
             cover_image=doc.cover_image,
+            available_copies=doc.available_copies,
             added_at=item.get("added_at")
         ))
     return response

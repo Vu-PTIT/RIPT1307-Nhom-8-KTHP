@@ -1,5 +1,8 @@
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, Query, HTTPException
+import io
+from bson import ObjectId
+from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from app.db.session import engine
 from app.api import deps
 from app.models.user import User
@@ -208,3 +211,74 @@ async def delete_copy(
         return {"message": "Document copy deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ----------------- Cover upload / serve -----------------
+@router.post("/{doc_id}/cover")
+async def upload_cover(
+    doc_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """Upload a cover image and store it in GridFS. Saves the file id string into Document.cover_image."""
+    # get DB and GridFS bucket
+    db_name = engine.database_name
+    db = engine.client[db_name]
+    from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+    bucket = AsyncIOMotorGridFSBucket(db)
+
+    # read file bytes
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Empty file")
+
+    # upload to gridfs
+    try:
+        file_id = await bucket.upload_from_stream(file.filename or "cover", contents, metadata={"contentType": file.content_type})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to store file: {e}")
+
+    # update document record
+    doc = await document_crud.get_document_by_id(engine, doc_id)
+    if not doc:
+        # cleanup uploaded file
+        try:
+            await bucket.delete(file_id)
+        except Exception:
+            pass
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc.cover_image = str(file_id)
+    await engine.save(doc)
+    return {"file_id": str(file_id), "cover_image": doc.cover_image}
+
+
+@router.get("/covers/{file_id}")
+async def serve_cover(file_id: str) -> Any:
+    """Stream a cover image previously stored in GridFS by id."""
+    db_name = engine.database_name
+    db = engine.client[db_name]
+    from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+    bucket = AsyncIOMotorGridFSBucket(db)
+
+    try:
+        oid = ObjectId(file_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid file id")
+
+    try:
+        grid_out = await bucket.open_download_stream(oid)
+    except Exception:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # read contents (GridOut supports read())
+    data = await grid_out.read()
+    # try to get content type from metadata
+    content_type = None
+    try:
+        md = grid_out.metadata or {}
+        content_type = md.get("contentType")
+    except Exception:
+        content_type = None
+
+    return StreamingResponse(io.BytesIO(data), media_type=content_type or "application/octet-stream")

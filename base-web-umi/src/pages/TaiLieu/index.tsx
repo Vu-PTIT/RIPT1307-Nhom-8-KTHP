@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Input, Row, Col, message, Empty, Pagination, Space, Button, Tag } from 'antd';
+import { Card, Input, Row, Col, message, Empty, Pagination, Space, Button, Tag, Select } from 'antd';
 import { history } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import * as TaiLieuService from '@/services/TaiLieu';
@@ -12,16 +12,18 @@ export default function DocumentsPage() {
 	const [items, setItems] = useState<any[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [keyword, setKeyword] = useState<string>('');
+	const [categories, setCategories] = useState<any[]>([]);
+	const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(10);
 	const [total, setTotal] = useState(0);
 	const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 	const [actionType, setActionType] = useState<'wishlist' | 'cart' | null>(null);
 
-	const load = async (p = page, ps = pageSize, kw = keyword) => {
+	const load = async (p = page, ps = pageSize, kw = keyword, category_id?: string) => {
 		setLoading(true);
 		try {
-			const res = await TaiLieuService.searchDocuments({ keyword: kw, page: p, page_size: ps });
+			const res = await TaiLieuService.searchDocuments({ keyword: kw, page: p, page_size: ps, category_id });
 			const data = res.data || {};
 			setItems(data.items || data || []);
 			setTotal(data.total || data.count || (data.items ? data.items.length : 0));
@@ -33,13 +35,29 @@ export default function DocumentsPage() {
 	};
 
 	useEffect(() => {
-		load(1, pageSize, keyword);
+		load(1, pageSize, keyword, selectedCategory);
+
+		const loadCategories = async () => {
+			try {
+				const res = await TaiLieuService.getCategories();
+				setCategories(res.data || []);
+			} catch (e) {
+				// ignore
+			}
+		};
+		loadCategories();
 	}, []);
 
 	const onSearch = (val: string) => {
 		setKeyword(val);
 		setPage(1);
-		load(1, pageSize, val);
+		load(1, pageSize, val, selectedCategory);
+	};
+
+	const onCategoryChange = (val: string | undefined) => {
+		setSelectedCategory(val);
+		setPage(1);
+		load(1, pageSize, keyword, val);
 	};
 
 	const handleAddToWishlist = async (doc: any) => {
@@ -72,12 +90,27 @@ export default function DocumentsPage() {
 
 	return (
 		<PageSkeleton title='Danh sách tài liệu'>
-			<Card>
+			<Card style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
 				<Row gutter={12} style={{ marginBottom: 12 }} align='middle'>
-					<Col xs={24} sm={16} md={18} lg={20}>
+					<Col xs={24} sm={12} md={14} lg={16}>
 						<Search placeholder='Tìm theo tiêu đề, tác giả, ISBN...' enterButton onSearch={onSearch} />
 					</Col>
-					<Col xs={24} sm={8} md={6} lg={4} style={{ textAlign: 'right' }}>
+					<Col xs={24} sm={6} md={4} lg={4}>
+						<Select
+							allowClear
+							placeholder='Tất cả danh mục'
+							style={{ width: '100%' }}
+							onChange={onCategoryChange}
+							value={selectedCategory}
+						>
+							{categories.map((c: any) => (
+								<Select.Option key={c.id || c.category_id} value={c.id || c.category_id}>
+									{c.name || c.category_name}
+								</Select.Option>
+							))}
+						</Select>
+					</Col>
+					<Col xs={24} sm={6} md={6} lg={4} style={{ textAlign: 'right' }}>
 						<Tag color='blue'>{total} tài liệu</Tag>
 					</Col>
 				</Row>
@@ -86,7 +119,7 @@ export default function DocumentsPage() {
 					<Empty description={loading ? 'Đang tải tài liệu' : 'Không có tài liệu'} />
 				) : (
 					<>
-						<Row gutter={[16, 16]}>
+						<Row gutter={[24, 24]}>
 							{items.map((it: any) => (
 								<Col xs={24} sm={12} md={8} lg={8} key={it.id || it.document_id}>
 									<DocumentCard
