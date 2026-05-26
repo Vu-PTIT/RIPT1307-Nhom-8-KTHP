@@ -32,9 +32,7 @@ const DocumentCard: React.FC<Props> = ({ item, onDetail, onWishlist, onCart, act
 
 	return (
 		<Card
-			className={`doc-card`}
-			data-accent={accent ? 'true' : undefined}
-			data-layout={layout}
+			className={`doc-card ${accent ? 'accent' : ''} ${layout === 'list' ? 'list' : ''}`}
 			hoverable
 			bodyStyle={{ padding: 0 }}
 		>
@@ -49,46 +47,14 @@ const DocumentCard: React.FC<Props> = ({ item, onDetail, onWishlist, onCart, act
 					<h3 className='doc-title' onClick={() => onDetail && onDetail(item.id || item.document_id)}>
 						{title}
 					</h3>
-					<div>{author}</div>
-					<div>
+					<div className='doc-author'>{author}</div>
+					<div className='doc-tags'>
 						{item.category_name || item.category?.name ? (
 							<Tag color='volcano'>{item.category_name || item.category?.name}</Tag>
 						) : null}
 						<Tag color={Number(item.available_copies || 0) > 0 ? 'green' : 'default'}>
 							{Number(item.available_copies || 0)} bản khả dụng
 						</Tag>
-				</div>
-
-					<div className='doc-actions'>
-								{actions ? (
-									actions
-								) : (
-									<>
-										<Button onClick={() => onDetail && onDetail(item.id || item.document_id)}>
-											<InfoCircleOutlined />
-											&nbsp;Chi tiết
-										</Button>
-										<Button icon={<HeartOutlined />} onClick={() => onWishlist && onWishlist(item)} />
-										<Button icon={<ShoppingCartOutlined />} onClick={() => onCart && onCart(item)} />
-									</>
-								)}
-							</div>
-				</div>
-			) : (
-				<>
-					<div className='doc-body'>
-						<h3 className='doc-title' onClick={() => onDetail && onDetail(item.id || item.document_id)}>
-							{title}
-						</h3>
-						<div>{author}</div>
-						<div>
-							{item.category_name || item.category?.name ? (
-								<Tag color='volcano'>{item.category_name || item.category?.name}</Tag>
-							) : null}
-							<Tag color={Number(item.available_copies || 0) > 0 ? 'green' : 'default'}>
-								{Number(item.available_copies || 0)} bản khả dụng
-							</Tag>
-					</div>
 					</div>
 
 					<div className='doc-actions'>
@@ -96,12 +62,60 @@ const DocumentCard: React.FC<Props> = ({ item, onDetail, onWishlist, onCart, act
 							actions
 						) : (
 							<>
-								<Button onClick={() => onDetail && onDetail(item.id || item.document_id)}>
-									<InfoCircleOutlined />
-									&nbsp;Chi tiết
-								</Button>
-								<Button icon={<HeartOutlined />} onClick={() => onWishlist && onWishlist(item)} />
-								<Button icon={<ShoppingCartOutlined />} onClick={() => onCart && onCart(item)} />
+								<div className='actions-left'>
+									<Button className='detail-btn' onClick={() => onDetail && onDetail(item.id || item.document_id)}>
+										<InfoCircleOutlined />
+										&nbsp;Chi tiết
+									</Button>
+								</div>
+								<div className='actions-right'>
+									<Button
+										className='icon-btn'
+										icon={<HeartOutlined />}
+										onClick={() => onWishlist && onWishlist(item)}
+									/>
+									<Button className='icon-btn' icon={<ShoppingCartOutlined />} onClick={() => onCart && onCart(item)} />
+								</div>
+							</>
+						)}
+					</div>
+				</div>
+			) : (
+				<>
+					<div className='doc-body'>
+						<h3 className='doc-title' onClick={() => onDetail && onDetail(item.id || item.document_id)}>
+							{title}
+						</h3>
+						<div className='doc-author'>{author}</div>
+						<div className='doc-tags'>
+							{item.category_name || item.category?.name ? (
+								<Tag color='volcano'>{item.category_name || item.category?.name}</Tag>
+							) : null}
+							<Tag color={Number(item.available_copies || 0) > 0 ? 'green' : 'default'}>
+								{Number(item.available_copies || 0)} bản khả dụng
+							</Tag>
+						</div>
+					</div>
+
+					<div className='doc-actions'>
+						{actions ? (
+							actions
+						) : (
+							<>
+								<div className='actions-left'>
+									<Button className='detail-btn' onClick={() => onDetail && onDetail(item.id || item.document_id)}>
+										<InfoCircleOutlined />
+										&nbsp;Chi tiết
+									</Button>
+								</div>
+								<div className='actions-right'>
+									<Button
+										className='icon-btn'
+										icon={<HeartOutlined />}
+										onClick={() => onWishlist && onWishlist(item)}
+									/>
+									<Button className='icon-btn' icon={<ShoppingCartOutlined />} onClick={() => onCart && onCart(item)} />
+								</div>
 							</>
 						)}
 					</div>

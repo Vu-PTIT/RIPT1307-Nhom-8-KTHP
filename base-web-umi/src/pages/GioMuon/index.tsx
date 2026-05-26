@@ -85,20 +85,23 @@ export default function BorrowCartPage() {
 
 						<Row gutter={[24, 24]}>
 							{items.map((it: any) => (
-								<Col xs={24} key={it.id}>
+								<Col xs={24} sm={12} md={6} lg={6} key={it.id}>
 									<DocumentCard
 										item={it}
 										onDetail={(id) => history.push(`/tai-lieu/${id}`)}
 										onWishlist={() => {}}
 										onCart={() => {}}
 										accent={true}
-										layout='list'
 										actions={[
-											<Button key='detail' onClick={() => history.push(`/tai-lieu/${it.document_id}`)}>
+											<Button
+												key='detail'
+												className='detail-btn small'
+												onClick={() => history.push(`/tai-lieu/${it.document_id}`)}
+											>
 												Chi tiết
 											</Button>,
-											<Button key='remove' danger onClick={() => handleRemove(it.id)}>
-												Xoá khỏi giỏ
+											<Button key='remove' className='remove-btn' onClick={() => handleRemove(it.id)}>
+												Xóa
 											</Button>,
 										]}
 									/>

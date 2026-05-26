@@ -5,7 +5,7 @@ import { Card } from 'antd';
 const PageSkeleton: React.FC<{ title: string; children?: React.ReactNode }> = ({ title, children }) => {
 	return (
 		<PageContainer title={title} style={{ background: 'transparent' }}>
-			<div style={{ background: '#f6f7f9', padding: 16, minHeight: '60vh' }}>
+			<div style={{ background: 'transparent', padding: 0, minHeight: '60vh' }}>
 				{children ? (
 					children
 				) : (

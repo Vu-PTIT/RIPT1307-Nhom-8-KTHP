@@ -121,7 +121,7 @@ export default function DocumentsPage() {
 					<>
 						<Row gutter={[24, 24]}>
 							{items.map((it: any) => (
-								<Col xs={24} sm={12} md={8} lg={8} key={it.id || it.document_id}>
+								<Col xs={24} sm={12} md={6} lg={6} key={it.id || it.document_id}>
 									<DocumentCard
 										item={it}
 										onDetail={(id) => history.push(`/tai-lieu/${id}`)}

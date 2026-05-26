@@ -62,14 +62,13 @@ export default function WishlistPage() {
 				) : (
 					<Row gutter={[24, 24]}>
 						{items.map((it: any) => (
-							<Col xs={24} key={it.id}>
+							<Col xs={24} sm={12} md={6} lg={6} key={it.id}>
 								<DocumentCard
 									item={it}
 									onDetail={(id) => history.push(`/tai-lieu/${id}`)}
 									onWishlist={() => {}}
 									onCart={() => handleMoveToCart(it)}
 									accent={true}
-									layout='list'
 									actions={[
 										<Button key='add' type='primary' onClick={() => handleMoveToCart(it)}>
 											Thêm vào giỏ

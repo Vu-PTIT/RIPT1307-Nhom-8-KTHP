@@ -27,9 +27,10 @@
 	}
 
 	.doc-body {
+		/* keep body and actions out of the flex-growing area for square layout */
+		flex: 0 0 auto;
 		padding: 12px 12px 10px 12px;
 
-		/* title */
 		.doc-title {
 			display: -webkit-box;
 			height: 56px;
@@ -44,32 +45,29 @@
 			-webkit-box-orient: vertical;
 		}
 
-		/* author (element immediately after title) */
-		.doc-title + div {
+		.doc-author {
 			margin-bottom: 6px;
 			color: rgba(0, 0, 0, 0.6);
 			font-weight: 600;
 			font-size: 14px;
 		}
 
-		/* tags and availability */
-		/* target any ant tags inside doc-body */
-		.ant-tag {
-			padding: 4px 8px;
-			font-size: 13px;
-			border-radius: 8px;
-		}
+		.doc-tags {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin-top: 8px;
 
-		/* spacing between tag row and actions */
-		.ant-tag + .ant-tag,
-		.ant-tag + div,
-		.doc-title + div + .ant-tag {
-			margin-left: 8px;
+			.ant-tag {
+				padding: 4px 8px;
+				font-size: 13px;
+				border-radius: 8px;
+			}
 		}
 	}
 
 	/* list layout (horizontal) used for wishlist / cart views */
-	&[data-layout="list"] {
+	&.list {
 		flex-direction: row;
 		align-items: center;
 		min-height: 200px;
@@ -101,21 +99,21 @@
 				font-size: 26px;
 			}
 
-			/* author (element immediately after title) */
-			.doc-title + div {
+			.doc-author {
 				margin-bottom: 8px;
 				color: rgba(0, 0, 0, 0.75);
 				font-size: 16px;
 			}
 
-			/* tags in list layout */
-			.ant-tag {
-				padding: 6px 12px;
-				font-size: 14px;
+			.doc-tags {
+				margin-top: 8px;
+				.ant-tag {
+					padding: 6px 12px;
+					font-size: 14px;
+				}
 			}
 
-			/* meta (if present as an element after tags) */
-			.ant-tag + div, .doc-title + div + .ant-tag + div {
+			.doc-meta {
 				margin-top: 10px;
 				color: rgba(0, 0, 0, 0.65);
 				font-size: 14px;
@@ -147,8 +145,11 @@
 		padding: 12px 16px;
 		border-top: 1px solid rgba(0, 0, 0, 0.06);
 
-		/* detail button is first child: styled as primary action */
-		.ant-btn:first-child {
+		.actions-left {
+			flex: 1 1 auto;
+		}
+
+		.detail-btn {
 			width: 100%;
 			height: 36px;
 			padding: 8px 12px;
@@ -158,22 +159,35 @@
 			background: #fff1f0;
 			border: 1px solid #ff7875;
 			border-radius: 8px;
+
+			&:hover,
+			&:focus {
+				color: #fff;
+				background: #cf1322;
+				border-color: #cf1322;
+			}
 		}
 
-		.ant-btn:first-child:hover,
-		.ant-btn:first-child:focus {
-			color: #fff;
-			background: #cf1322;
-			border-color: #cf1322;
+		/* shortened variant for detail button when used in compact layouts */
+		.detail-btn.small {
+			width: auto;
+			min-width: 90px;
+			padding: 6px 12px;
+			text-align: center;
 		}
 
-		/* other buttons are direct siblings: push the second button to the right */
-		.doc-actions > .ant-btn:nth-child(2) {
-			margin-left: auto;
+		/* remove / soften rounded corners for destructive or small buttons */
+		.remove-btn {
+			border-radius: 6px;
 		}
 
-		/* icon buttons (not the first one) */
-		.doc-actions > .ant-btn:not(:first-child) {
+		.actions-right {
+			display: flex;
+			align-items: center;
+			margin-left: 12px;
+		}
+
+		.icon-btn {
 			width: 36px;
 			height: 36px;
 			margin-left: 10px;
@@ -183,19 +197,18 @@
 			border-radius: 8px;
 		}
 
-		.doc-actions > .ant-btn:not(:first-child) .anticon {
+		.icon-btn .anticon {
 			font-size: 18px;
 		}
 
-		/* style the heart button (second child) */
-		.doc-actions > .ant-btn:nth-child(2) {
+		.icon-btn.heart {
 			color: #e91e63;
 			background: #ffedf2;
 			border: none;
 		}
 	}
 
-	&[data-accent="true"] {
+	&.accent {
 		background: #ffffff !important; /* giữ trắng cho thẻ nổi bật */
 
 		.doc-cover {
