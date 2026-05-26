@@ -172,3 +172,29 @@ async def delete_copy(
         return {"message": "Document copy deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ===================== BULK OPERATIONS =====================
+
+@router.post("/bulk/upload-images", response_model=document_schema.BulkUploadResponse)
+async def bulk_upload_images(
+    images: List[document_schema.BulkUploadImageRequest],
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """
+    Bulk upload/update cover images for multiple documents.
+    
+    Request body:
+    [
+        {
+            "document_id": "doc_id_1",
+            "cover_image": "data:image/jpeg;base64,..."
+        },
+        ...
+    ]
+    
+    Returns stats of successful and failed uploads.
+    """
+    images_data = [img.model_dump() for img in images]
+    result = await document_crud.bulk_upload_images(engine, images_data)
+    return document_schema.BulkUploadResponse(**result)

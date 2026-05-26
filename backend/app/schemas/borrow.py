@@ -103,6 +103,7 @@ class BorrowRecordItemSummary(BaseModel):
     id: PyObjectId
     copy_code: str
     document_title: str
+    cover_image: Optional[str] = None
     borrow_date: date
     due_date: date
     return_date: Optional[date] = None

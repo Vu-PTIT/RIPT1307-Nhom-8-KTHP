@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
-import { Table, Button, Modal, Input, Select, Popconfirm, Space, message, Empty } from 'antd';
+import { Button, Card, Input, Modal, Popconfirm, Select, Space, Tag, Typography, message, Empty } from 'antd';
 import { getMyBorrows, getBorrowDetail, updateBorrowRecord, deleteBorrowRecord } from '@/services/MuonSach';
 
 const { Search } = Input;
+const { Title, Text } = Typography;
 
 const LichSuMuonPage: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
@@ -88,64 +89,102 @@ const LichSuMuonPage: React.FC = () => {
     }
   };
 
-  const columns = [
-    {
-      title: 'Mã phiếu',
-      dataIndex: 'id',
-      key: 'id',
-    },
-    {
-      title: 'Ngày mượn',
-      dataIndex: 'borrow_date',
-      key: 'borrow_date',
-    },
-    {
-      title: 'Hạn trả',
-      dataIndex: 'due_date',
-      key: 'due_date',
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-    },
-    {
-      title: 'Ghi chú',
-      dataIndex: 'note',
-      key: 'note',
-      render: (value: any) => value || '-',
-    },
-    {
-      title: 'Số lượng',
-      key: 'count',
-      render: (_: any, record: any) => record?.items?.length || 0,
-    },
-    {
-      title: 'Hành động',
-      key: 'action',
-      render: (_: any, record: any) => (
-        <Space>
-          <Button size="small" onClick={() => openEditModal(record)}>
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Bạn có chắc muốn xóa lịch sử này?"
-            onConfirm={() => handleDeleteRecord(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
+  const renderStatusTag = (status: string) => {
+    const lower = status?.toString().toLowerCase();
+    const statusMap: Record<string, { text: string; color: string }> = {
+      borrowed: { text: 'Đang mượn', color: 'geekblue' },
+      overdue: { text: 'Quá hạn', color: 'volcano' },
+      returned: { text: 'Đã trả', color: 'green' },
+    };
+    const item = statusMap[lower] || { text: status || 'Không xác định', color: 'default' };
+    return <Tag color={item.color}>{item.text}</Tag>;
+  };
+
+  const renderBorrowCard = (record: any) => (
+    <Card
+      key={record.id}
+      bodyStyle={{ padding: 22 }}
+      style={{ borderRadius: 20, boxShadow: '0 12px 32px rgba(0,0,0,0.06)' }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+        <div>
+          <Title level={5} style={{ marginBottom: 6 }} ellipsis>
+            Phiếu mượn {record.id}
+          </Title>
+          <Text type="secondary">Ngày mượn: {record.borrow_date || '-'}</Text>
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          {renderStatusTag(record.status)}
+          <Tag color="default">{record.items?.length || 0} tài liệu</Tag>
+        </div>
+      </div>
+      <div style={{ marginTop: 18, display: 'grid', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <Text strong>Hạn trả:</Text>
+          <Text>{record.due_date || '-'}</Text>
+        </div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <Text strong>Ghi chú:</Text>
+          <Text>{record.note || '-'}</Text>
+        </div>
+      </div>
+      <div style={{ marginTop: 18, display: 'grid', gap: 12 }}>
+        {record.items?.map((item: any) => (
+          <Card
+            key={item.id || item.copy_code}
+            type="inner"
+            bodyStyle={{ padding: 16 }}
+            style={{ background: '#fafafa', borderRadius: 16 }}
           >
-            <Button danger size="small" disabled={record.status !== 'returned'}>
-              Xóa
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              {item.cover_image ? (
+                <div style={{ width: 96, minWidth: 96, height: 136, borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', background: '#fff' }}>
+                  <img
+                    src={item.cover_image}
+                    alt={item.document_title || 'Bìa sách'}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                </div>
+              ) : (
+                <div style={{ width: 96, minWidth: 96, height: 136, borderRadius: 16, background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: 12, textAlign: 'center', padding: 8 }}>
+                  Không có ảnh
+                </div>
+              )}
+              <div style={{ minWidth: 220, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>{item.document_title || 'Tài liệu không rõ'}</Text>
+                  <Text type="secondary" style={{ display: 'block' }}>Mã bản sao: {item.copy_code || '-'}</Text>
+                </div>
+                <div style={{ marginTop: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Tag color="blue">{item.status || '-'}</Tag>
+                  <Text type="secondary">Ngày trả: {item.return_date || '-'}</Text>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+        <Button size="small" onClick={() => openEditModal(record)}>
+          Sửa
+        </Button>
+        <Popconfirm
+          title="Bạn có chắc muốn xóa lịch sử này?"
+          onConfirm={() => handleDeleteRecord(record.id)}
+          okText="Xóa"
+          cancelText="Hủy"
+        >
+          <Button danger size="small" disabled={record.status !== 'returned'}>
+            Xóa
+          </Button>
+        </Popconfirm>
+      </div>
+    </Card>
+  );
 
   return (
     <PageContainer title="Lịch sử mượn">
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
         <Search
           placeholder="Tìm tài liệu hoặc mã bản sao"
           allowClear
@@ -159,35 +198,17 @@ const LichSuMuonPage: React.FC = () => {
           options={[
             { label: 'Tất cả', value: 'all' },
             { label: 'Đang mượn', value: 'borrowed' },
-            { label: 'Overdue', value: 'overdue' },
+            { label: 'Quá hạn', value: 'overdue' },
             { label: 'Đã trả', value: 'returned' },
           ]}
           style={{ width: 180 }}
         />
       </Space>
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={filteredData}
-        loading={loading}
-        expandable={{
-          expandedRowRender: (record: any) => (
-            <Table
-              rowKey="id"
-              columns={[
-                { title: 'Bản sao', dataIndex: 'copy_code', key: 'copy_code' },
-                { title: 'Tài liệu', dataIndex: 'document_title', key: 'document_title' },
-                { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
-                { title: 'Ngày trả', dataIndex: 'return_date', key: 'return_date' },
-              ]}
-              dataSource={record.items || []}
-              pagination={false}
-              size="small"
-            />
-          ),
-        }}
-        locale={{ emptyText: <Empty description="Không có lịch sử mượn" /> }}
-      />
+      <div style={{ display: 'grid', gap: 16 }}>
+        {filteredData.length > 0 ? filteredData.map(renderBorrowCard) : (
+          <Empty description="Không có lịch sử mượn" />
+        )}
+      </div>
       <Modal
         title="Sửa ghi chú"
         visible={editModalVisible}

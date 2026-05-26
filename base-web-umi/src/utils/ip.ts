@@ -1,6 +1,6 @@
 import { AppModules, EModuleKey } from '@/services/base/constant';
 
-const ipRoot = APP_CONFIG_IP_ROOT; // ip dev
+const ipRoot = APP_CONFIG_IP_ROOT || 'http://127.0.0.1:8000/'; // ip dev
 
 // Ip Chính => Mặc định dùng trong các useInitModel
 const ip3 = ipRoot + 'slink'; // ip dev
@@ -8,7 +8,7 @@ const ip3 = ipRoot + 'slink'; // ip dev
 // Ip khác
 const ipNotif = ipRoot + 'notification'; // ip dev
 const ipSlink = ipRoot + 'slink'; // ip dev
-const ipLibrary = APP_CONFIG_LIBRARY_API;
+const ipLibrary = APP_CONFIG_LIBRARY_API || 'http://127.0.0.1:8000/api/v1';
 
 const currentRole = EModuleKey.CONNECT;
 const oneSignalRole = EModuleKey.CONNECT;

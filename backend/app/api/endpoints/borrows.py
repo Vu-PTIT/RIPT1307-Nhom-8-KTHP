@@ -37,6 +37,7 @@ async def _get_borrow_detail_logic(record_id: str):
             
         item_summaries.append(borrow_schema.BorrowRecordItemSummary(
             id=item.id, copy_code=copy.copy_code, document_title=doc.title,
+            cover_image=doc.cover_image,
             borrow_date=record.borrow_date, due_date=record.due_date,
             return_date=item.return_date, status=status
         ))

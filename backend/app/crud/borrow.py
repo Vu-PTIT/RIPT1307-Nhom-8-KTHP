@@ -112,7 +112,7 @@ async def create_renewal_request(engine: AIOEngine, item_id: str, user_id: str, 
     # Check if record belongs to user
     record_id = _resolve_reference_id(item.borrow_record)
     record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
-    if not record or str(record.reader.id) != user_id:
+    if not record or str(_resolve_reference_id(record.reader)) != user_id:
         raise ValueError("Unauthorized access to this borrow record")
 
     if item.return_date is not None:
