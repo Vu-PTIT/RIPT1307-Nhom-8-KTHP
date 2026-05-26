@@ -214,6 +214,23 @@ const GiaHanPage: React.FC = () => {
             }}>
               {isOverdue ? `Quá hạn ${overdueDays} ngày` : `Còn lại ${dueDate ? dueDate.diff(moment(), 'days') : 0} ngày`}
             </div>
+            {/* Copy code badge */}
+            {item.copy_code && (
+              <div style={{
+                position: 'absolute',
+                bottom: 8,
+                right: 8,
+                background: 'rgba(0, 0, 0, 0.55)',
+                color: '#fff',
+                padding: '2px 7px',
+                borderRadius: 4,
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.3px',
+              }}>
+                📖 {item.copy_code}
+              </div>
+            )}
           </div>
         }
         bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}
