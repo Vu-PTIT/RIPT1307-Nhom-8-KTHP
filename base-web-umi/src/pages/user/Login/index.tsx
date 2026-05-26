@@ -31,7 +31,7 @@ const Login: React.FC = () => {
 			if (roleName === 'Admin') {
 				history.push('/quan-tri/thong-ke');
 			} else if (roleName === 'Librarian') {
-				history.push('/thu-thu/muon-tra');
+				history.push('/thu-thu/xu-ly-muon-tra');
 			} else {
 				history.push('/tai-lieu');
 			}
@@ -66,15 +66,12 @@ const Login: React.FC = () => {
 				>
 					<div style={{ textAlign: 'center', marginBottom: 32 }}>
 						<img alt='logo' src='/logo-full.svg' style={{ height: 50, marginBottom: 24 }} />
-						<Title level={3} style={{ margin: 0, color: 'var(--primary-color)' }}>Đăng nhập hệ thống</Title>
+						<Title level={3} style={{ margin: 0, color: 'var(--primary-color)' }}>
+							Đăng nhập hệ thống
+						</Title>
 					</div>
 
-					<Form
-						form={form}
-						onFinish={handleSubmit}
-						layout='vertical'
-						size='large'
-					>
+					<Form form={form} onFinish={handleSubmit} layout='vertical' size='large'>
 						<Form.Item name='login' rules={[...rules.required]}>
 							<Input
 								placeholder='Nhập tên đăng nhập'

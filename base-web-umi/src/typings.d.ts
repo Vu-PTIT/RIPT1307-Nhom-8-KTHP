@@ -60,3 +60,6 @@ declare const APP_CONFIG_TITLE_CORE: string;
 declare const APP_CONFIG_TITLE_CSVC: string;
 declare const APP_CONFIG_TITLE_THU_VIEN: string;
 declare const APP_CONFIG_TITLE_QLVB: string;
+
+// Declare Moment locale modules to allow side-effect imports like `import 'moment/locale/vi'`
+declare module 'moment/locale/*';
