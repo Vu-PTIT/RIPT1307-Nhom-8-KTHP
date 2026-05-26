@@ -3,6 +3,7 @@ import { PageContainer } from '@ant-design/pro-layout';
 import { Button, Card, DatePicker, Empty, Input, message, Modal, Popconfirm, Select, Space, Tag, Typography } from 'antd';
 import moment from 'moment';
 import { getMyBorrows, getMyRenewals, requestRenewal, getBorrowDetail, updateRenewalRequest, cancelRenewalRequest } from '@/services/MuonSach';
+import { ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined } from '@ant-design/icons';
 
 const { Search } = Input;
 const { Title, Text } = Typography;
@@ -177,171 +178,303 @@ const GiaHanPage: React.FC = () => {
     return matchesStatus && matchesSearch;
   });
 
-  const renderStatusTag = (status: string) => {
-    const lower = status?.toString().toLowerCase();
-    const statusMap: Record<string, { text: string; color: string }> = {
-      pending: { text: 'Đang chờ duyệt', color: 'gold' },
-      approved: { text: 'Đã duyệt', color: 'green' },
-      rejected: { text: 'Đã từ chối', color: 'volcano' },
-      cancelled: { text: 'Đã hủy', color: 'default' },
-    };
-    const item = statusMap[lower] || { text: status || '-', color: 'default' };
-    return <Tag color={item.color}>{item.text}</Tag>;
-  };
-
   const renderBookCard = (item: any) => {
     const dueDate = item.due_date ? moment(item.due_date) : null;
     const isOverdue = dueDate && dueDate.isBefore(moment(), 'day');
     const overdueDays = isOverdue ? moment().diff(dueDate, 'days') : 0;
     const dueLabel = dueDate ? dueDate.format('DD/MM/YYYY') : '-';
-    const badgeText = item.hasPendingRenewal
-      ? 'Đang chờ duyệt'
-      : isOverdue
-      ? `Quá hạn ${overdueDays} ngày`
-      : `Còn lại ${dueDate?.diff(moment(), 'days')} ngày`;
 
     return (
       <Card
         key={item.id}
-        bodyStyle={{ padding: 24 }}
-        style={{ borderRadius: 20, boxShadow: '0 12px 32px rgba(0,0,0,0.08)' }}
-      >
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ width: 110, minWidth: 110, height: 150, borderRadius: 16, overflow: 'hidden', background: '#f5f5f5', boxShadow: '0 8px 20px rgba(0,0,0,0.06)' }}>
+        cover={
+          <div style={{ height: 160, overflow: 'hidden', background: '#f5f5f5', borderBottom: '1px solid #f0f0f0', position: 'relative' }}>
             {item.cover_image ? (
               <img
                 src={item.cover_image}
                 alt={item.document_title || 'Bìa sách'}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', padding: 8, textAlign: 'center', fontSize: 12 }}>
-                Chưa có ảnh bìa
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 13 }}>
+                Chưa có ảnh
               </div>
             )}
-          </div>
-          <div style={{ flex: 1, minWidth: 260 }}>
-            <Title level={5} style={{ marginBottom: 8 }} ellipsis>
-              {item.document_title}
-            </Title>
-            <Text type="secondary">{item.author || 'Không rõ tác giả'}</Text>
-            <div style={{ marginTop: 16, display: 'grid', gap: 10 }}>
-              <Text strong>Hạn trả: </Text>
-              <Text>{dueLabel}</Text>
-              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                <Tag color={isOverdue ? 'volcano' : item.hasPendingRenewal ? 'gold' : 'geekblue'}>
-                  {badgeText}
-                </Tag>
-                <Tag color="default">Đã gia hạn: {item.renewalCount}/2 lần</Tag>
-              </div>
+            {/* Overdue or remaining days badge */}
+            <div style={{
+              position: 'absolute',
+              top: 10,
+              left: 10,
+              background: isOverdue ? 'rgba(227, 26, 26, 0.9)' : 'rgba(24, 144, 255, 0.9)',
+              color: '#fff',
+              padding: '2px 8px',
+              borderRadius: 4,
+              fontSize: 11,
+              fontWeight: 500
+            }}>
+              {isOverdue ? `Quá hạn ${overdueDays} ngày` : `Còn lại ${dueDate ? dueDate.diff(moment(), 'days') : 0} ngày`}
             </div>
           </div>
-          <div style={{ minWidth: 140, display: 'flex', justifyContent: 'flex-end' }}>
+        }
+        bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}
+        style={{
+          borderRadius: 8,
+          border: '1px solid #e8e8e8',
+          boxShadow: 'none',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: '#262626', marginBottom: 4, minHeight: 44, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {item.document_title}
+          </div>
+          <div style={{ fontSize: '12px', color: '#8c8c8c', marginBottom: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {item.author || 'Tác giả không rõ'}
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8c8c8c', marginBottom: 6 }}>
+            <span>Hạn trả:</span>
+            <span style={{ fontWeight: 600, color: '#262626' }}>{dueLabel}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8c8c8c', marginBottom: 16 }}>
+            <span>Đã gia hạn:</span>
+            <span>{item.renewalCount}/2 lần</span>
+          </div>
+        </div>
+
+        <div>
+          {item.hasPendingRenewal ? (
             <Button
               type="primary"
-              size="large"
-              disabled={!item.canRenew || item.hasPendingRenewal}
-              onClick={() => openRenewalModal(item)}
-              style={{ minWidth: 140 }}
+              icon={<ClockCircleOutlined />}
+              style={{
+                width: '100%',
+                background: '#E26D67',
+                borderColor: '#E26D67',
+                color: '#fff',
+                borderRadius: '20px',
+                height: '36px',
+                fontSize: '13px',
+                fontWeight: 500,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: 'none',
+                cursor: 'default',
+                pointerEvents: 'none',
+              }}
             >
-              {item.hasPendingRenewal ? 'Đang chờ duyệt' : 'Yêu cầu gia hạn'}
+              Đang chờ duyệt
             </Button>
-          </div>
+          ) : (
+            <Button
+              type="primary"
+              disabled={!item.canRenew}
+              onClick={() => openRenewalModal(item)}
+              icon={<SyncOutlined />}
+              style={{
+                width: '100%',
+                background: item.canRenew ? '#E31A1A' : '#f5f5f5',
+                borderColor: item.canRenew ? '#E31A1A' : '#d9d9d9',
+                color: item.canRenew ? '#fff' : '#bfbfbf',
+                borderRadius: '20px',
+                height: '36px',
+                fontSize: '13px',
+                fontWeight: 500,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: item.canRenew ? '0 2px 4px rgba(227, 26, 26, 0.2)' : 'none',
+                cursor: item.canRenew ? 'pointer' : 'not-allowed',
+              }}
+            >
+              Yêu cầu gia hạn
+            </Button>
+          )}
         </div>
       </Card>
     );
   };
 
   const renderRenewalCard = (renewal: any) => {
+    const isPending = renewal.status === 'pending';
+    const isApproved = renewal.status === 'approved';
+    const isRejected = renewal.status === 'rejected';
+    const isCancelled = renewal.status === 'cancelled';
+
+    let tagBg = '#f5f5f5';
+    let tagBorder = '#d9d9d9';
+    let tagColor = '#595959';
+    let tagText = STATUS_LABELS[renewal.status] || renewal.status;
+    let tagIcon = null;
+
+    if (isPending) {
+      tagBg = '#FFFBE6';
+      tagBorder = '#FFE58F';
+      tagColor = '#D48806';
+      tagText = 'Chờ duyệt';
+      tagIcon = <ClockCircleOutlined style={{ marginRight: 4, color: '#D48806' }} />;
+    } else if (isApproved) {
+      tagBg = '#F6FFED';
+      tagBorder = '#B7EB8F';
+      tagColor = '#389E0D';
+      tagText = 'Đã duyệt';
+      tagIcon = <CheckCircleOutlined style={{ marginRight: 4, color: '#389E0D' }} />;
+    } else if (isRejected) {
+      tagBg = '#FFF1F0';
+      tagBorder = '#FFA39E';
+      tagColor = '#CF1322';
+      tagText = 'Từ chối';
+      tagIcon = <CloseCircleOutlined style={{ marginRight: 4, color: '#CF1322' }} />;
+    } else if (isCancelled) {
+      tagBg = '#F5F5F5';
+      tagBorder = '#D9D9D9';
+      tagColor = '#8c8c8c';
+      tagText = 'Đã hủy';
+    }
+
+    const formatDate = (dateStr: string) => {
+      if (!dateStr) return '-';
+      return moment(dateStr).format('DD/MM/YYYY');
+    };
+
+    const matchedBorrow = borrowItems.find((b: any) => toId(b.borrow_record_item_id) === toId(renewal.borrow_record_item_id));
+    const author = renewal.author || matchedBorrow?.author || 'Tác giả không rõ';
+    const coverImage = matchedBorrow?.cover_image;
+
     return (
       <Card
         key={renewal.id}
-        bodyStyle={{ padding: 20 }}
-        style={{ borderRadius: 20, boxShadow: '0 12px 32px rgba(0,0,0,0.06)' }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 6 }} ellipsis>
-              {renewal.document_title}
-            </Title>
-            <Text type="secondary">{renewal.author || 'Không rõ tác giả'}</Text>
+        cover={
+          <div style={{ height: 140, overflow: 'hidden', background: '#f5f5f5', borderBottom: '1px solid #f0f0f0', position: 'relative' }}>
+            {coverImage ? (
+              <img
+                src={coverImage}
+                alt={renewal.document_title}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 13 }}>
+                Ảnh
+              </div>
+            )}
+            {/* Status tag in top corner */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                display: 'inline-flex',
+                alignItems: 'center',
+                backgroundColor: tagBg,
+                border: `1px solid ${tagBorder}`,
+                color: tagColor,
+                borderRadius: '4px',
+                padding: '2px 8px',
+                fontSize: '11px',
+                fontWeight: 500,
+              }}
+            >
+              {tagIcon}
+              {tagText}
+            </div>
           </div>
-          <div>{renderStatusTag(renewal.status)}</div>
+        }
+        bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}
+        style={{
+          borderRadius: 8,
+          border: '1px solid #e8e8e8',
+          boxShadow: 'none',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: '#262626', marginBottom: 4, minHeight: 40, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {renewal.document_title}
+          </div>
+          <div style={{ fontSize: '12px', color: '#8c8c8c', marginBottom: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {author}
+          </div>
+          
+          <div style={{ fontSize: '11px', color: '#8c8c8c', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Ngày gửi:</span>
+              <span style={{ color: '#262626' }}>{formatDate(renewal.request_date)}</span>
+            </div>
+            {renewal.status !== 'pending' && renewal.reviewed_at && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Xử lý:</span>
+                <span style={{ color: '#262626' }}>{formatDate(renewal.reviewed_at)}</span>
+              </div>
+            )}
+          </div>
+
+          {renewal.reject_reason && (
+            <div style={{ marginTop: 8, fontSize: '11px', color: '#ff4d4f', background: '#fff2f0', padding: '4px 8px', borderRadius: 4, width: '100%' }}>
+              Lý do: {renewal.reject_reason}
+            </div>
+          )}
         </div>
-        <div style={{ marginTop: 18, display: 'grid', gap: 8 }}>
-          <Text>Ngày gửi: {renewal.request_date ? moment(renewal.request_date).format('DD/MM/YYYY HH:mm') : '-'}</Text>
-          <Text>
-            Hạn cũ: {renewal.old_due_date ? moment(renewal.old_due_date).format('DD/MM/YYYY') : '-'}
-            {' · '}
-            Hạn mới: {renewal.new_due_date ? moment(renewal.new_due_date).format('DD/MM/YYYY') : '-'}
-          </Text>
-          {renewal.reject_reason ? <Text type="danger">Lý do: {renewal.reject_reason}</Text> : null}
-        </div>
-        <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
-          <Button
-            type="default"
-            size="small"
-            disabled={renewal.status !== 'pending'}
-            onClick={() => openEditRenewal(renewal)}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Hủy yêu cầu gia hạn này?"
-            onConfirm={() => cancelRenewal(renewal.id)}
-            okText="Hủy"
-            cancelText="Không"
-          >
-            <Button danger size="small" disabled={renewal.status !== 'pending'}>
-              Hủy
+
+        {isPending && (
+          <div style={{ display: 'flex', gap: 12, marginTop: 12, borderTop: '1px solid #f0f0f0', paddingTop: 12 }}>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => openEditRenewal(renewal)}
+              style={{ padding: 0, fontSize: '12px', flex: 1, textAlign: 'center', color: '#1890ff' }}
+            >
+              Sửa
             </Button>
-          </Popconfirm>
-        </div>
+            <Popconfirm
+              title="Hủy yêu cầu gia hạn này?"
+              onConfirm={() => cancelRenewal(renewal.id)}
+              okText="Hủy"
+              cancelText="Không"
+            >
+              <Button
+                type="link"
+                size="small"
+                danger
+                style={{ padding: 0, fontSize: '12px', flex: 1, textAlign: 'center' }}
+              >
+                Hủy
+              </Button>
+            </Popconfirm>
+          </div>
+        )}
       </Card>
     );
   };
 
   return (
-    <PageContainer title="Gia hạn trực tuyến">
-      <div style={{ marginBottom: 16, color: '#666', fontSize: 14 }}>
+    <PageContainer header={{ title: '' }}>
+      <div style={{ marginBottom: 24, color: '#666', fontSize: 14 }}>
         Gửi yêu cầu gia hạn thời gian mượn sách
       </div>
-      <div style={{ display: 'grid', gap: 28 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 32, maxWidth: '100%' }}>
         <div>
-          <Title level={4}>Sách có thể gia hạn</Title>
-          <div style={{ display: 'grid', gap: 16 }}>
+          <Title level={4} style={{ marginBottom: 20 }}>Sách có thể gia hạn</Title>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
             {borrowItems.length > 0 ? borrowItems.map(renderBookCard) : (
-              <Empty description="Không có tài liệu để gia hạn" />
+              <div style={{ gridColumn: 'span 4' }}>
+                <Empty description="Không có tài liệu để gia hạn" />
+              </div>
             )}
           </div>
         </div>
 
         <div>
-          <Title level={4}>Lịch sử yêu cầu gia hạn</Title>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-            <Search
-              placeholder="Tìm theo tài liệu hoặc hạn"
-              allowClear
-              value={renewalSearch}
-              onChange={(e) => setRenewalSearch(e.target.value)}
-              style={{ width: 280 }}
-            />
-            <Select
-              value={renewalStatusFilter}
-              onChange={(value) => setRenewalStatusFilter(value)}
-              options={[
-                { label: 'Tất cả', value: 'all' },
-                { label: 'Chờ duyệt', value: 'pending' },
-                { label: 'Đã duyệt', value: 'approved' },
-                { label: 'Từ chối', value: 'rejected' },
-                { label: 'Đã hủy', value: 'cancelled' },
-              ]}
-              style={{ width: 180 }}
-            />
-          </div>
-          <div style={{ display: 'grid', gap: 12 }}>
+          <Title level={4} style={{ marginBottom: 20, marginTop: 12 }}>Lịch sử yêu cầu gia hạn</Title>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
             {filteredRenewals.length > 0 ? filteredRenewals.map(renderRenewalCard) : (
-              <Empty description="Chưa có yêu cầu gia hạn" />
+              <div style={{ gridColumn: 'span 4' }}>
+                <Empty description="Chưa có yêu cầu gia hạn" />
+              </div>
             )}
           </div>
         </div>

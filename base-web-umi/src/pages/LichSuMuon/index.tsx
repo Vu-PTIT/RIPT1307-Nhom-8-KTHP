@@ -1,227 +1,376 @@
 import React, { useEffect, useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
-import { Button, Card, Input, Modal, Popconfirm, Select, Space, Tag, Typography, message, Empty } from 'antd';
-import { getMyBorrows, getBorrowDetail, updateBorrowRecord, deleteBorrowRecord } from '@/services/MuonSach';
+import { Card, Typography, message } from 'antd';
+import moment from 'moment';
+import { getMyBorrows, getBorrowDetail, getMyRenewals } from '@/services/MuonSach';
+import { CalendarOutlined, InfoCircleOutlined } from '@ant-design/icons';
 
-const { Search } = Input;
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const LichSuMuonPage: React.FC = () => {
-  const [data, setData] = useState<any[]>([]);
+  const [borrows, setBorrows] = useState<any[]>([]);
+  const [renewals, setRenewals] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
-  const [editingRecord, setEditingRecord] = useState<any>(null);
-  const [editNote, setEditNote] = useState<string>('');
 
-  const fetchBorrows = async () => {
+  const toId = (value: any) => value?.toString?.() ?? value;
+
+  const fetchData = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         message.warning('Vui lòng đăng nhập để xem lịch sử mượn');
-        setData([]);
+        setBorrows([]);
+        setRenewals([]);
         return;
       }
 
-      const response = await getMyBorrows();
-      const records = response?.data || [];
-      const details = await Promise.all(
-        records.map(async (record: any) => {
+      const [borrowsRes, renewalsRes] = await Promise.all([getMyBorrows(), getMyRenewals()]);
+      const borrowRecords = Array.isArray(borrowsRes?.data) ? borrowsRes.data : borrowsRes?.data?.data || borrowsRes?.data || [];
+      const renewalRecords = Array.isArray(renewalsRes?.data) ? renewalsRes.data : renewalsRes?.data?.data || renewalsRes?.data || [];
+
+      const borrowDetails = await Promise.all(
+        borrowRecords.map(async (record: any) => {
           try {
-            const detailRes = await getBorrowDetail(record.id);
-            return { ...(detailRes?.data || record), note: record.notes ?? record.note ?? '' };
+            const recordId = record.id?.toString?.() ?? record.id;
+            const detailRes = await getBorrowDetail(recordId);
+            return detailRes?.data;
           } catch (e) {
             console.error('Failed to load borrow detail', e);
-            return { ...record, note: record.notes ?? record.note ?? '' };
+            return record;
           }
         }),
       );
-      setData(details);
+
+      setBorrows(borrowDetails.filter(Boolean));
+      setRenewals(Array.isArray(renewalRecords) ? renewalRecords : []);
     } catch (error) {
-      message.error('Không thể tải lịch sử mượn');
       console.error(error);
+      message.error('Không thể tải lịch sử mượn trả');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    void fetchBorrows();
+    void fetchData();
   }, []);
 
-  const filteredData = data.filter((record) => {
-    const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
-    const matchesSearch = record.items?.some((item: any) => item.document_title?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      record.items?.some((item: any) => item.copy_code?.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesStatus && (!searchTerm || matchesSearch);
-  });
-
-  const openEditModal = (record: any) => {
-    setEditingRecord(record);
-    setEditNote(record.note || '');
-    setEditModalVisible(true);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingRecord) return;
-    try {
-      const response = await updateBorrowRecord(editingRecord.id, { notes: editNote });
-      const updatedRecord = response?.data;
-      setData((prev) => prev.map((item) => item.id === editingRecord.id ? { ...item, note: updatedRecord?.notes ?? editNote } : item));
-      setEditModalVisible(false);
-      message.success('Đã lưu ghi chú');
-    } catch (error: any) {
-      console.error(error);
-      message.error(error?.response?.data?.detail || 'Cập nhật ghi chú thất bại');
+  const renewalCountMap = renewals.reduce<Record<string, number>>((acc, item: any) => {
+    const id = toId(item.borrow_record_item_id ?? item.id);
+    if (id) {
+      acc[id] = (acc[id] || 0) + 1;
     }
-  };
+    return acc;
+  }, {});
 
-  const handleDeleteRecord = async (id: string) => {
-    try {
-      await deleteBorrowRecord(id);
-      setData((prev) => prev.filter((item) => item.id !== id));
-      message.success('Đã xóa lịch sử mượn');
-    } catch (error: any) {
-      console.error(error);
-      message.error(error?.response?.data?.detail || 'Xóa lịch sử mượn thất bại');
-    }
-  };
+  const pendingRenewalItemIds = new Set(
+    renewals
+      .filter((item: any) => item.status === 'pending')
+      .map((item: any) => toId(item.borrow_record_item_id ?? item.id)),
+  );
 
-  const renderStatusTag = (status: string) => {
-    const lower = status?.toString().toLowerCase();
-    const statusMap: Record<string, { text: string; color: string }> = {
-      borrowed: { text: 'Đang mượn', color: 'geekblue' },
-      overdue: { text: 'Quá hạn', color: 'volcano' },
-      returned: { text: 'Đã trả', color: 'green' },
-    };
-    const item = statusMap[lower] || { text: status || 'Không xác định', color: 'default' };
-    return <Tag color={item.color}>{item.text}</Tag>;
-  };
+  const allBorrowItems = borrows.flatMap((record) =>
+    (record.items || []).map((item: any) => {
+      const itemId = toId(item.id);
+      const borrowRecordItemId = item.borrow_record_item_id ?? itemId;
+      return {
+        ...item,
+        id: itemId,
+        borrow_record_item_id: borrowRecordItemId,
+        borrow_record_id: record.id,
+        borrow_date: record.borrow_date,
+        due_date: record.due_date,
+        return_date: item.return_date,
+        status: item.status || record.status,
+        hasPendingRenewal: pendingRenewalItemIds.has(borrowRecordItemId),
+        renewalCount: renewalCountMap[borrowRecordItemId] || 0,
+      };
+    }),
+  );
 
-  const renderBorrowCard = (record: any) => (
-    <Card
-      key={record.id}
-      bodyStyle={{ padding: 22 }}
-      style={{ borderRadius: 20, boxShadow: '0 12px 32px rgba(0,0,0,0.06)' }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
-        <div>
-          <Title level={5} style={{ marginBottom: 6 }} ellipsis>
-            Phiếu mượn {record.id}
-          </Title>
-          <Text type="secondary">Ngày mượn: {record.borrow_date || '-'}</Text>
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          {renderStatusTag(record.status)}
-          <Tag color="default">{record.items?.length || 0} tài liệu</Tag>
-        </div>
-      </div>
-      <div style={{ marginTop: 18, display: 'grid', gap: 12 }}>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <Text strong>Hạn trả:</Text>
-          <Text>{record.due_date || '-'}</Text>
-        </div>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <Text strong>Ghi chú:</Text>
-          <Text>{record.note || '-'}</Text>
-        </div>
-      </div>
-      <div style={{ marginTop: 18, display: 'grid', gap: 12 }}>
-        {record.items?.map((item: any) => (
-          <Card
-            key={item.id || item.copy_code}
-            type="inner"
-            bodyStyle={{ padding: 16 }}
-            style={{ background: '#fafafa', borderRadius: 16 }}
-          >
-            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {item.cover_image ? (
-                <div style={{ width: 96, minWidth: 96, height: 136, borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', background: '#fff' }}>
-                  <img
-                    src={item.cover_image}
-                    alt={item.document_title || 'Bìa sách'}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  />
-                </div>
-              ) : (
-                <div style={{ width: 96, minWidth: 96, height: 136, borderRadius: 16, background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: 12, textAlign: 'center', padding: 8 }}>
-                  Không có ảnh
+  const currentBorrowedItems = allBorrowItems.filter((item) => item.return_date == null && item.status !== 'returned');
+  const returnedHistoryItems = allBorrowItems.filter((item) => item.return_date != null || item.status === 'returned');
+
+  const renderBorrowedBookCard = (item: any) => {
+    const borrowDate = item.borrow_date ? moment(item.borrow_date) : null;
+    const dueDate = item.due_date ? moment(item.due_date) : null;
+    const isOverdue = dueDate && dueDate.isBefore(moment(), 'day');
+    const overdueDays = isOverdue ? moment().diff(dueDate, 'days') : 0;
+    
+    const borrowLabel = borrowDate ? borrowDate.format('DD/MM/YYYY') : '-';
+    const dueLabel = dueDate ? dueDate.format('DD/MM/YYYY') : '-';
+
+    const isPending = item.hasPendingRenewal;
+    const isActuallyOverdue = isOverdue || item.status === 'overdue';
+    
+    const tagText = isActuallyOverdue ? 'Quá hạn' : 'Đang mượn';
+    const tagBg = isActuallyOverdue ? '#FFF1F0' : '#F6FFED';
+    const tagBorder = isActuallyOverdue ? '#FFA39E' : '#B7EB8F';
+    const tagColor = isActuallyOverdue ? '#CF1322' : '#389E0D';
+
+    return (
+      <Card
+        key={item.id}
+        cover={
+          <div style={{ height: 160, overflow: 'hidden', background: '#f5f5f5', borderBottom: '1px solid #f0f0f0', position: 'relative' }}>
+            {item.cover_image ? (
+              <img
+                src={item.cover_image}
+                alt={item.document_title || 'Bìa sách'}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 13 }}>
+                Chưa có ảnh
+              </div>
+            )}
+            {/* Status tag */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                display: 'inline-flex',
+                alignItems: 'center',
+                backgroundColor: tagBg,
+                border: `1px solid ${tagBorder}`,
+                color: tagColor,
+                borderRadius: '4px',
+                padding: '2px 8px',
+                fontSize: '11px',
+                fontWeight: 500,
+              }}
+            >
+              {tagText}
+            </div>
+          </div>
+        }
+        bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}
+        style={{
+          borderRadius: 8,
+          border: isActuallyOverdue ? '1px solid #FFA39E' : '1px solid #e8e8e8',
+          background: isActuallyOverdue ? '#FFFDFD' : '#fff',
+          boxShadow: 'none',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: '#262626', marginBottom: 4, minHeight: 44, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {item.document_title}
+          </div>
+          <div style={{ fontSize: '12px', color: '#8c8c8c', marginBottom: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {item.author || 'Tác giả không rõ'}
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '12px', color: '#8c8c8c', marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: '11px', color: '#8c8c8c', marginBottom: 2 }}>Ngày mượn</div>
+              <div style={{ fontSize: '13px', color: '#262626', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <CalendarOutlined style={{ color: '#8c8c8c' }} />
+                {borrowLabel}
+              </div>
+              {isActuallyOverdue && (
+                <div style={{ fontSize: '11px', color: '#ff4d4f', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <InfoCircleOutlined />
+                  Quá hạn {overdueDays} ngày
                 </div>
               )}
-              <div style={{ minWidth: 220, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>{item.document_title || 'Tài liệu không rõ'}</Text>
-                  <Text type="secondary" style={{ display: 'block' }}>Mã bản sao: {item.copy_code || '-'}</Text>
-                </div>
-                <div style={{ marginTop: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <Tag color="blue">{item.status || '-'}</Tag>
-                  <Text type="secondary">Ngày trả: {item.return_date || '-'}</Text>
-                </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '11px', color: '#8c8c8c', marginBottom: 2 }}>Hạn trả</div>
+              <div style={{ fontSize: '13px', color: isActuallyOverdue ? '#ff4d4f' : '#262626', display: 'flex', alignItems: 'center', gap: 6, fontWeight: isActuallyOverdue ? 600 : 400 }}>
+                <CalendarOutlined style={{ color: isActuallyOverdue ? '#ff4d4f' : '#8c8c8c' }} />
+                {dueLabel}
               </div>
             </div>
-          </Card>
-        ))}
-      </div>
-      <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
-        <Button size="small" onClick={() => openEditModal(record)}>
-          Sửa
-        </Button>
-        <Popconfirm
-          title="Bạn có chắc muốn xóa lịch sử này?"
-          onConfirm={() => handleDeleteRecord(record.id)}
-          okText="Xóa"
-          cancelText="Hủy"
-        >
-          <Button danger size="small" disabled={record.status !== 'returned'}>
-            Xóa
-          </Button>
-        </Popconfirm>
-      </div>
-    </Card>
+          </div>
+
+          {item.renewalCount > 0 && (
+            <div style={{ fontSize: '12px', color: '#8c8c8c', marginBottom: isPending ? 8 : 0 }}>
+              Đã gia hạn: {item.renewalCount} lần
+            </div>
+          )}
+        </div>
+
+        {isPending && (
+          <div
+            style={{
+              backgroundColor: '#FFFBE6',
+              border: '1px solid #FFE58F',
+              borderRadius: '4px',
+              padding: '6px 10px',
+              fontSize: '12px',
+              color: '#D48806',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              marginTop: 12,
+            }}
+          >
+            Yêu cầu gia hạn đang chờ duyệt
+          </div>
+        )}
+      </Card>
+    );
+  };
+
+  const renderReturnedBookCard = (item: any) => {
+    const borrowDate = item.borrow_date ? moment(item.borrow_date) : null;
+    const returnDate = item.return_date ? moment(item.return_date) : null;
+    const dueDate = item.due_date ? moment(item.due_date) : null;
+    
+    const borrowLabel = borrowDate ? borrowDate.format('DD/MM/YYYY') : '-';
+    const returnLabel = returnDate ? returnDate.format('DD/MM/YYYY') : '-';
+    const dueLabel = dueDate ? dueDate.format('DD/MM/YYYY') : '-';
+
+    return (
+      <Card
+        key={item.id}
+        cover={
+          <div style={{ height: 140, overflow: 'hidden', background: '#f5f5f5', borderBottom: '1px solid #f0f0f0', position: 'relative' }}>
+            {item.cover_image ? (
+              <img
+                src={item.cover_image}
+                alt={item.document_title || 'Bìa sách'}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 13 }}>
+                Ảnh
+              </div>
+            )}
+            {/* Status tag */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                display: 'inline-flex',
+                alignItems: 'center',
+                backgroundColor: '#F6FFED',
+                border: '1px solid #B7EB8F',
+                color: '#389E0D',
+                borderRadius: '4px',
+                padding: '2px 8px',
+                fontSize: '11px',
+                fontWeight: 500,
+              }}
+            >
+              Đã trả
+            </div>
+          </div>
+        }
+        bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}
+        style={{
+          borderRadius: 8,
+          border: '1px solid #e8e8e8',
+          boxShadow: 'none',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: '#262626', marginBottom: 4, minHeight: 40, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {item.document_title}
+          </div>
+          <div style={{ fontSize: '12px', color: '#8c8c8c', marginBottom: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {item.author || 'Tác giả không rõ'}
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '11px', color: '#8c8c8c' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Ngày mượn:</span>
+              <span style={{ color: '#262626' }}>{borrowLabel}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Hạn trả:</span>
+              <span style={{ color: '#262626' }}>{dueLabel}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Ngày trả:</span>
+              <span style={{ color: '#389E0D', fontWeight: 500 }}>{returnLabel}</span>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
+  const renderEmptyHistory = () => (
+    <div
+      style={{
+        gridColumn: 'span 4',
+        padding: '40px 24px',
+        background: '#fff',
+        border: '1px solid #e8e8e8',
+        borderRadius: '8px',
+        textAlign: 'center',
+        color: '#8c8c8c',
+        fontSize: '14px',
+      }}
+    >
+      Chưa có lịch sử mượn trả
+    </div>
+  );
+
+  const renderEmptyBorrowed = () => (
+    <div
+      style={{
+        gridColumn: 'span 4',
+        padding: '40px 24px',
+        background: '#fff',
+        border: '1px solid #e8e8e8',
+        borderRadius: '8px',
+        textAlign: 'center',
+        color: '#8c8c8c',
+        fontSize: '14px',
+      }}
+    >
+      Không có sách đang mượn
+    </div>
   );
 
   return (
-    <PageContainer title="Lịch sử mượn">
-      <Space style={{ marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
-        <Search
-          placeholder="Tìm tài liệu hoặc mã bản sao"
-          allowClear
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ width: 320 }}
-        />
-        <Select
-          value={statusFilter}
-          onChange={(value) => setStatusFilter(value)}
-          options={[
-            { label: 'Tất cả', value: 'all' },
-            { label: 'Đang mượn', value: 'borrowed' },
-            { label: 'Quá hạn', value: 'overdue' },
-            { label: 'Đã trả', value: 'returned' },
-          ]}
-          style={{ width: 180 }}
-        />
-      </Space>
-      <div style={{ display: 'grid', gap: 16 }}>
-        {filteredData.length > 0 ? filteredData.map(renderBorrowCard) : (
-          <Empty description="Không có lịch sử mượn" />
-        )}
+    <PageContainer header={{ title: '' }} loading={loading}>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: '20px', fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
+          Quản lý mượn trả
+        </div>
+        <div style={{ fontSize: '14px', color: '#666' }}>
+          Theo dõi trạng thái sách đang mượn và lịch sử mượn trả
+        </div>
       </div>
-      <Modal
-        title="Sửa ghi chú"
-        visible={editModalVisible}
-        onOk={handleSaveEdit}
-        onCancel={() => setEditModalVisible(false)}
-      >
-        <Input.TextArea
-          value={editNote}
-          onChange={(e) => setEditNote(e.target.value)}
-          rows={4}
-          placeholder="Nhập ghi chú cho phiếu mượn"
-        />
-      </Modal>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 32, maxWidth: '100%' }}>
+        {/* Books currently borrowed */}
+        <div>
+          <Title level={4} style={{ marginBottom: 20 }}>Sách đang mượn</Title>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+            {currentBorrowedItems.length > 0 ? (
+              currentBorrowedItems.map(renderBorrowedBookCard)
+            ) : (
+              renderEmptyBorrowed()
+            )}
+          </div>
+        </div>
+
+        {/* Borrow-return history */}
+        <div>
+          <Title level={4} style={{ marginBottom: 20, marginTop: 12 }}>Lịch sử mượn trả</Title>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+            {returnedHistoryItems.length > 0 ? (
+              returnedHistoryItems.map(renderReturnedBookCard)
+            ) : (
+              renderEmptyHistory()
+            )}
+          </div>
+        </div>
+      </div>
     </PageContainer>
   );
 };

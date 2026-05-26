@@ -66,19 +66,27 @@ const DiemDanhPage: React.FC = () => {
   const renderLogCard = (record: any) => (
     <Card
       key={record.id}
-      bodyStyle={{ padding: 18 }}
-      style={{ borderRadius: 20, boxShadow: '0 12px 32px rgba(0,0,0,0.06)' }}
+      bodyStyle={{ padding: 16 }}
+      style={{ borderRadius: 16, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
-        <div>
-          <Title level={5} style={{ marginBottom: 6 }} ellipsis>
-            {record.check_type === 'checkout' ? 'Check-out' : 'Check-in'}
-          </Title>
-          <Text type="secondary">Phương thức: {record.method || '-'}</Text>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
+          <div>
+            <Title level={5} style={{ marginBottom: 4, marginTop: 0 }}>
+              {record.check_type === 'checkout' ? 'Check-out' : 'Check-in'}
+            </Title>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Phương thức: {record.method || '-'}
+            </Text>
+          </div>
+          <div>
+            {renderCheckTag(record.check_type)}
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          {renderCheckTag(record.check_type)}
-          <Text type="secondary">{record.check_time || '-'}</Text>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid #f0f0f0' }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {record.check_time || '-'}
+          </Text>
         </div>
       </div>
     </Card>
@@ -98,9 +106,12 @@ const DiemDanhPage: React.FC = () => {
         </Space>
       }
     >
-      <div style={{ display: 'grid', gap: 16, marginTop: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, marginTop: 12 }}>
         {loading ? (
-          <Card style={{ borderRadius: 20, minHeight: 200 }} loading />
+          <>
+            <Card style={{ borderRadius: 20, minHeight: 120 }} loading />
+            <Card style={{ borderRadius: 20, minHeight: 120 }} loading />
+          </>
         ) : data.length > 0 ? (
           data.map(renderLogCard)
         ) : (

@@ -156,10 +156,12 @@ class RenewalRequestResponse(BaseModel):
     id: PyObjectId
     borrow_record_item_id: str
     document_title: str
+    author: Optional[str] = None
     old_due_date: date
     new_due_date: date
     status: str
     request_date: datetime
+    reviewed_at: Optional[datetime] = None
     reject_reason: Optional[str] = None
 
 # ====== Librarian Schemas ======

@@ -39,10 +39,12 @@ async def _build_renewal_response(renewal):
         id=renewal.id,
         borrow_record_item_id=str(item.id),
         document_title=doc.title,
+        author=doc.author,
         old_due_date=record.due_date,
         new_due_date=renewal.new_due_date,
         status=renewal.status,
         request_date=renewal.request_date,
+        reviewed_at=renewal.reviewed_at,
         reject_reason=renewal.reject_reason,
     )
 
@@ -125,10 +127,12 @@ async def list_pending_renewals(
             id=req.id,
             borrow_record_item_id=str(item.id),
             document_title=doc.title,
+            author=doc.author,
             old_due_date=record.due_date,
             new_due_date=req.new_due_date,
             status=req.status,
             request_date=req.request_date,
+            reviewed_at=req.reviewed_at,
             reject_reason=req.reject_reason
         ))
     return response
@@ -161,11 +165,14 @@ async def review_renewal(
         
         return borrow_schema.RenewalRequestResponse(
             id=renewal.id,
+            borrow_record_item_id=str(item.id),
             document_title=doc.title,
+            author=doc.author,
             old_due_date=record.due_date,
             new_due_date=renewal.new_due_date,
             status=renewal.status,
             request_date=renewal.request_date,
+            reviewed_at=renewal.reviewed_at,
             reject_reason=renewal.reject_reason
         )
     except ValueError as e:
