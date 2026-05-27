@@ -14,6 +14,7 @@ import type { IInitialState } from './services/base/typing';
 import './styles/global.less';
 import { getUserInfo } from './services/base/api';
 import { currentRole } from './utils/ip';
+import { Link } from 'umi';
 
 /**  loading */
 export const initialStateConfig = {
@@ -108,7 +109,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
 		onPageChange: () => {
 			const token = localStorage.getItem('token');
 			const { location } = history;
-			
+
 			// Redirect to login if not authenticated and trying to access a protected route
 			if (!token && !location.pathname.includes('/user/')) {
 				history.replace('/user/login');
@@ -131,20 +132,14 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
 			}
 		},
 
-		menuItemRender: (item: any, dom: any) => (
-			<a
-				className='not-underline'
-				key={item?.path}
-				href={item?.path}
-				onClick={(e) => {
-					e.preventDefault();
-					history.push(item?.path ?? '/');
-				}}
-				style={{ display: 'block' }}
-			>
-				{dom}
-			</a>
-		),
+		menuItemRender: (item: any, dom: any) => {
+			if (!item?.path) return dom;
+			return (
+				<Link className='not-underline' to={item.path} style={{ display: 'block' }}>
+					{dom}
+				</Link>
+			);
+		},
 
 		childrenRender: (dom) => (
 			<ErrorBoundary>

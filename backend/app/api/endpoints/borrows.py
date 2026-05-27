@@ -66,6 +66,29 @@ async def get_my_borrows(
         for record in records
     ]
 
+@router.post("/checkout", response_model=borrow_schema.BorrowRecordDetailResponse)
+async def checkout_cart(
+    current_user: User = Depends(deps.get_current_reader),
+) -> Any:
+    """Checkout current user's borrow cart and create a borrow record."""
+    try:
+        record = await borrow_crud.create_borrow_from_cart(engine, str(current_user.id))
+        return await _get_borrow_detail_logic(str(record.id))
+    except ValueError as e:
+        detail = e.args[0] if e.args else str(e)
+        raise HTTPException(status_code=400, detail=detail)
+
+
+@router.get("/count")
+async def get_current_borrow_count(
+    current_user: User = Depends(deps.get_current_reader),
+) -> Any:
+    """Return the number of currently borrowed (not returned) items for the current user."""
+    from app.crud.borrow import count_current_borrowed
+    count = await count_current_borrowed(engine, str(current_user.id))
+    return {"current_borrowed": count}
+
+
 @router.get("/{id}", response_model=borrow_schema.BorrowRecordDetailResponse)
 async def get_borrow_detail(
     id: str,
@@ -83,18 +106,6 @@ async def get_borrow_detail(
     return await _get_borrow_detail_logic(id)
 
 
-@router.post("/checkout", response_model=borrow_schema.BorrowRecordDetailResponse)
-async def checkout_cart(
-    current_user: User = Depends(deps.get_current_reader),
-) -> Any:
-    """Checkout current user's borrow cart and create a borrow record."""
-    try:
-        record = await borrow_crud.create_borrow_from_cart(engine, str(current_user.id))
-        return await _get_borrow_detail_logic(str(record.id))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
 # ===================== LIBRARIAN ENDPOINTS =====================
 
 @router.post("/librarian", response_model=borrow_schema.BorrowRecordDetailResponse)
@@ -110,7 +121,8 @@ async def create_borrow_librarian(
         )
         return await _get_borrow_detail_logic(str(record.id))
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        detail = e.args[0] if e.args else str(e)
+        raise HTTPException(status_code=400, detail=detail)
 
 
 @router.get("/librarian/all", response_model=List[borrow_schema.BorrowRecordListItem])

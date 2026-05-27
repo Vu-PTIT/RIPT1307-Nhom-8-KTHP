@@ -11,6 +11,46 @@ from app.crud import document as document_crud
 
 router = APIRouter()
 
+
+def _get_value(item: Any, key: str, default: Any = None) -> Any:
+    if isinstance(item, dict):
+        return item.get(key, default)
+    return getattr(item, key, default)
+
+
+def _extract_reference_id(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        return value.get("$id") or value.get("id") or value.get("_id")
+    return getattr(value, "id", value)
+
+
+async def _build_document_summaries(docs: list[Any]) -> list[document_schema.DocumentSummary]:
+    from app.models.document import Category
+
+    items = []
+    for doc in docs:
+        category_ref = _get_value(doc, "category")
+        category_id = _extract_reference_id(category_ref)
+        category = None
+        if category_id:
+            category = await engine.find_one(Category, Category.id == category_id)
+
+        items.append(
+            document_schema.DocumentSummary(
+                id=_get_value(doc, "_id", _get_value(doc, "id")),
+                title=_get_value(doc, "title"),
+                author=_get_value(doc, "author"),
+                isbn=_get_value(doc, "isbn"),
+                cover_image=_get_value(doc, "cover_image"),
+                available_copies=_get_value(doc, "available_copies", 0),
+                category_name=category.name if category else "Unknown",
+            )
+        )
+
+    return items
+
 @router.get("", response_model=document_schema.DocumentSearchResponse)
 async def search_documents(
     keyword: Optional[str] = None,
@@ -24,23 +64,9 @@ async def search_documents(
     docs, total = await document_crud.search_documents(
         engine, keyword=keyword, category_id=category_id, page=page, page_size=page_size
     )
-    
-    # Map to summary schema
-    items = []
-    from app.models.document import Category
-    for doc in docs:
-        # Need to fetch category for name if not loaded
-        category = await engine.find_one(Category, Category.id == doc.category.id)
-        items.append(document_schema.DocumentSummary(
-            id=doc.id,
-            title=doc.title,
-            author=doc.author,
-            isbn=doc.isbn,
-            cover_image=doc.cover_image,
-            available_copies=doc.available_copies,
-            category_name=category.name if category else "Unknown"
-        ))
-        
+
+    items = await _build_document_summaries(docs)
+
     return {
         "items": items,
         "total": total,
@@ -61,22 +87,9 @@ async def search_documents_path(
     docs, total = await document_crud.search_documents(
         engine, keyword=keyword, category_id=category_id, page=page, page_size=page_size
     )
-    
-    # Map to summary schema
-    items = []
-    from app.models.document import Category
-    for doc in docs:
-        category = await engine.find_one(Category, Category.id == doc.category.id)
-        items.append(document_schema.DocumentSummary(
-            id=doc.id,
-            title=doc.title,
-            author=doc.author,
-            isbn=doc.isbn,
-            cover_image=doc.cover_image,
-            available_copies=doc.available_copies,
-            category_name=category.name if category else "Unknown"
-        ))
-        
+
+    items = await _build_document_summaries(docs)
+
     return {
         "items": items,
         "total": total,

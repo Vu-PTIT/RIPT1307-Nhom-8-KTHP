@@ -52,8 +52,7 @@ async def search_documents(
         total = await collection.count_documents(mongo_query)
         cursor = collection.find(mongo_query).skip((page - 1) * page_size).limit(page_size)
         docs_raw = await cursor.to_list(length=page_size)
-        docs = [engine.database_to_model(Document, doc) for doc in docs_raw]
-        return docs, total
+        return docs_raw, total
     else:
         total = await engine.count(Document, *filters)
         docs = await engine.find(

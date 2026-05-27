@@ -117,7 +117,15 @@ async def create_borrow_from_cart(
         current_borrowed += len(rec_items_raw)
 
     if current_borrowed + len(cart_raw) > max_books:
-        raise ValueError(f"Exceeds borrow limit. Currently borrowing {current_borrowed}, limit is {max_books}")
+        raise ValueError(
+            {
+                "code": "borrow_limit_exceeded",
+                "message": f"Bạn đang mượn {current_borrowed} cuốn, giới hạn là {max_books}.",
+                "current_borrowed": current_borrowed,
+                "cart_size": len(cart_raw),
+                "max_books": max_books,
+            }
+        )
 
     # Find available copies for each cart item
     copies = []
@@ -174,6 +182,20 @@ async def get_my_borrow_records(engine: AIOEngine, user_id: str, status: Optiona
         if record:
             records.append(record)
     return records
+
+
+async def count_current_borrowed(engine: AIOEngine, user_id: str) -> int:
+    """Count active (not returned) borrowed items for a user."""
+    borrow_collection = engine.get_collection(BorrowRecord)
+    item_collection = engine.get_collection(BorrowRecordItem)
+
+    # Find active borrow records for reader
+    active_raw = await borrow_collection.find({"reader": ObjectId(user_id), "status": "borrowed"}).to_list(length=None)
+    total = 0
+    for rec in active_raw:
+        cnt = await item_collection.count_documents({"borrow_record": rec["_id"], "return_date": None})
+        total += cnt
+    return total
 
 async def get_borrow_record_detail(engine: AIOEngine, record_id: str, user_id: str) -> Optional[BorrowRecord]:
     return await engine.find_one(BorrowRecord, (BorrowRecord.id == ObjectId(record_id)) & (BorrowRecord.reader == ObjectId(user_id)))
@@ -274,7 +296,13 @@ async def create_borrow_record(
 
     if current_borrowed + len(copy_codes) > max_books:
         raise ValueError(
-            f"Exceeds borrow limit. Currently borrowing {current_borrowed}, limit is {max_books}"
+            {
+                "code": "borrow_limit_exceeded",
+                "message": f"Bạn đang mượn {current_borrowed} cuốn, giới hạn là {max_books}.",
+                "current_borrowed": current_borrowed,
+                "cart_size": len(copy_codes),
+                "max_books": max_books,
+            }
         )
 
     # Validate all copies
