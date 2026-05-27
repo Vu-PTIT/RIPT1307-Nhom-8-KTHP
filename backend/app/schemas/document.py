@@ -82,7 +82,9 @@ class DocumentSummary(BaseModel):
     title: str
     author: str
     isbn: Optional[str] = None
+    description: Optional[str] = None
     cover_image: Optional[str] = None
+    total_copies: int = 0
     available_copies: int
     category_name: str
 

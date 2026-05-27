@@ -43,7 +43,9 @@ async def _build_document_summaries(docs: list[Any]) -> list[document_schema.Doc
                 title=_get_value(doc, "title"),
                 author=_get_value(doc, "author"),
                 isbn=_get_value(doc, "isbn"),
+                description=_get_value(doc, "description"),
                 cover_image=_get_value(doc, "cover_image"),
+                total_copies=_get_value(doc, "total_copies", 0),
                 available_copies=_get_value(doc, "available_copies", 0),
                 category_name=category.name if category else "Unknown",
             )
@@ -126,7 +128,8 @@ async def create_document(
         category = await engine.find_one(Category, Category.id == doc.category.id)
         return document_schema.DocumentSummary(
             id=doc.id, title=doc.title, author=doc.author, isbn=doc.isbn,
-            cover_image=doc.cover_image, available_copies=doc.available_copies,
+            description=doc.description, cover_image=doc.cover_image,
+            total_copies=doc.total_copies, available_copies=doc.available_copies,
             category_name=category.name if category else "Unknown"
         )
     except ValueError as e:
@@ -146,7 +149,8 @@ async def update_document(
         category = await engine.find_one(Category, Category.id == doc.category.id)
         return document_schema.DocumentSummary(
             id=doc.id, title=doc.title, author=doc.author, isbn=doc.isbn,
-            cover_image=doc.cover_image, available_copies=doc.available_copies,
+            description=doc.description, cover_image=doc.cover_image,
+            total_copies=doc.total_copies, available_copies=doc.available_copies,
             category_name=category.name if category else "Unknown"
         )
     except ValueError as e:

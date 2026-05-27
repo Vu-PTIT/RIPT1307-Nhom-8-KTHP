@@ -65,7 +65,7 @@ export default function WishlistPage() {
 							<Col xs={24} sm={12} md={6} lg={6} key={it.id}>
 								<DocumentCard
 									item={it}
-									onDetail={(id) => history.push(`/tai-lieu/${id}`)}
+									onDetail={() => history.push(`/tai-lieu/${it.document_id}`)}
 									onWishlist={() => {}}
 									onCart={() => handleMoveToCart(it)}
 									accent={true}

@@ -29,17 +29,21 @@ async def create_checkin_log(
     return db_obj
 
 async def get_my_checkin_logs(
-    engine: AIOEngine, 
-    user_id: str, 
-    page: int = 1, 
+    engine: AIOEngine,
+    user_id: str,
+    page: int = 1,
     page_size: int = 20
 ) -> Tuple[List[CheckinLog], int]:
-    collection = engine.get_collection(CheckinLog)
-    query = {"user": ObjectId(user_id)}
-    total = await collection.count_documents(query)
-    raw = await collection.find(query).sort("check_time", -1).skip((page - 1) * page_size).limit(page_size).to_list(length=page_size)
-    logs = [engine.database_to_model(CheckinLog, doc) for doc in raw]
-    return logs, total
+    skip = (page - 1) * page_size
+    all_logs = await engine.find(
+        CheckinLog,
+        CheckinLog.user.id == ObjectId(user_id),
+        sort=CheckinLog.check_time.desc(),
+        skip=skip,
+        limit=page_size,
+    )
+    total = await engine.count(CheckinLog, CheckinLog.user.id == ObjectId(user_id))
+    return list(all_logs), total
 
 
 # ===================== LIBRARIAN OPERATIONS =====================
@@ -52,17 +56,33 @@ async def get_all_checkin_logs(
     page_size: int = 50,
 ) -> Tuple[List[CheckinLog], int]:
     """Get all check-in logs for monitoring."""
-    collection = engine.get_collection(CheckinLog)
-    query = {}
+    conditions = []
     if user_id:
-        query["user"] = ObjectId(user_id)
+        conditions.append(CheckinLog.user.id == ObjectId(user_id))
     if check_type:
-        query["check_type"] = check_type
-    
-    total = await collection.count_documents(query)
-    raw = await collection.find(query).sort("check_time", -1).skip((page - 1) * page_size).limit(page_size).to_list(length=page_size)
-    logs = [engine.database_to_model(CheckinLog, doc) for doc in raw]
-    return logs, total
+        conditions.append(CheckinLog.check_type == check_type)
+
+    skip = (page - 1) * page_size
+    if conditions:
+        from odmantic import query as Q
+        filter_expr = conditions[0]
+        for c in conditions[1:]:
+            filter_expr = filter_expr & c
+        logs = await engine.find(
+            CheckinLog, filter_expr,
+            sort=CheckinLog.check_time.desc(),
+            skip=skip, limit=page_size,
+        )
+        total = await engine.count(CheckinLog, filter_expr)
+    else:
+        logs = await engine.find(
+            CheckinLog,
+            sort=CheckinLog.check_time.desc(),
+            skip=skip, limit=page_size,
+        )
+        total = await engine.count(CheckinLog)
+
+    return list(logs), total
 
 
 async def manual_checkin(

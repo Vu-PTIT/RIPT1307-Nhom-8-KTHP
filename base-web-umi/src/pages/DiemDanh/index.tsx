@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button, List, message, Empty } from 'antd';
+import { Card, Button, List, message, Empty, Tag } from 'antd';
 import PageSkeleton from '@/components/PageSkeleton';
 import * as MuonSach from '@/services/MuonSach';
 
 export default function CheckinPage() {
-	const [history, setHistory] = useState<any[]>([]);
+	const [logs, setLogs] = useState<any[]>([]);
 	const [loading, setLoading] = useState(false);
 
 	const load = async () => {
 		setLoading(true);
 		try {
 			const res = await MuonSach.getCheckinHistory({ page: 1, page_size: 20 });
-			setHistory(res.data?.items || res.data || []);
+			setLogs(res.data?.items || res.data || []);
 		} catch (e) {
 			message.error('Không tải được lịch sử Check-in');
 		} finally {
@@ -40,23 +40,31 @@ export default function CheckinPage() {
 		<PageSkeleton title='Check-in / Check-out'>
 			<Card>
 				<div style={{ marginBottom: 12 }}>
-					<Button type='primary' onClick={() => doCheck('in')} style={{ marginRight: 8 }}>
+					<Button type='primary' onClick={() => doCheck('in')} style={{ marginRight: 8 }} loading={loading}>
 						Check-in
 					</Button>
-					<Button onClick={() => doCheck('out')}>Check-out</Button>
+					<Button onClick={() => doCheck('out')} loading={loading}>Check-out</Button>
 				</div>
 
-				{history.length === 0 ? (
+				{logs.length === 0 ? (
 					<Empty description='Chưa có lịch sử' />
 				) : (
 					<List
 						loading={loading}
-						dataSource={history}
+						dataSource={logs}
 						renderItem={(it: any) => (
 							<List.Item>
 								<List.Item.Meta
-									title={it.action || it.check_type}
-									description={it.created_at || it.time || JSON.stringify(it)}
+									title={
+										<Tag color={it.check_type === 'in' ? 'green' : 'volcano'}>
+											{it.check_type === 'in' ? '🟢 Check-in' : '🔴 Check-out'}
+										</Tag>
+									}
+									description={
+										it.check_time
+											? new Date(it.check_time).toLocaleString('vi-VN')
+											: 'Không rõ thời gian'
+									}
 								/>
 							</List.Item>
 						)}

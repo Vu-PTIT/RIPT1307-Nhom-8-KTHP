@@ -48,7 +48,7 @@ async def _get_borrow_detail_logic(record_id: str):
         status=record.status, items=item_summaries
     )
 
-@router.get("", response_model=List[borrow_schema.BorrowRecordSummary])
+@router.get("", response_model=List[borrow_schema.BorrowRecordSummaryResponse])
 async def get_my_borrows(
     status: Optional[str] = None,
     current_user: User = Depends(deps.get_current_reader)
@@ -56,7 +56,7 @@ async def get_my_borrows(
     """Get current user's borrow records."""
     records = await borrow_crud.get_my_borrow_records(engine, str(current_user.id), status=status)
     return [
-        borrow_schema.BorrowRecordSummary(
+        borrow_schema.BorrowRecordSummaryResponse(
             id=record.id,
             borrow_date=_as_date(record.borrow_date),
             due_date=_as_date(record.due_date),
