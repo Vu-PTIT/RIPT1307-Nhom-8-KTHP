@@ -57,6 +57,11 @@ export async function getMyRenewals() {
 	return axios.get(`${ipLibrary}/renewals`, { silent: true });
 }
 
+// Borrow counts
+export async function getCurrentBorrowCount() {
+	return axios.get(`${ipLibrary}/borrows/count`, { silent: true });
+}
+
 // Checkout cart (create borrow record from current user's cart)
 export async function checkoutCart() {
 	return axios.post(`${ipLibrary}/borrows/checkout`);

@@ -13,7 +13,7 @@ const staticMap: Record<string, string> = {
 	'Kinh tế học hài hước': '/covers/sieukinhte-haihuoc.jpg',
 	'Lập trình Python cơ bản': '/covers/python-for-beginners.jpg',
 	'Số đồ': '/covers/so-do.jpg',
-	'Lịch sử hội họa thế giới': '/covers/s-l960.webp',
+	'Lịch sử hội họa thế giới': '/covers/lich-su-hoi-hoa.jpg',
 	'The Pragmatic Programmer': '/covers/pragmatic-programmer.jpg',
 };
 

@@ -26,6 +26,7 @@ class WishlistResponse(BaseModel):
     document_title: str
     author: str
     cover_image: Optional[str] = None
+    available_copies: int = 0
     added_at: datetime
 
 # BorrowCartItem Schemas
@@ -50,6 +51,7 @@ class BorrowCartItemResponse(BaseModel):
     document_title: str
     author: str
     cover_image: Optional[str] = None
+    available_copies: int = 0
     added_at: datetime
 
 # BorrowRecord Schemas

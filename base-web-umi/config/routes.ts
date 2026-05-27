@@ -25,7 +25,7 @@ export default [
 	// === MEMBER PAGES ===
 	{
 		path: '/tai-lieu',
-		name: 'Tài liệu',
+		name: 'Tra cứu sách',
 		icon: 'BookOutlined',
 		component: './TaiLieu',
 		access: 'isMember',

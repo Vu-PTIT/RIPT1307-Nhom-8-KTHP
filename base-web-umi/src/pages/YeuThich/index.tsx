@@ -55,14 +55,14 @@ export default function WishlistPage() {
 
 	return (
 		<PageSkeleton title='Danh sách yêu thích'>
-			<Card>
+			<Card style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
 				{error ? <Alert type='error' message={error} style={{ marginBottom: 12 }} /> : null}
 				{items.length === 0 ? (
 					<Empty description='Danh sách trống' />
 				) : (
-					<Row gutter={[16, 16]}>
+					<Row gutter={[24, 24]}>
 						{items.map((it: any) => (
-							<Col xs={24} key={it.id}>
+							<Col xs={24} sm={12} md={6} lg={6} key={it.id}>
 								<DocumentCard
 									item={it}
 									onDetail={(id) => history.push(`/tai-lieu/${id}`)}

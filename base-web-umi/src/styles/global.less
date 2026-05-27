@@ -401,6 +401,65 @@ canvas {
 	}
 }
 
+/* Bigger pagination buttons for better touch/click targets */
+.ant-pagination {
+	.ant-pagination-item,
+	.ant-pagination-prev,
+	.ant-pagination-next,
+	.ant-pagination-jump-prev,
+	.ant-pagination-jump-next {
+		min-width: 56px !important;
+		height: 56px !important;
+		margin: 0 4px !important;
+		font-size: 16px !important;
+		line-height: 56px !important;
+		border-radius: 10px !important;
+	}
+
+	.ant-pagination-item a,
+	.ant-pagination-item-link {
+		display: inline-flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		height: 100% !important;
+		padding: 0 16px !important;
+		font-size: 16px !important;
+	}
+
+	.ant-pagination-prev,
+	.ant-pagination-next {
+		min-width: 56px;
+	}
+
+	.ant-pagination-item-active {
+		background-color: var(--primary-color) !important;
+		border-color: var(--primary-color) !important;
+	}
+
+	.ant-pagination-item-active a {
+		color: #fff !important;
+	}
+
+	@media (max-width: 480px) {
+		.ant-pagination {
+			.ant-pagination-item,
+			.ant-pagination-prev,
+			.ant-pagination-next {
+				min-width: 48px !important;
+				height: 48px !important;
+				font-size: 15px !important;
+				line-height: 48px !important;
+			}
+		}
+	}
+}
+
+/* Extra high-specificity fallback in case antd styles override earlier */
+.ant-pagination,
+.ant-pagination * {
+	box-sizing: border-box !important;
+}
+
 // Card Statistics Small
 .card-stat-small {
 	&.pointer {

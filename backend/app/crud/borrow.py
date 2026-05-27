@@ -1,45 +1,47 @@
 from __future__ import annotations
 from datetime import datetime, date, timedelta
-from typing import Optional, List, Tuple
+from typing import Optional, List, Any
 from odmantic import AIOEngine, ObjectId
 from app.models.borrow import Wishlist, BorrowCartItem, BorrowRecord, BorrowRecordItem, RenewalRequest
 from app.models.document import Document, DocumentCopy
 from app.models.user import User
 
-
-def _resolve_reference_id(ref):
-    return ref.id if hasattr(ref, "id") else ref
-
 # Wishlist
-async def get_wishlists(engine: AIOEngine, user_id: str) -> List[Wishlist]:
-    return await engine.find(Wishlist, Wishlist.user == ObjectId(user_id))
+async def get_wishlists(engine: AIOEngine, user_id: str) -> List[dict[str, Any]]:
+    collection = engine.get_collection(Wishlist)
+    return await collection.find({"user": ObjectId(user_id)}).to_list(length=None)
 
-async def add_to_wishlist(engine: AIOEngine, user_id: str, doc_id: str) -> Wishlist:
+async def add_to_wishlist(engine: AIOEngine, user_id: str, doc_id: str) -> dict[str, Any]:
     user = await engine.find_one(User, User.id == ObjectId(user_id))
     doc = await engine.find_one(Document, Document.id == ObjectId(doc_id))
     if not user or not doc:
         raise ValueError("User or Document not found")
     
-    existing = await engine.find_one(Wishlist, (Wishlist.user == user.id) & (Wishlist.document == doc.id))
-    if existing:
-        return existing
+    collection = engine.get_collection(Wishlist)
+    existing_raw = await collection.find_one({"user": ObjectId(user_id), "document": ObjectId(doc_id)})
+    if existing_raw:
+        return existing_raw
         
     db_obj = Wishlist(user=user, document=doc)
     await engine.save(db_obj)
-    return db_obj
+    return {
+        "_id": db_obj.id,
+        "user": ObjectId(user_id),
+        "document": ObjectId(doc_id),
+        "added_at": db_obj.added_at,
+    }
 
 async def remove_from_wishlist(engine: AIOEngine, wishlist_id: str, user_id: str) -> bool:
-    obj = await engine.find_one(Wishlist, (Wishlist.id == ObjectId(wishlist_id)) & (Wishlist.user == ObjectId(user_id)))
-    if obj:
-        await engine.delete(obj)
-        return True
-    return False
+    collection = engine.get_collection(Wishlist)
+    result = await collection.delete_one({"_id": ObjectId(wishlist_id), "user": ObjectId(user_id)})
+    return result.deleted_count > 0
 
 # Borrow Cart
-async def get_cart_items(engine: AIOEngine, user_id: str) -> List[BorrowCartItem]:
-    return await engine.find(BorrowCartItem, BorrowCartItem.user == ObjectId(user_id))
+async def get_cart_items(engine: AIOEngine, user_id: str) -> List[dict[str, Any]]:
+    collection = engine.get_collection(BorrowCartItem)
+    return await collection.find({"user": ObjectId(user_id)}).to_list(length=None)
 
-async def add_to_cart(engine: AIOEngine, user_id: str, doc_id: str) -> BorrowCartItem:
+async def add_to_cart(engine: AIOEngine, user_id: str, doc_id: str) -> dict[str, Any]:
     user = await engine.find_one(User, User.id == ObjectId(user_id))
     doc = await engine.find_one(Document, Document.id == ObjectId(doc_id))
     if not user or not doc:
@@ -49,58 +51,164 @@ async def add_to_cart(engine: AIOEngine, user_id: str, doc_id: str) -> BorrowCar
     if doc.available_copies <= 0:
         raise ValueError("No available copies for this document")
         
-    existing = await engine.find_one(BorrowCartItem, (BorrowCartItem.user == user.id) & (BorrowCartItem.document == doc.id))
-    if existing:
-        return existing
+    collection = engine.get_collection(BorrowCartItem)
+    existing_raw = await collection.find_one({"user": ObjectId(user_id), "document": ObjectId(doc_id)})
+    if existing_raw:
+        return existing_raw
         
     db_obj = BorrowCartItem(user=user, document=doc)
     await engine.save(db_obj)
-    return db_obj
+    return {
+        "_id": db_obj.id,
+        "user": ObjectId(user_id),
+        "document": ObjectId(doc_id),
+        "added_at": db_obj.added_at,
+    }
 
 async def remove_from_cart(engine: AIOEngine, cart_item_id: str, user_id: str) -> bool:
-    obj = await engine.find_one(BorrowCartItem, (BorrowCartItem.id == ObjectId(cart_item_id)) & (BorrowCartItem.user == ObjectId(user_id)))
-    if obj:
-        await engine.delete(obj)
-        return True
-    return False
+    collection = engine.get_collection(BorrowCartItem)
+    result = await collection.delete_one({"_id": ObjectId(cart_item_id), "user": ObjectId(user_id)})
+    return result.deleted_count > 0
 
 async def clear_cart(engine: AIOEngine, user_id: str):
-    items = await engine.find(BorrowCartItem, BorrowCartItem.user == ObjectId(user_id))
-    for item in items:
-        await engine.delete(item)
+    collection = engine.get_collection(BorrowCartItem)
+    await collection.delete_many({"user": ObjectId(user_id)})
+
+
+async def create_borrow_from_cart(
+    engine: AIOEngine,
+    user_id: str,
+) -> BorrowRecord:
+    """Create a borrow record using all items currently in the user's cart.
+
+    - Selects one available copy per document in the cart.
+    - Honors user limits (default or per-user override).
+    - Clears the cart on success.
+    """
+    # Load user and cart items
+    reader = await engine.find_one(User, User.id == ObjectId(user_id))
+    if not reader:
+        raise ValueError("Reader not found")
+
+    # Get cart items using motor
+    cart_collection = engine.get_collection(BorrowCartItem)
+    cart_raw = await cart_collection.find({"user": ObjectId(user_id)}).to_list(length=None)
+    if not cart_raw:
+        raise ValueError("Borrow cart is empty")
+
+    # Get limits
+    from app.crud.setting import get_setting
+    max_books_setting = await get_setting(engine, "default_max_books")
+    max_days_setting = await get_setting(engine, "default_max_days")
+    max_books = int(max_books_setting.setting_value) if max_books_setting else 5
+    max_days = int(max_days_setting.setting_value) if max_days_setting else 14
+    if reader.max_books_allowed is not None:
+        max_books = reader.max_books_allowed
+    if reader.max_days_allowed is not None:
+        max_days = reader.max_days_allowed
+
+    # Count current active borrowed items using motor
+    borrow_collection = engine.get_collection(BorrowRecord)
+    active_raw = await borrow_collection.find({"reader": ObjectId(user_id), "status": "borrowed"}).to_list(length=None)
+    current_borrowed = 0
+    item_collection = engine.get_collection(BorrowRecordItem)
+    for rec in active_raw:
+        rec_items_raw = await item_collection.find({"borrow_record": rec["_id"], "return_date": None}).to_list(length=None)
+        current_borrowed += len(rec_items_raw)
+
+    if current_borrowed + len(cart_raw) > max_books:
+        raise ValueError(
+            {
+                "code": "borrow_limit_exceeded",
+                "message": f"Bạn đang mượn {current_borrowed} cuốn, giới hạn là {max_books}.",
+                "current_borrowed": current_borrowed,
+                "cart_size": len(cart_raw),
+                "max_books": max_books,
+            }
+        )
+
+    # Find available copies for each cart item
+    copies = []
+    for cart_item in cart_raw:
+        doc = await engine.find_one(Document, Document.id == cart_item["document"])
+        if not doc:
+            raise ValueError("Document not found in cart")
+        copy_collection = engine.get_collection(DocumentCopy)
+        copy_raw = await copy_collection.find_one({"document": ObjectId(doc.id), "status": "available"})
+        if not copy_raw:
+            raise ValueError(f"No available copies for document '{doc.title}'")
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_raw["_id"])
+        if not copy:
+            raise ValueError(f"Unable to load copy for document '{doc.title}'")
+        copies.append(copy)
+
+    # Create borrow record; for self-checkout we set librarian = reader
+    record = BorrowRecord(
+        reader=reader,
+        librarian=reader,
+        borrow_date=datetime.utcnow(),
+        due_date=datetime.utcnow() + timedelta(days=max_days),
+        status="borrowed",
+    )
+    await engine.save(record)
+
+    # Create items and update copy/document counts
+    for copy in copies:
+        item = BorrowRecordItem(borrow_record=record, document_copy=copy)
+        await engine.save(item)
+        copy.status = "borrowed"
+        await engine.save(copy)
+
+        doc = await engine.find_one(Document, Document.id == copy.document.id)
+        if doc:
+            doc.available_copies = max(0, doc.available_copies - 1)
+            await engine.save(doc)
+
+    # Clear cart
+    await cart_collection.delete_many({"user": ObjectId(user_id)})
+
+    return record
 
 # Borrow Records
 async def get_my_borrow_records(engine: AIOEngine, user_id: str, status: Optional[str] = None) -> List[BorrowRecord]:
-    filters = [BorrowRecord.reader == ObjectId(user_id)]
+    collection = engine.get_collection(BorrowRecord)
+    query = {"reader": ObjectId(user_id)}
     if status:
-        filters.append(BorrowRecord.status == status)
-    return await engine.find(BorrowRecord, *filters, sort=BorrowRecord.borrow_date.desc())
+        query["status"] = status
+    raw = await collection.find(query).sort("borrow_date", -1).to_list(length=None)
+    records: List[BorrowRecord] = []
+    for doc in raw:
+        record = await engine.find_one(BorrowRecord, BorrowRecord.id == doc["_id"])
+        if record:
+            records.append(record)
+    return records
+
+
+async def count_current_borrowed(engine: AIOEngine, user_id: str) -> int:
+    """Count active (not returned) borrowed items for a user."""
+    borrow_collection = engine.get_collection(BorrowRecord)
+    item_collection = engine.get_collection(BorrowRecordItem)
+
+    # Find active borrow records for reader
+    active_raw = await borrow_collection.find({"reader": ObjectId(user_id), "status": "borrowed"}).to_list(length=None)
+    total = 0
+    for rec in active_raw:
+        cnt = await item_collection.count_documents({"borrow_record": rec["_id"], "return_date": None})
+        total += cnt
+    return total
 
 async def get_borrow_record_detail(engine: AIOEngine, record_id: str, user_id: str) -> Optional[BorrowRecord]:
     return await engine.find_one(BorrowRecord, (BorrowRecord.id == ObjectId(record_id)) & (BorrowRecord.reader == ObjectId(user_id)))
 
 async def get_record_items(engine: AIOEngine, record_id: str) -> List[BorrowRecordItem]:
-    return await engine.find(BorrowRecordItem, BorrowRecordItem.borrow_record == ObjectId(record_id))
-
-async def update_borrow_record_notes(engine: AIOEngine, record_id: str, user_id: str, notes: Optional[str]) -> BorrowRecord:
-    record = await engine.find_one(BorrowRecord, (BorrowRecord.id == ObjectId(record_id)) & (BorrowRecord.reader == ObjectId(user_id)))
-    if not record:
-        raise ValueError("Borrow record not found or access denied")
-    record.notes = notes
-    await engine.save(record)
-    return record
-
-async def delete_borrow_record(engine: AIOEngine, record_id: str, user_id: str) -> bool:
-    record = await engine.find_one(BorrowRecord, (BorrowRecord.id == ObjectId(record_id)) & (BorrowRecord.reader == ObjectId(user_id)))
-    if not record:
-        raise ValueError("Borrow record not found or access denied")
-    if record.status != "returned":
-        raise ValueError("Chỉ có thể xóa lịch sử khi tất cả sách đã được trả")
-    items = await engine.find(BorrowRecordItem, BorrowRecordItem.borrow_record == record.id)
-    for item in items:
-        await engine.delete(item)
-    await engine.delete(record)
-    return True
+    collection = engine.get_collection(BorrowRecordItem)
+    raw = await collection.find({"borrow_record": ObjectId(record_id)}).to_list(length=None)
+    items: List[BorrowRecordItem] = []
+    for doc in raw:
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == doc["_id"])
+        if item:
+            items.append(item)
+    return items
 
 # Renewal
 async def create_renewal_request(engine: AIOEngine, item_id: str, user_id: str, new_due_date: date) -> RenewalRequest:
@@ -110,62 +218,36 @@ async def create_renewal_request(engine: AIOEngine, item_id: str, user_id: str, 
         raise ValueError("Borrow record item not found")
         
     # Check if record belongs to user
-    record_id = _resolve_reference_id(item.borrow_record)
-    record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
-    if not record or str(_resolve_reference_id(record.reader)) != user_id:
+    record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
+    if not record or str(record.reader.id) != user_id:
         raise ValueError("Unauthorized access to this borrow record")
-
-    if item.return_date is not None:
-        raise ValueError("Cannot renew an item that has already been returned")
-
-    if record.status != "borrowed":
-        raise ValueError("Renewal is only allowed for currently borrowed records")
-
+        
     user = await engine.find_one(User, User.id == ObjectId(user_id))
-    if not user:
-        raise ValueError("Requesting user not found")
-
+    
     # Check if there is already a pending request
-    existing = await engine.find_one(
-        RenewalRequest,
-        (RenewalRequest.borrow_record_item == item.id) & (RenewalRequest.status == "pending")
-    )
-    if existing:
+    collection = engine.get_collection(RenewalRequest)
+    existing_raw = await collection.find_one({"borrow_record_item": ObjectId(item_id), "status": "pending"})
+    if existing_raw:
         raise ValueError("A renewal request is already pending for this item")
-
+        
     db_obj = RenewalRequest(
         borrow_record_item=item,
         requested_by=user,
-        new_due_date=new_due_date,
+        new_due_date=datetime.combine(new_due_date, datetime.min.time()),
         status="pending"
     )
     await engine.save(db_obj)
     return db_obj
 
 async def get_my_renewals(engine: AIOEngine, user_id: str) -> List[RenewalRequest]:
-    return await engine.find(RenewalRequest, RenewalRequest.requested_by == ObjectId(user_id), sort=RenewalRequest.request_date.desc())
-
-async def update_renewal_request(engine: AIOEngine, renewal_id: str, user_id: str, new_due_date: date) -> RenewalRequest:
-    renewal = await engine.find_one(RenewalRequest, RenewalRequest.id == ObjectId(renewal_id))
-    if not renewal or str(_resolve_reference_id(renewal.requested_by)) != user_id:
-        raise ValueError("Renewal request not found or access denied")
-    if renewal.status != "pending":
-        raise ValueError("Chỉ có thể sửa yêu cầu đang chờ xử lý")
-    renewal.new_due_date = new_due_date
-    await engine.save(renewal)
-    return renewal
-
-async def cancel_renewal_request(engine: AIOEngine, renewal_id: str, user_id: str) -> RenewalRequest:
-    renewal = await engine.find_one(RenewalRequest, RenewalRequest.id == ObjectId(renewal_id))
-    if not renewal or str(_resolve_reference_id(renewal.requested_by)) != user_id:
-        raise ValueError("Renewal request not found or access denied")
-    if renewal.status != "pending":
-        raise ValueError("Chỉ có thể hủy yêu cầu đang chờ xử lý")
-    renewal.status = "cancelled"
-    renewal.reject_reason = "Hủy bởi người dùng"
-    renewal.reviewed_at = datetime.utcnow()
-    await engine.save(renewal)
-    return renewal
+    collection = engine.get_collection(RenewalRequest)
+    raw = await collection.find({"requested_by": ObjectId(user_id)}).sort("request_date", -1).to_list(length=None)
+    requests: List[RenewalRequest] = []
+    for doc in raw:
+        request = await engine.find_one(RenewalRequest, RenewalRequest.id == doc["_id"])
+        if request:
+            requests.append(request)
+    return requests
 
 
 # ===================== LIBRARIAN OPERATIONS =====================
@@ -214,7 +296,13 @@ async def create_borrow_record(
 
     if current_borrowed + len(copy_codes) > max_books:
         raise ValueError(
-            f"Exceeds borrow limit. Currently borrowing {current_borrowed}, limit is {max_books}"
+            {
+                "code": "borrow_limit_exceeded",
+                "message": f"Bạn đang mượn {current_borrowed} cuốn, giới hạn là {max_books}.",
+                "current_borrowed": current_borrowed,
+                "cart_size": len(copy_codes),
+                "max_books": max_books,
+            }
         )
 
     # Validate all copies
@@ -231,8 +319,8 @@ async def create_borrow_record(
     record = BorrowRecord(
         reader=reader,
         librarian=librarian,
-        borrow_date=date.today(),
-        due_date=date.today() + timedelta(days=max_days),
+        borrow_date=datetime.utcnow(),
+        due_date=datetime.utcnow() + timedelta(days=max_days),
         status="borrowed",
         notes=notes,
     )
@@ -245,8 +333,7 @@ async def create_borrow_record(
         copy.status = "borrowed"
         await engine.save(copy)
 
-        document_id = _resolve_reference_id(copy.document)
-        doc = await engine.find_one(Document, Document.id == document_id)
+        doc = await engine.find_one(Document, Document.id == copy.document.id)
         if doc:
             doc.available_copies = max(0, doc.available_copies - 1)
             await engine.save(doc)
@@ -271,7 +358,7 @@ async def process_return(
     if not item:
         raise ValueError(f"No active borrow record found for copy '{copy_code}'")
 
-    item.return_date = date.today()
+    item.return_date = datetime.utcnow()
     item.condition_on_return = condition_on_return
     await engine.save(item)
 
@@ -279,8 +366,7 @@ async def process_return(
     copy.condition = condition_on_return
     await engine.save(copy)
 
-    document_id = _resolve_reference_id(copy.document)
-    doc = await engine.find_one(Document, Document.id == document_id)
+    doc = await engine.find_one(Document, Document.id == copy.document.id)
     if doc:
         doc.available_copies += 1
         await engine.save(doc)
@@ -337,11 +423,9 @@ async def review_renewal(
     if new_status == "rejected":
         renewal.reject_reason = reject_reason
     elif new_status == "approved":
-        item_id = _resolve_reference_id(renewal.borrow_record_item)
-        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == item_id)
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == renewal.borrow_record_item.id)
         if item:
-            record_id = _resolve_reference_id(item.borrow_record)
-            record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
+            record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
             if record:
                 record.due_date = renewal.new_due_date
                 await engine.save(record)
