@@ -203,3 +203,68 @@ async def delete_category(engine: AIOEngine, cat_id: str) -> bool:
     await engine.delete(cat)
     return True
 
+
+# ===================== BULK OPERATIONS =====================
+
+async def bulk_upload_images(engine: AIOEngine, images_data: List[dict]) -> dict:
+    """
+    Bulk upload/update cover images for multiple documents.
+    
+    Args:
+        engine: AIOEngine instance
+        images_data: List of dicts with 'document_id' and 'cover_image' (base64)
+    
+    Returns:
+        Dict with success count, failed count, and results
+    """
+    results = []
+    success_count = 0
+    failed_count = 0
+    
+    for item in images_data:
+        try:
+            doc_id = item.get("document_id")
+            cover_image = item.get("cover_image")
+            
+            if not doc_id or not cover_image:
+                results.append({
+                    "document_id": doc_id,
+                    "status": "failed",
+                    "error": "Missing document_id or cover_image"
+                })
+                failed_count += 1
+                continue
+            
+            doc = await engine.find_one(Document, Document.id == ObjectId(doc_id))
+            if not doc:
+                results.append({
+                    "document_id": doc_id,
+                    "status": "failed",
+                    "error": "Document not found"
+                })
+                failed_count += 1
+                continue
+            
+            doc.cover_image = cover_image
+            await engine.save(doc)
+            
+            results.append({
+                "document_id": str(doc_id),
+                "status": "success"
+            })
+            success_count += 1
+            
+        except Exception as e:
+            results.append({
+                "document_id": item.get("document_id"),
+                "status": "failed",
+                "error": str(e)
+            })
+            failed_count += 1
+    
+    return {
+        "success": success_count,
+        "failed": failed_count,
+        "results": results
+    }
+

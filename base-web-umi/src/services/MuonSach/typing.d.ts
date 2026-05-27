@@ -34,6 +34,7 @@ declare module MuonSach {
     id: string;
     document_id: string;
     document_title: string;
+    cover_image?: string;
     copy_code: string;
     status: EBorrowStatus;
   }

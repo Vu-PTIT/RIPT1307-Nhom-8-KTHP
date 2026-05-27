@@ -103,6 +103,7 @@ class BorrowRecordItemSummary(BaseModel):
     id: PyObjectId
     copy_code: str
     document_title: str
+    cover_image: Optional[str] = None
     borrow_date: date
     due_date: date
     return_date: Optional[date] = None
@@ -115,8 +116,7 @@ class BorrowRecordDetailResponse(BaseModel):
     status: str
     items: List[BorrowRecordItemSummary]
 
-
-class BorrowRecordSummary(BaseModel):
+class BorrowRecordSummaryResponse(BaseModel):
     id: PyObjectId
     borrow_date: date
     due_date: date
@@ -131,6 +131,9 @@ class RenewalRequestBase(BaseModel):
 
 class RenewalRequestCreate(BaseModel):
     borrow_record_item_id: str
+    new_due_date: date
+
+class RenewalRequestModify(BaseModel):
     new_due_date: date
 
 class RenewalRequestUpdate(BaseModel):
@@ -151,11 +154,14 @@ class RenewalRequest(RenewalRequestBase):
 
 class RenewalRequestResponse(BaseModel):
     id: PyObjectId
+    borrow_record_item_id: str
     document_title: str
+    author: Optional[str] = None
     old_due_date: date
     new_due_date: date
     status: str
     request_date: datetime
+    reviewed_at: Optional[datetime] = None
     reject_reason: Optional[str] = None
 
 # ====== Librarian Schemas ======

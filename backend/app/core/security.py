@@ -11,9 +11,7 @@ from jose import jwt
 from passlib.context import CryptContext
 from app.core.config import settings
 
-# Use pbkdf2_sha256 for new hashes so passwords longer than 72 bytes do not fail.
-# Keep bcrypt enabled so existing stored hashes can still be verified.
-pwd_context = CryptContext(schemes=["pbkdf2_sha256", "bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt", "pbkdf2_sha256"], deprecated="auto")
 
 def create_access_token(
     subject: Union[str, Any], expires_delta: timedelta = None
@@ -31,16 +29,7 @@ def create_access_token(
     return encoded_jwt
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    try:
-        # Truncate plain_password to 72 bytes for bcrypt compatibility
-        plain_password_truncated = plain_password[:72]
-        return pwd_context.verify(plain_password_truncated, hashed_password)
-    except Exception as e:
-        # Log and return False on any password verification error
-        print(f"Password verification error: {e}")
-        return False
+    return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password: str) -> str:
-    # Truncate password to 72 bytes for bcrypt compatibility
-    password_truncated = password[:72]
-    return pwd_context.hash(password_truncated)
+    return pwd_context.hash(password)

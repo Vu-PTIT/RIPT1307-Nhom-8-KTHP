@@ -6,7 +6,7 @@ from odmantic import ObjectId
 
 from app.core.config import settings
 from app.db.session import engine
-from app.models.user import User, Role
+from app.models.user import Role, User
 from app.schemas.token import TokenPayload
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -26,18 +26,11 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
         )
+    # Using fetch_links=True to load the Role reference
     user = await engine.find_one(User, User.id == ObjectId(token_data.sub))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
-
-
-async def _get_current_user_role(current_user: User) -> Role | None:
-    role_ref = getattr(current_user, "role", None)
-    if not role_ref:
-        return None
-    role_id = getattr(role_ref, "id", role_ref)
-    return await engine.find_one(Role, Role.id == ObjectId(role_id))
 
 async def get_current_active_user(
     current_user: User = Depends(get_current_user),
@@ -46,11 +39,21 @@ async def get_current_active_user(
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
+def _normalize_role_name(role) -> str:
+    if not role:
+        return ''
+    if hasattr(role, 'name'):
+        return str(role.name).lower().strip()
+    return str(role).lower().strip()
+
 async def get_current_active_admin(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
-    role = await _get_current_user_role(current_user)
-    if not role or role.name != "Admin":
+    # Need to check if role is loaded. Odmantic references are proxies.
+    # We should ensure the role name is accessible.
+    role_id = current_user.role.id if hasattr(current_user.role, "id") else current_user.role
+    role = await engine.find_one(Role, Role.id == role_id)
+    if not role or _normalize_role_name(role.name) != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, 
             detail="The user doesn't have enough privileges"
@@ -61,8 +64,9 @@ async def get_current_librarian(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
     """Allow both Librarian and Admin roles to access librarian features."""
-    role = await _get_current_user_role(current_user)
-    if not role or role.name not in ("Librarian", "Admin"):
+    role_id = current_user.role.id if hasattr(current_user.role, "id") else current_user.role
+    role = await engine.find_one(Role, Role.id == role_id)
+    if not role or _normalize_role_name(role.name) not in ("librarian", "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, 
             detail="This action is for librarians only"
@@ -72,8 +76,9 @@ async def get_current_librarian(
 async def get_current_reader(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
-    role = await _get_current_user_role(current_user)
-    if not role or role.name != "Member":
+    role_id = current_user.role.id if hasattr(current_user.role, "id") else current_user.role
+    role = await engine.find_one(Role, Role.id == role_id)
+    if not role or _normalize_role_name(role.name) not in ("member", "reader", "librarian", "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, 
             detail="This action is for readers only"

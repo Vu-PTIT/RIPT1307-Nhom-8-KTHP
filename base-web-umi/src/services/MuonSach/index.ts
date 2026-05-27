@@ -45,6 +45,14 @@ export async function requestRenewal(data: { borrow_record_item_id: string; new_
 	return axios.post(`${ipLibrary}/renewals`, data);
 }
 
+export async function updateRenewalRequest(id: string, data: { new_due_date: string }) {
+  return axios.put(`${ipLibrary}/renewals/${id}`, data);
+}
+
+export async function cancelRenewalRequest(id: string) {
+  return axios.delete(`${ipLibrary}/renewals/${id}`);
+}
+
 export async function getMyRenewals() {
 	return axios.get(`${ipLibrary}/renewals`, { silent: true });
 }
@@ -52,6 +60,14 @@ export async function getMyRenewals() {
 // Checkout cart (create borrow record from current user's cart)
 export async function checkoutCart() {
 	return axios.post(`${ipLibrary}/borrows/checkout`);
+}
+
+export async function updateBorrowRecord(id: string, data: { notes?: string }) {
+  return axios.put(`${ipLibrary}/borrows/${id}`, data);
+}
+
+export async function deleteBorrowRecord(id: string) {
+  return axios.delete(`${ipLibrary}/borrows/${id}`);
 }
 
 // Checkin

@@ -1,14 +1,16 @@
 from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException
-from odmantic import ObjectId
 from app.db.session import engine
 from app.api import deps
-from app.models.user import User
 from app.models.document import Document
+from app.models.user import User
 from app.schemas import borrow as borrow_schema
 from app.crud import borrow as borrow_crud
 
 router = APIRouter()
+
+def _resolve_reference_id(ref):
+    return ref.id if hasattr(ref, "id") else ref
 
 @router.get("", response_model=List[borrow_schema.BorrowCartItemResponse])
 async def get_my_cart(
@@ -21,15 +23,15 @@ async def get_my_cart(
     
     response = []
     for item in items:
-        doc_id = item.get("document")
-        doc = await engine.find_one(Document, Document.id == ObjectId(doc_id))
+        doc_id = _resolve_reference_id(item.document)
+        doc = await engine.find_one(Document, Document.id == doc_id)
         response.append(borrow_schema.BorrowCartItemResponse(
-            id=item.get("_id"),
+            id=item.id,
             document_id=doc.id,
             document_title=doc.title,
             author=doc.author,
             cover_image=doc.cover_image,
-            added_at=item.get("added_at")
+            added_at=item.added_at
         ))
     return response
 
@@ -43,15 +45,15 @@ async def add_to_cart(
     """
     try:
         item = await borrow_crud.add_to_cart(engine, str(current_user.id), item_in.document_id)
-        doc_id = item.get("document")
-        doc = await engine.find_one(Document, Document.id == ObjectId(doc_id))
+        doc_id = _resolve_reference_id(item.document)
+        doc = await engine.find_one(Document, Document.id == doc_id)
         return borrow_schema.BorrowCartItemResponse(
-            id=item.get("_id"),
+            id=item.id,
             document_id=doc.id,
             document_title=doc.title,
             author=doc.author,
             cover_image=doc.cover_image,
-            added_at=item.get("added_at")
+            added_at=item.added_at
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

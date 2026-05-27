@@ -108,6 +108,11 @@ export default [
 				name: 'Log Check-in',
 				component: './ThuThu/CheckinLogs',
 			},
+			{
+				path: '/thu-thu/bulk-upload-images',
+				name: 'Upload ảnh bìa',
+				component: './BulkUploadImages',
+			},
 		],
 	},
 

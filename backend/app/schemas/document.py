@@ -99,3 +99,15 @@ class DocumentCopySummary(BaseModel):
     status: str
     created_at: datetime
 
+# Bulk Upload Schemas
+class BulkUploadImageRequest(BaseModel):
+    """Schema for bulk uploading images to documents"""
+    document_id: str
+    cover_image: str  # Base64 encoded image
+
+class BulkUploadResponse(BaseModel):
+    """Response for bulk upload operation"""
+    success: int
+    failed: int
+    results: list[dict]  # List of {document_id, status, error?}
+
