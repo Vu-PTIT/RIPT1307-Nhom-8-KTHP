@@ -93,3 +93,16 @@ async def read_user_me(
     Get current user.
     """
     return current_user
+
+
+@router.put("/me", response_model=user_schema.User)
+async def update_user_me(
+    user_in: user_schema.UserUpdate,
+    current_user = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Update current user profile.
+    """
+    update_data = user_in.model_dump(exclude_unset=True)
+    updated_user = await user_crud.update_user(engine, str(current_user.id), update_data)
+    return updated_user

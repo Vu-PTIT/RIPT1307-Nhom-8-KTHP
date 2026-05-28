@@ -20,6 +20,10 @@ export async function getUserInfo() {
 	return axios.get(`${ipLibrary}/auth/me`);
 }
 
+export async function updateUserInfo(payload: { gender?: string; date_of_birth?: string | null }) {
+	return axios.put(`${ipLibrary}/auth/me`, payload);
+}
+
 export async function adminlogin(payload: { username?: string; password?: string }) {
 	const data = {
 		username: payload.username ?? '',

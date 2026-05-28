@@ -77,6 +77,12 @@ export default [
 		component: './BanDoc/DiemDanh',
 		access: 'isMember',
 	},
+	{
+		path: '/ban-doc/tai-khoan',
+		component: './BanDoc/TaiKhoan',
+		hideInMenu: true,
+		access: 'isMember',
+	},
 
 	// === LIBRARIAN PAGES ===
 	{

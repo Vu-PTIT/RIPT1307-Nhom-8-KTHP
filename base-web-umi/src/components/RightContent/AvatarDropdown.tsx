@@ -10,6 +10,8 @@ type Props = {
 const AvatarDropdown: React.FC<Props> = ({ menu = false }) => {
 	const { initialState } = useModel('@@initialState');
 	const user: any = initialState?.currentUser;
+	const displayName = user?.name || user?.fullname || user?.username || 'Người dùng';
+	const initial = displayName.trim().charAt(0).toUpperCase() || 'U';
 
 	const handleLogout = () => {
 		try {
@@ -25,7 +27,7 @@ const AvatarDropdown: React.FC<Props> = ({ menu = false }) => {
 
 	const menuOverlay = (
 		<Menu>
-			<Menu.Item key='profile' onClick={() => history.push('/tai-khoan')}>
+			<Menu.Item key='profile' onClick={() => history.push('/ban-doc/tai-khoan')}>
 				<UserOutlined />
 				&nbsp;Thông tin
 			</Menu.Item>
@@ -39,8 +41,8 @@ const AvatarDropdown: React.FC<Props> = ({ menu = false }) => {
 
 	const avatar = (
 		<span style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-			<Avatar style={{ backgroundColor: '#87d068' }} icon={<UserOutlined />} />
-			<span style={{ marginLeft: 8 }}>{user?.name || user?.fullname || user?.username || 'Người dùng'}</span>
+			<Avatar style={{ backgroundColor: '#87d068' }}>{initial}</Avatar>
+			<span style={{ marginLeft: 8 }}>{displayName}</span>
 		</span>
 	);
 

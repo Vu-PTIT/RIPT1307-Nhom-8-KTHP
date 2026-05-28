@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 from odmantic import Model, Field, Reference
 
@@ -16,6 +16,8 @@ class User(Model):
     username: str = Field(unique=True)
     email: str = Field(unique=True)
     password_hash: str
+    gender: str | None = Field(default=None)
+    date_of_birth: date | None = Field(default=None)
     max_books_allowed: int | None = Field(default=None)
     max_days_allowed: int | None = Field(default=None)
     is_active: bool = Field(default=True)

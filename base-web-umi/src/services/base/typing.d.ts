@@ -12,6 +12,8 @@ declare module Login {
 		id: string;
 		username: string;
 		email: string;
+		gender?: string | null;
+		date_of_birth?: string | null;
 		role: IRole;
 		is_active: boolean;
 		max_books_allowed?: number;

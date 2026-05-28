@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional, Any, Annotated
 from pydantic import BaseModel, EmailStr, Field, BeforeValidator
 from odmantic import ObjectId
@@ -28,6 +28,8 @@ class Role(RoleBase):
 class UserBase(BaseModel):
     username: str
     email: EmailStr
+    gender: Optional[str] = None
+    date_of_birth: Optional[date] = None
     max_books_allowed: Optional[int] = None
     max_days_allowed: Optional[int] = None
     is_active: bool = True
@@ -45,6 +47,8 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
+    gender: Optional[str] = None
+    date_of_birth: Optional[date] = None
     max_books_allowed: Optional[int] = None
     max_days_allowed: Optional[int] = None
     is_active: Optional[bool] = None
@@ -53,6 +57,8 @@ class UserUpdate(BaseModel):
 class AdminUserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
+    gender: Optional[str] = None
+    date_of_birth: Optional[date] = None
     max_books_allowed: Optional[int] = None
     max_days_allowed: Optional[int] = None
     is_active: Optional[bool] = None
