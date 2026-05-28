@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Button, message, Empty, Alert, Row, Col } from 'antd';
+import { Button, message, Empty, Alert, Row, Col, Tabs } from 'antd';
 import {
 	BookOutlined,
 	CheckCircleOutlined,
@@ -25,6 +25,7 @@ const getErrorMessage = (error: any, fallback: string) => {
 };
 
 export default function BorrowCartPage() {
+	const [activeTab, setActiveTab] = useState<'borrowed' | 'cart'>('borrowed');
 	const [items, setItems] = useState<any[]>([]);
 	const [borrowedItems, setBorrowedItems] = useState<any[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -156,113 +157,140 @@ export default function BorrowCartPage() {
 		<PageSkeleton title='Giỏ mượn sách'>
 			<div className='library-panel'>
 				{error ? <Alert type='error' message={error} style={{ marginBottom: 12 }} /> : null}
-				<div className='borrowed-now-panel'>
-					<div className='borrowed-now-header'>
-						<div className='library-stat'>
-							<BookOutlined />
-							<div>
-								<span>Đang mượn</span>
-								<strong>{borrowedItems.length}</strong>
-							</div>
+				{/* persistent stats row to switch between tabs */}
+				<div
+					className='library-stats-switch'
+					style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}
+				>
+					<div
+						className={`library-stat clickable ${activeTab === 'borrowed' ? 'active' : ''}`}
+						role='button'
+						tabIndex={0}
+						onClick={() => setActiveTab('borrowed')}
+						onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setActiveTab('borrowed')}
+					>
+						<BookOutlined />
+						<div>
+							<span>Đang mượn</span>
+							<strong>{borrowedItems.length}</strong>
 						</div>
+					</div>
+
+					<div
+						className={`library-stat clickable ${activeTab === 'cart' ? 'active' : ''}`}
+						role='button'
+						tabIndex={0}
+						onClick={() => setActiveTab('cart')}
+						onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setActiveTab('cart')}
+					>
+						<ShoppingCartOutlined />
+						<div>
+							<span>Trong giỏ checkout</span>
+							<strong>{items.length}</strong>
+						</div>
+					</div>
+
+					<div style={{ marginLeft: 'auto' }}>
 						<Button icon={<FieldTimeOutlined />} onClick={() => history.push('/ban-doc/lich-su-muon')}>
 							Xem lịch sử mượn
 						</Button>
 					</div>
-					{borrowedItems.length === 0 ? (
-						<Empty
-							image={Empty.PRESENTED_IMAGE_SIMPLE}
-							description={borrowedLoading ? 'Đang tải sách đang mượn' : 'Bạn chưa có sách đang mượn'}
-						/>
-					) : (
-						<BorrowedBookList
-							loading={borrowedLoading}
-							items={borrowedItems}
-							emptyDescription='Bạn chưa có sách đang mượn'
-						/>
-					)}
 				</div>
-				{items.length === 0 ? (
-					<div className='library-empty-state'>
-						<Empty description='Giỏ mượn trống'>
-							<Button type='primary' icon={<SearchOutlined />} onClick={() => history.push('/ban-doc/tai-lieu')}>
-								Tra cứu sách
-							</Button>
-						</Empty>
-					</div>
-				) : (
-					<>
-						<div className='library-action-bar'>
-							<div className='library-action-left'>
-								<div className='library-stat'>
-									<ShoppingCartOutlined />
-									<div>
-										<span>Trong giỏ checkout</span>
-										<strong>{items.length}</strong>
+
+				<Tabs
+					activeKey={activeTab}
+					onChange={(k) => setActiveTab(k as 'borrowed' | 'cart')}
+					tabBarStyle={{ display: 'none' }}
+				>
+					<Tabs.TabPane tab='Đang mượn' key='borrowed'>
+						{borrowedItems.length === 0 ? (
+							<Empty
+								image={Empty.PRESENTED_IMAGE_SIMPLE}
+								description={borrowedLoading ? 'Đang tải sách đang mượn' : 'Bạn chưa có sách đang mượn'}
+							/>
+						) : (
+							<BorrowedBookList
+								loading={borrowedLoading}
+								items={borrowedItems}
+								emptyDescription='Bạn chưa có sách đang mượn'
+							/>
+						)}
+					</Tabs.TabPane>
+					<Tabs.TabPane tab='Trong giỏ' key='cart'>
+						{items.length === 0 ? (
+							<div className='library-empty-state'>
+								<Empty description='Giỏ mượn trống'>
+									<Button type='primary' icon={<SearchOutlined />} onClick={() => history.push('/ban-doc/tai-lieu')}>
+										Tra cứu sách
+									</Button>
+								</Empty>
+							</div>
+						) : (
+							<>
+								<div className='library-action-bar'>
+									<div className='library-action-right'>
+										<Button icon={<SearchOutlined />} onClick={() => history.push('/ban-doc/tai-lieu')}>
+											Chọn thêm sách
+										</Button>
+										<Button icon={<DeleteOutlined />} onClick={handleClearCart} danger loading={loading}>
+											Xoá toàn bộ giỏ
+										</Button>
 									</div>
 								</div>
-							</div>
-							<div className='library-action-right'>
-								<Button icon={<SearchOutlined />} onClick={() => history.push('/ban-doc/tai-lieu')}>
-									Chọn thêm sách
-								</Button>
-								<Button icon={<DeleteOutlined />} onClick={handleClearCart} danger loading={loading}>
-									Xoá toàn bộ giỏ
-								</Button>
-							</div>
-						</div>
 
-						<Row gutter={[24, 24]}>
-							{items.map((it: any) => (
-								<Col xs={24} sm={12} md={12} lg={8} xl={6} key={it.id}>
-									<DocumentCard
-										item={it}
-										onDetail={(id) => history.push(`/ban-doc/tai-lieu/${id}`)}
-										onWishlist={() => {}}
-										onCart={() => {}}
-										accent={true}
-										actions={[
-											<Button
-												key='detail'
-												className='detail-btn small'
-												icon={<SearchOutlined />}
-												onClick={() => history.push(`/ban-doc/tai-lieu/${it.document_id}`)}
-											>
-												Chi tiết
-											</Button>,
-											<Button
-												key='remove'
-												className='remove-btn'
-												icon={<DeleteOutlined />}
-												loading={loading}
-												onClick={() => handleRemove(it.id)}
-											>
-												Xóa
-											</Button>,
-										]}
-									/>
-								</Col>
-							))}
-						</Row>
+								<Row gutter={[24, 24]}>
+									{items.map((it: any) => (
+										<Col xs={24} sm={12} md={12} lg={8} xl={6} key={it.id}>
+											<DocumentCard
+												item={it}
+												onDetail={(id) => history.push(`/ban-doc/tai-lieu/${id}`)}
+												onWishlist={() => {}}
+												onCart={() => {}}
+												accent={true}
+												actions={[
+													<Button
+														key='detail'
+														className='detail-btn small'
+														icon={<SearchOutlined />}
+														onClick={() => history.push(`/ban-doc/tai-lieu/${it.document_id}`)}
+													>
+														Chi tiết
+													</Button>,
+													<Button
+														key='remove'
+														className='remove-btn'
+														icon={<DeleteOutlined />}
+														loading={loading}
+														onClick={() => handleRemove(it.id)}
+													>
+														Xóa
+													</Button>,
+												]}
+											/>
+										</Col>
+									))}
+								</Row>
 
-						<div className='library-action-bar checkout-bar'>
-							<div className='library-action-left'>
-								<span className='library-count-badge'>Sẵn sàng tạo phiếu mượn</span>
-							</div>
-							<div className='library-action-right'>
-								<Button
-									type='primary'
-									icon={<CheckCircleOutlined />}
-									onClick={handleCheckout}
-									loading={loading}
-									disabled={items.length === 0}
-								>
-									Tạo phiếu mượn
-								</Button>
-							</div>
-						</div>
-					</>
-				)}
+								<div className='library-action-bar checkout-bar'>
+									<div className='library-action-left'>
+										<span className='library-count-badge'>Sẵn sàng tạo phiếu mượn</span>
+									</div>
+									<div className='library-action-right'>
+										<Button
+											type='primary'
+											icon={<CheckCircleOutlined />}
+											onClick={handleCheckout}
+											loading={loading}
+											disabled={items.length === 0}
+										>
+											Tạo phiếu mượn
+										</Button>
+									</div>
+								</div>
+							</>
+						)}
+					</Tabs.TabPane>
+				</Tabs>
 			</div>
 		</PageSkeleton>
 	);
