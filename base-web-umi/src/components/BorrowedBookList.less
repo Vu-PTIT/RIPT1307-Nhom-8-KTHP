@@ -1,0 +1,134 @@
+.borrowed-book-list {
+	display: grid;
+	gap: 14px;
+
+	.ant-list-items {
+		display: grid;
+		gap: 14px;
+	}
+}
+
+.borrowed-book-card {
+	display: grid !important;
+	grid-template-columns: 104px minmax(0, 1fr);
+	gap: 20px;
+	align-items: start;
+	padding: 20px !important;
+	background: #ffffff;
+	border: 1px solid var(--library-line);
+	border-radius: 8px;
+
+	&.overdue {
+		border-color: rgba(201, 0, 0, 0.42);
+		box-shadow: inset 4px 0 0 var(--library-red);
+	}
+}
+
+.borrowed-book-cover {
+	width: 100px;
+	aspect-ratio: 3 / 4.2;
+	background-color: #f4f4f4;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: cover;
+	border-radius: 6px;
+	box-shadow: 0 14px 28px -22px rgba(0, 0, 0, 0.7);
+}
+
+.borrowed-book-main {
+	min-width: 0;
+}
+
+.borrowed-book-heading {
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+	justify-content: space-between;
+	margin-bottom: 14px;
+
+	h3 {
+		margin: 0 0 4px;
+		color: var(--library-ink);
+		font-weight: 850;
+		font-size: 20px;
+		line-height: 1.25;
+		letter-spacing: 0;
+	}
+
+	p {
+		margin: 0;
+		color: var(--library-muted);
+		font-weight: 550;
+		font-size: 14px;
+	}
+}
+
+.borrowed-book-status {
+	display: flex;
+	flex: 0 0 auto;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	justify-content: flex-end;
+}
+
+.borrowed-book-dates {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(140px, 1fr));
+	gap: 12px;
+
+	span {
+		display: block;
+		margin-bottom: 4px;
+		color: var(--library-muted);
+		font-weight: 650;
+		font-size: 12px;
+	}
+
+	strong {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+		color: var(--library-ink);
+		font-weight: 750;
+		font-size: 14px;
+		line-height: 1.3;
+
+		&.danger {
+			color: var(--library-red);
+		}
+	}
+}
+
+.borrowed-book-warning {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-top: 14px;
+	color: var(--library-red);
+	font-weight: 750;
+}
+
+@media (max-width: 767px) {
+	.borrowed-book-card {
+		grid-template-columns: 76px minmax(0, 1fr);
+		gap: 14px;
+		padding: 14px !important;
+	}
+
+	.borrowed-book-cover {
+		width: 76px;
+	}
+
+	.borrowed-book-heading {
+		flex-direction: column;
+	}
+
+	.borrowed-book-status {
+		justify-content: flex-start;
+	}
+
+	.borrowed-book-dates {
+		grid-template-columns: 1fr;
+	}
+}

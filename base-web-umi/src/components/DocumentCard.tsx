@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Tag, Button } from 'antd';
+import { Card, Tag, Button, Tooltip } from 'antd';
 import { InfoCircleOutlined, HeartOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import './DocumentCard.less';
 import getCoverForTitle from '../utils/coverMap';
@@ -18,6 +18,11 @@ type Props = {
 const DocumentCard: React.FC<Props> = ({ item, onDetail, onWishlist, onCart, actions, accent, layout = 'card' }) => {
 	const title = item.title || item.document_title || 'Không có tiêu đề';
 	const author = item.author || item.authors || '';
+	const category = item.category_name || item.category?.name;
+	const rawAvailable = item.available_copies ?? item.document_available_copies;
+	const hasAvailability = rawAvailable !== undefined && rawAvailable !== null;
+	const available = Number(rawAvailable || 0);
+	const canBorrow = !hasAvailability || available > 0;
 	// prefer explicit cover, then title-based map, then thumbnail, then default
 	const mapped = getCoverForTitle(title);
 	let cover = item.cover_image || mapped || item.thumbnail || '/default-cover.png';
@@ -36,11 +41,19 @@ const DocumentCard: React.FC<Props> = ({ item, onDetail, onWishlist, onCart, act
 			hoverable
 			bodyStyle={{ padding: 0 }}
 		>
+			<div className='doc-spine' />
 			<div
 				className='doc-cover'
 				onClick={() => onDetail && onDetail(item.id || item.document_id)}
 				style={{ backgroundImage: `url(${cover})` }}
-			/>
+				role='button'
+				tabIndex={0}
+				aria-label={`Xem chi tiết ${title}`}
+			>
+				<div className={`doc-availability ${canBorrow ? 'available' : 'unavailable'}`}>
+					{canBorrow ? `${hasAvailability ? available : 'Có'} bản sẵn sàng` : 'Hết bản'}
+				</div>
+			</div>
 
 			{layout === 'list' ? (
 				<div className='doc-body'>
@@ -49,17 +62,15 @@ const DocumentCard: React.FC<Props> = ({ item, onDetail, onWishlist, onCart, act
 					</h3>
 					<div className='doc-author'>{author}</div>
 					<div className='doc-tags'>
-						{item.category_name || item.category?.name ? (
-							<Tag color='volcano'>{item.category_name || item.category?.name}</Tag>
-						) : null}
-						<Tag color={Number(item.available_copies || 0) > 0 ? 'green' : 'default'}>
-							{Number(item.available_copies || 0)} bản khả dụng
+						{category ? <Tag className='category-tag'>{category}</Tag> : null}
+						<Tag className={canBorrow ? 'available-tag' : 'unavailable-tag'}>
+							{canBorrow ? `${hasAvailability ? available : 'Có'} bản khả dụng` : 'Hết bản'}
 						</Tag>
 					</div>
 
 					<div className='doc-actions'>
 						{actions ? (
-							actions
+							<div className='actions-custom'>{actions}</div>
 						) : (
 							<>
 								<div className='actions-left'>
@@ -69,12 +80,23 @@ const DocumentCard: React.FC<Props> = ({ item, onDetail, onWishlist, onCart, act
 									</Button>
 								</div>
 								<div className='actions-right'>
-									<Button
-										className='icon-btn'
-										icon={<HeartOutlined />}
-										onClick={() => onWishlist && onWishlist(item)}
-									/>
-									<Button className='icon-btn' icon={<ShoppingCartOutlined />} onClick={() => onCart && onCart(item)} />
+									<Tooltip title='Lưu yêu thích'>
+										<Button
+											className='icon-btn'
+											icon={<HeartOutlined />}
+											onClick={() => onWishlist && onWishlist(item)}
+											aria-label='Lưu yêu thích'
+										/>
+									</Tooltip>
+									<Tooltip title={canBorrow ? 'Thêm vào giỏ mượn' : 'Hiện không còn bản'}>
+										<Button
+											className='icon-btn borrow-btn'
+											icon={<ShoppingCartOutlined />}
+											onClick={() => onCart && onCart(item)}
+											disabled={!canBorrow}
+											aria-label='Thêm vào giỏ mượn'
+										/>
+									</Tooltip>
 								</div>
 							</>
 						)}
@@ -88,18 +110,16 @@ const DocumentCard: React.FC<Props> = ({ item, onDetail, onWishlist, onCart, act
 						</h3>
 						<div className='doc-author'>{author}</div>
 						<div className='doc-tags'>
-							{item.category_name || item.category?.name ? (
-								<Tag color='volcano'>{item.category_name || item.category?.name}</Tag>
-							) : null}
-							<Tag color={Number(item.available_copies || 0) > 0 ? 'green' : 'default'}>
-								{Number(item.available_copies || 0)} bản khả dụng
+							{category ? <Tag className='category-tag'>{category}</Tag> : null}
+							<Tag className={canBorrow ? 'available-tag' : 'unavailable-tag'}>
+								{canBorrow ? `${hasAvailability ? available : 'Có'} bản khả dụng` : 'Hết bản'}
 							</Tag>
 						</div>
 					</div>
 
 					<div className='doc-actions'>
 						{actions ? (
-							actions
+							<div className='actions-custom'>{actions}</div>
 						) : (
 							<>
 								<div className='actions-left'>
@@ -109,12 +129,23 @@ const DocumentCard: React.FC<Props> = ({ item, onDetail, onWishlist, onCart, act
 									</Button>
 								</div>
 								<div className='actions-right'>
-									<Button
-										className='icon-btn'
-										icon={<HeartOutlined />}
-										onClick={() => onWishlist && onWishlist(item)}
-									/>
-									<Button className='icon-btn' icon={<ShoppingCartOutlined />} onClick={() => onCart && onCart(item)} />
+									<Tooltip title='Lưu yêu thích'>
+										<Button
+											className='icon-btn'
+											icon={<HeartOutlined />}
+											onClick={() => onWishlist && onWishlist(item)}
+											aria-label='Lưu yêu thích'
+										/>
+									</Tooltip>
+									<Tooltip title={canBorrow ? 'Thêm vào giỏ mượn' : 'Hiện không còn bản'}>
+										<Button
+											className='icon-btn borrow-btn'
+											icon={<ShoppingCartOutlined />}
+											onClick={() => onCart && onCart(item)}
+											disabled={!canBorrow}
+											aria-label='Thêm vào giỏ mượn'
+										/>
+									</Tooltip>
 								</div>
 							</>
 						)}

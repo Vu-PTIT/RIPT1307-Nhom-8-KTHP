@@ -105,6 +105,7 @@ class BorrowRecordItemSummary(BaseModel):
     id: PyObjectId
     copy_code: str
     document_title: str
+    author: Optional[str] = None
     cover_image: Optional[str] = None
     borrow_date: date
     due_date: date
@@ -159,6 +160,7 @@ class RenewalRequestResponse(BaseModel):
     borrow_record_item_id: str
     document_title: str
     author: Optional[str] = None
+    cover_image: Optional[str] = None
     old_due_date: date
     new_due_date: date
     status: str
@@ -194,4 +196,3 @@ class BorrowRecordListItem(BaseModel):
     status: str
     item_count: int
     created_at: datetime
-

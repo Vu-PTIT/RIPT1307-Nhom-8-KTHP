@@ -1,4 +1,3 @@
-import Footer from '@/components/Footer';
 import RightContent from '@/components/RightContent';
 import { notification } from 'antd';
 import 'moment/locale/vi';
@@ -104,7 +103,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
 		rightContentRender: () => <RightContent />,
 		disableContentMargin: false,
 
-		footerRender: () => <Footer />,
+		footerRender: false,
 
 		onPageChange: () => {
 			const token = localStorage.getItem('token');

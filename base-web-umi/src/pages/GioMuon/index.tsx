@@ -1,11 +1,20 @@
 import { useEffect, useState, useRef } from 'react';
-import { Button, Card, message, Empty, Alert, Space, Tag, Row, Col } from 'antd';
+import { Button, message, Empty, Alert, Row, Col } from 'antd';
+import {
+	BookOutlined,
+	CheckCircleOutlined,
+	DeleteOutlined,
+	FieldTimeOutlined,
+	SearchOutlined,
+	ShoppingCartOutlined,
+} from '@ant-design/icons';
 import { history } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import * as MuonSach from '@/services/MuonSach';
 import axios from '@/utils/axios';
 import { ipLibrary } from '@/utils/ip';
 import DocumentCard from '@/components/DocumentCard';
+import BorrowedBookList from '@/components/BorrowedBookList';
 
 const getErrorMessage = (error: any, fallback: string) => {
 	const detail = error?.response?.data?.detail;
@@ -17,7 +26,9 @@ const getErrorMessage = (error: any, fallback: string) => {
 
 export default function BorrowCartPage() {
 	const [items, setItems] = useState<any[]>([]);
+	const [borrowedItems, setBorrowedItems] = useState<any[]>([]);
 	const [loading, setLoading] = useState(false);
+	const [borrowedLoading, setBorrowedLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	const load = async () => {
@@ -35,8 +46,35 @@ export default function BorrowCartPage() {
 
 	const mountedRef = useRef(true);
 
+	const loadBorrowedItems = async () => {
+		if (mountedRef.current) setBorrowedLoading(true);
+		try {
+			const res = await MuonSach.getMyBorrows('borrowed');
+			const records = Array.isArray(res.data) ? res.data : [];
+			const detailResults = await Promise.allSettled(records.map((record: any) => MuonSach.getBorrowDetail(record.id)));
+			const activeItems = detailResults.flatMap((result: any) => {
+				if (result.status !== 'fulfilled') return [];
+				const record = result.value?.data || {};
+				const recordItems = Array.isArray(record.items) ? record.items : [];
+				return recordItems
+					.filter((item: any) => item.status !== 'returned' && !item.return_date)
+					.map((item: any) => ({
+						...item,
+						record_id: record.id,
+						record_due_date: record.due_date,
+					}));
+			});
+			if (mountedRef.current) setBorrowedItems(activeItems);
+		} catch (e) {
+			if (mountedRef.current) setBorrowedItems([]);
+		} finally {
+			if (mountedRef.current) setBorrowedLoading(false);
+		}
+	};
+
 	useEffect(() => {
 		load();
+		loadBorrowedItems();
 		return () => {
 			mountedRef.current = false;
 		};
@@ -84,6 +122,7 @@ export default function BorrowCartPage() {
 					setError(
 						`Bạn đang mượn ${currentBorrowed} cuốn, giới hạn ${maxBooks}. Vui lòng trả bớt hoặc giảm số sách trong giỏ.`,
 					);
+				loadBorrowedItems();
 				if (mountedRef.current) setLoading(false);
 				return;
 			}
@@ -115,23 +154,67 @@ export default function BorrowCartPage() {
 
 	return (
 		<PageSkeleton title='Giỏ mượn sách'>
-			<Card style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
+			<div className='library-panel'>
 				{error ? <Alert type='error' message={error} style={{ marginBottom: 12 }} /> : null}
+				<div className='borrowed-now-panel'>
+					<div className='borrowed-now-header'>
+						<div className='library-stat'>
+							<BookOutlined />
+							<div>
+								<span>Đang mượn</span>
+								<strong>{borrowedItems.length}</strong>
+							</div>
+						</div>
+						<Button icon={<FieldTimeOutlined />} onClick={() => history.push('/lich-su-muon')}>
+							Xem lịch sử mượn
+						</Button>
+					</div>
+					{borrowedItems.length === 0 ? (
+						<Empty
+							image={Empty.PRESENTED_IMAGE_SIMPLE}
+							description={borrowedLoading ? 'Đang tải sách đang mượn' : 'Bạn chưa có sách đang mượn'}
+						/>
+					) : (
+						<BorrowedBookList
+							loading={borrowedLoading}
+							items={borrowedItems}
+							emptyDescription='Bạn chưa có sách đang mượn'
+						/>
+					)}
+				</div>
 				{items.length === 0 ? (
-					<Empty description='Giỏ mượn trống' />
+					<div className='library-empty-state'>
+						<Empty description='Giỏ mượn trống'>
+							<Button type='primary' icon={<SearchOutlined />} onClick={() => history.push('/tai-lieu')}>
+								Tra cứu sách
+							</Button>
+						</Empty>
+					</div>
 				) : (
 					<>
-						<Space style={{ marginBottom: 12 }} wrap>
-							<Tag color='blue'>{items.length} tài liệu</Tag>
-							<Button onClick={() => history.push('/tai-lieu')}>Tiếp tục chọn tài liệu</Button>
-							<Button onClick={handleClearCart} danger loading={loading}>
-								Xoá toàn bộ giỏ
-							</Button>
-						</Space>
+						<div className='library-action-bar'>
+							<div className='library-action-left'>
+								<div className='library-stat'>
+									<ShoppingCartOutlined />
+									<div>
+										<span>Trong giỏ checkout</span>
+										<strong>{items.length}</strong>
+									</div>
+								</div>
+							</div>
+							<div className='library-action-right'>
+								<Button icon={<SearchOutlined />} onClick={() => history.push('/tai-lieu')}>
+									Chọn thêm sách
+								</Button>
+								<Button icon={<DeleteOutlined />} onClick={handleClearCart} danger loading={loading}>
+									Xoá toàn bộ giỏ
+								</Button>
+							</div>
+						</div>
 
 						<Row gutter={[24, 24]}>
 							{items.map((it: any) => (
-								<Col xs={24} sm={12} md={6} lg={6} key={it.id}>
+								<Col xs={24} sm={12} md={12} lg={8} xl={6} key={it.id}>
 									<DocumentCard
 										item={it}
 										onDetail={(id) => history.push(`/tai-lieu/${id}`)}
@@ -142,11 +225,18 @@ export default function BorrowCartPage() {
 											<Button
 												key='detail'
 												className='detail-btn small'
+												icon={<SearchOutlined />}
 												onClick={() => history.push(`/tai-lieu/${it.document_id}`)}
 											>
 												Chi tiết
 											</Button>,
-											<Button key='remove' className='remove-btn' onClick={() => handleRemove(it.id)}>
+											<Button
+												key='remove'
+												className='remove-btn'
+												icon={<DeleteOutlined />}
+												loading={loading}
+												onClick={() => handleRemove(it.id)}
+											>
 												Xóa
 											</Button>,
 										]}
@@ -155,14 +245,25 @@ export default function BorrowCartPage() {
 							))}
 						</Row>
 
-						<div style={{ textAlign: 'right', marginTop: 12 }}>
-							<Button type='primary' onClick={handleCheckout} loading={loading} disabled={items.length === 0}>
-								Tạo phiếu mượn
-							</Button>
+						<div className='library-action-bar checkout-bar'>
+							<div className='library-action-left'>
+								<span className='library-count-badge'>Sẵn sàng tạo phiếu mượn</span>
+							</div>
+							<div className='library-action-right'>
+								<Button
+									type='primary'
+									icon={<CheckCircleOutlined />}
+									onClick={handleCheckout}
+									loading={loading}
+									disabled={items.length === 0}
+								>
+									Tạo phiếu mượn
+								</Button>
+							</div>
 						</div>
 					</>
 				)}
-			</Card>
+			</div>
 		</PageSkeleton>
 	);
 }

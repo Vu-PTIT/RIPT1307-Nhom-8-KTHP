@@ -32,7 +32,7 @@ async def checkin_checkout(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/history", response_model=List[log_schema.CheckinLogResponse])
+@router.get("/history", response_model=log_schema.CheckinLogHistoryResponse)
 async def get_checkin_history(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -53,7 +53,12 @@ async def get_checkin_history(
             method=log.method,
             check_time=log.check_time
         ))
-    return response
+    return log_schema.CheckinLogHistoryResponse(
+        items=response,
+        total=total,
+        page=page,
+        page_size=page_size
+    )
 
 
 # ===================== LIBRARIAN ENDPOINTS =====================

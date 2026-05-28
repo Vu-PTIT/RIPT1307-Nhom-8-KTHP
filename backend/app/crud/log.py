@@ -35,15 +35,17 @@ async def get_my_checkin_logs(
     page_size: int = 20
 ) -> Tuple[List[CheckinLog], int]:
     skip = (page - 1) * page_size
-    all_logs = await engine.find(
-        CheckinLog,
-        CheckinLog.user.id == ObjectId(user_id),
-        sort=CheckinLog.check_time.desc(),
-        skip=skip,
-        limit=page_size,
-    )
-    total = await engine.count(CheckinLog, CheckinLog.user.id == ObjectId(user_id))
-    return list(all_logs), total
+    collection = engine.get_collection(CheckinLog)
+    query = {"user": ObjectId(user_id)}
+    raw_logs = await collection.find(query).sort("check_time", -1).skip(skip).limit(page_size).to_list(length=None)
+    total = await collection.count_documents(query)
+
+    logs: List[CheckinLog] = []
+    for raw in raw_logs:
+        log = await engine.find_one(CheckinLog, CheckinLog.id == raw["_id"])
+        if log:
+            logs.append(log)
+    return logs, total
 
 
 # ===================== LIBRARIAN OPERATIONS =====================
@@ -58,31 +60,25 @@ async def get_all_checkin_logs(
     """Get all check-in logs for monitoring."""
     conditions = []
     if user_id:
-        conditions.append(CheckinLog.user.id == ObjectId(user_id))
+        conditions.append({"user": ObjectId(user_id)})
     if check_type:
-        conditions.append(CheckinLog.check_type == check_type)
+        conditions.append({"check_type": check_type})
 
     skip = (page - 1) * page_size
+    collection = engine.get_collection(CheckinLog)
     if conditions:
-        from odmantic import query as Q
-        filter_expr = conditions[0]
-        for c in conditions[1:]:
-            filter_expr = filter_expr & c
-        logs = await engine.find(
-            CheckinLog, filter_expr,
-            sort=CheckinLog.check_time.desc(),
-            skip=skip, limit=page_size,
-        )
-        total = await engine.count(CheckinLog, filter_expr)
+        filter_expr = {"$and": conditions} if len(conditions) > 1 else conditions[0]
     else:
-        logs = await engine.find(
-            CheckinLog,
-            sort=CheckinLog.check_time.desc(),
-            skip=skip, limit=page_size,
-        )
-        total = await engine.count(CheckinLog)
+        filter_expr = {}
 
-    return list(logs), total
+    raw_logs = await collection.find(filter_expr).sort("check_time", -1).skip(skip).limit(page_size).to_list(length=None)
+    total = await collection.count_documents(filter_expr)
+    logs: List[CheckinLog] = []
+    for raw in raw_logs:
+        log = await engine.find_one(CheckinLog, CheckinLog.id == raw["_id"])
+        if log:
+            logs.append(log)
+    return logs, total
 
 
 async def manual_checkin(

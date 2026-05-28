@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Empty, Alert, Button, Space, Tag, message, Row, Col } from 'antd';
+import { Empty, Alert, Button, message, Row, Col } from 'antd';
+import { HeartOutlined, SearchOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { history } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import * as MuonSach from '@/services/MuonSach';
@@ -55,14 +56,32 @@ export default function WishlistPage() {
 
 	return (
 		<PageSkeleton title='Danh sách yêu thích'>
-			<Card style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
+			<div className='library-panel'>
 				{error ? <Alert type='error' message={error} style={{ marginBottom: 12 }} /> : null}
+				<div className='library-action-bar'>
+					<div className='library-action-left'>
+						<div className='library-stat'>
+							<HeartOutlined />
+							<div>
+								<span>Sách đã lưu</span>
+								<strong>{items.length}</strong>
+							</div>
+						</div>
+					</div>
+					<div className='library-action-right'>
+						<Button icon={<SearchOutlined />} onClick={() => history.push('/tai-lieu')}>
+							Tra cứu thêm
+						</Button>
+					</div>
+				</div>
 				{items.length === 0 ? (
-					<Empty description='Danh sách trống' />
+					<div className='library-empty-state'>
+						<Empty description='Chưa có sách yêu thích' />
+					</div>
 				) : (
 					<Row gutter={[24, 24]}>
 						{items.map((it: any) => (
-							<Col xs={24} sm={12} md={6} lg={6} key={it.id}>
+							<Col xs={24} sm={12} md={12} lg={8} xl={6} key={it.id}>
 								<DocumentCard
 									item={it}
 									onDetail={() => history.push(`/tai-lieu/${it.document_id}`)}
@@ -70,10 +89,16 @@ export default function WishlistPage() {
 									onCart={() => handleMoveToCart(it)}
 									accent={true}
 									actions={[
-										<Button key='add' type='primary' onClick={() => handleMoveToCart(it)}>
-											Thêm vào giỏ
+										<Button
+											key='add'
+											type='primary'
+											icon={<ShoppingCartOutlined />}
+											loading={busyId === it.id}
+											onClick={() => handleMoveToCart(it)}
+										>
+											Đưa vào giỏ
 										</Button>,
-										<Button key='del' danger onClick={() => handleRemove(it.id)}>
+										<Button key='del' danger loading={busyId === it.id} onClick={() => handleRemove(it.id)}>
 											Xóa
 										</Button>,
 									]}
@@ -82,7 +107,7 @@ export default function WishlistPage() {
 						))}
 					</Row>
 				)}
-			</Card>
+			</div>
 		</PageSkeleton>
 	);
 }

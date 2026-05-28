@@ -39,6 +39,7 @@ async def _get_borrow_detail_logic(record_id: str):
             
         item_summaries.append(borrow_schema.BorrowRecordItemSummary(
             id=item.id, copy_code=copy.copy_code, document_title=doc.title,
+            author=doc.author, cover_image=doc.cover_image,
             borrow_date=_as_date(record.borrow_date), due_date=_as_date(record.due_date),
             return_date=_as_date(item.return_date) if item.return_date else None, status=status
         ))
@@ -99,7 +100,9 @@ async def get_borrow_detail(
     from app.models.borrow import BorrowRecord
     from odmantic import ObjectId
 
-    record = await engine.find_one(BorrowRecord, (BorrowRecord.id == ObjectId(id)) & (BorrowRecord.reader == current_user.id))
+    collection = engine.get_collection(BorrowRecord)
+    record_raw = await collection.find_one({"_id": ObjectId(id), "reader": ObjectId(str(current_user.id))})
+    record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_raw["_id"]) if record_raw else None
     if not record:
         raise HTTPException(status_code=404, detail="Borrow record not found or access denied")
     

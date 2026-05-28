@@ -35,3 +35,9 @@ class CheckinLogListItem(BaseModel):
     check_time: datetime
     handled_by_name: Optional[str] = None
 
+class CheckinLogHistoryResponse(BaseModel):
+    items: list[CheckinLogResponse]
+    total: int
+    page: int
+    page_size: int
+
