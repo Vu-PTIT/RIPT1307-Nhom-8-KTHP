@@ -131,7 +131,7 @@ export default function BorrowCartPage() {
 			await MuonSach.checkoutCart();
 			if (mountedRef.current) message.success('Tạo phiếu mượn thành công');
 			if (mountedRef.current) setItems([]);
-			if (mountedRef.current) history.push('/lich-su-muon');
+			if (mountedRef.current) history.push('/ban-doc/lich-su-muon');
 		} catch (e: any) {
 			if (mountedRef.current) setError(getErrorMessage(e, 'Checkout thất bại'));
 		} finally {
@@ -165,7 +165,7 @@ export default function BorrowCartPage() {
 								<strong>{borrowedItems.length}</strong>
 							</div>
 						</div>
-						<Button icon={<FieldTimeOutlined />} onClick={() => history.push('/lich-su-muon')}>
+						<Button icon={<FieldTimeOutlined />} onClick={() => history.push('/ban-doc/lich-su-muon')}>
 							Xem lịch sử mượn
 						</Button>
 					</div>
@@ -185,7 +185,7 @@ export default function BorrowCartPage() {
 				{items.length === 0 ? (
 					<div className='library-empty-state'>
 						<Empty description='Giỏ mượn trống'>
-							<Button type='primary' icon={<SearchOutlined />} onClick={() => history.push('/tai-lieu')}>
+							<Button type='primary' icon={<SearchOutlined />} onClick={() => history.push('/ban-doc/tai-lieu')}>
 								Tra cứu sách
 							</Button>
 						</Empty>
@@ -203,7 +203,7 @@ export default function BorrowCartPage() {
 								</div>
 							</div>
 							<div className='library-action-right'>
-								<Button icon={<SearchOutlined />} onClick={() => history.push('/tai-lieu')}>
+								<Button icon={<SearchOutlined />} onClick={() => history.push('/ban-doc/tai-lieu')}>
 									Chọn thêm sách
 								</Button>
 								<Button icon={<DeleteOutlined />} onClick={handleClearCart} danger loading={loading}>
@@ -217,7 +217,7 @@ export default function BorrowCartPage() {
 								<Col xs={24} sm={12} md={12} lg={8} xl={6} key={it.id}>
 									<DocumentCard
 										item={it}
-										onDetail={(id) => history.push(`/tai-lieu/${id}`)}
+										onDetail={(id) => history.push(`/ban-doc/tai-lieu/${id}`)}
 										onWishlist={() => {}}
 										onCart={() => {}}
 										accent={true}
@@ -226,7 +226,7 @@ export default function BorrowCartPage() {
 												key='detail'
 												className='detail-btn small'
 												icon={<SearchOutlined />}
-												onClick={() => history.push(`/tai-lieu/${it.document_id}`)}
+												onClick={() => history.push(`/ban-doc/tai-lieu/${it.document_id}`)}
 											>
 												Chi tiết
 											</Button>,

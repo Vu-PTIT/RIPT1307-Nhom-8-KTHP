@@ -25,8 +25,8 @@ export default function access(initialState: IInitialState) {
 
 	return {
 		isAdmin: roleName === 'admin',
-		isLibrarian: roleName === 'librarian' || roleName === 'admin',
-		isMember: isAuthenticated && ['member', 'reader', 'librarian', 'admin'].includes(roleName),
+		isLibrarian: roleName === 'librarian',
+		isMember: isAuthenticated && ['member', 'reader'].includes(roleName),
 		accessFilter: (route: any) => true, // Default to true or implement custom logic if needed
 	};
 }

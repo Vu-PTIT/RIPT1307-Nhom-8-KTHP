@@ -63,7 +63,7 @@ export default function BorrowDetailPage(props: any) {
 							</div>
 
 							<div>
-								<Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/lich-su-muon')}>
+								<Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/ban-doc/lich-su-muon')}>
 									Quay lại lịch sử mượn
 								</Button>
 							</div>

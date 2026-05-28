@@ -129,7 +129,7 @@ export default function DocumentDetailPage(props: any) {
 									<Button icon={<HeartOutlined />} loading={actionLoading === 'wishlist'} onClick={handleAddToWishlist}>
 										Thêm vào yêu thích
 									</Button>
-									<Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/tai-lieu')}>
+									<Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/ban-doc/tai-lieu')}>
 										Quay lại danh sách
 									</Button>
 								</div>

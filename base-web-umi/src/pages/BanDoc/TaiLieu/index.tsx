@@ -139,7 +139,7 @@ export default function DocumentsPage() {
 								<Col xs={24} sm={12} md={12} lg={8} xl={6} key={it.id || it.document_id}>
 									<DocumentCard
 										item={it}
-										onDetail={(id) => history.push(`/tai-lieu/${id}`)}
+										onDetail={(id) => history.push(`/ban-doc/tai-lieu/${id}`)}
 										onWishlist={(i) => handleAddToWishlist(i)}
 										onCart={(i) => handleAddToCart(i)}
 										accent={true}

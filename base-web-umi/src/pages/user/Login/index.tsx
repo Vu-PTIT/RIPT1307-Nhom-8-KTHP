@@ -33,7 +33,7 @@ const Login: React.FC = () => {
 			} else if (roleName === 'Librarian') {
 				history.push('/thu-thu/muon-tra');
 			} else {
-				history.push('/tai-lieu');
+				history.push('/ban-doc/tai-lieu');
 			}
 		} catch (e) {
 			console.error('Failed to get user info', e);

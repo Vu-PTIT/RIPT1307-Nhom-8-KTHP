@@ -69,7 +69,7 @@ export default function WishlistPage() {
 						</div>
 					</div>
 					<div className='library-action-right'>
-						<Button icon={<SearchOutlined />} onClick={() => history.push('/tai-lieu')}>
+						<Button icon={<SearchOutlined />} onClick={() => history.push('/ban-doc/tai-lieu')}>
 							Tra cứu thêm
 						</Button>
 					</div>
@@ -84,7 +84,7 @@ export default function WishlistPage() {
 							<Col xs={24} sm={12} md={12} lg={8} xl={6} key={it.id}>
 								<DocumentCard
 									item={it}
-									onDetail={() => history.push(`/tai-lieu/${it.document_id}`)}
+									onDetail={() => history.push(`/ban-doc/tai-lieu/${it.document_id}`)}
 									onWishlist={() => {}}
 									onCart={() => handleMoveToCart(it)}
 									accent={true}

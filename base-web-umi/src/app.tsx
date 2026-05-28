@@ -119,13 +119,13 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
 				const isUncheckPath = unCheckPermissionPaths.some((path) => window.location.pathname.includes(path));
 
 				if (location.pathname === '/') {
-					const roleName = initialState?.currentUser?.role?.name;
-					if (roleName === 'Admin') {
+					const roleName = initialState?.currentUser?.role?.name?.toLowerCase() || (initialState?.currentUser as any)?.role_name?.toLowerCase();
+					if (roleName === 'admin') {
 						history.replace('/quan-tri/thong-ke');
-					} else if (roleName === 'Librarian') {
+					} else if (roleName === 'librarian') {
 						history.replace('/thu-thu/muon-tra');
 					} else {
-						history.replace('/tai-lieu');
+						history.replace('/ban-doc/tai-lieu');
 					}
 				}
 			}
