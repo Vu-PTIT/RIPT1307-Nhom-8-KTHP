@@ -89,6 +89,7 @@ async def manual_checkin(
     """Create a manual check-in log by librarian."""
     user = await engine.find_one(User, User.id == ObjectId(user_id))
     if not user: raise ValueError("User not found")
+    
     librarian = await engine.find_one(User, User.id == ObjectId(handled_by_id))
     log = CheckinLog(user=user, check_type=check_type, method="manual", handled_by=librarian)
     await engine.save(log)

@@ -161,12 +161,17 @@ class RenewalRequestResponse(BaseModel):
     document_title: str
     author: Optional[str] = None
     cover_image: Optional[str] = None
+    borrow_date: Optional[date] = None
     old_due_date: date
     new_due_date: date
     status: str
     request_date: datetime
     reviewed_at: Optional[datetime] = None
     reject_reason: Optional[str] = None
+    # Librarian-facing extra fields
+    reader_name: Optional[str] = None
+    reader_username: Optional[str] = None
+    renewal_count: Optional[int] = None
 
 # ====== Librarian Schemas ======
 

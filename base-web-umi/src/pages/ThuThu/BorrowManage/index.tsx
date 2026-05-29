@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Typography, Card } from 'antd';
 import { BookOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import Checkout from './components/Checkout';
+import ReturnTab from './components/ReturnTab';
 
 const { Title, Text } = Typography;
 
@@ -70,10 +71,7 @@ const BorrowManage: React.FC = () => {
 				{activeTab === 'borrow' ? (
 					<Checkout />
 				) : (
-					<div style={{ textAlign: 'center', padding: '100px 0', color: '#999' }}>
-						<CheckCircleOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-						<p>Giao diện Nhận trả sách đang được cập nhật...</p>
-					</div>
+					<ReturnTab />
 				)}
 			</Card>
 		</div>

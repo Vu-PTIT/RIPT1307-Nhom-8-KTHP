@@ -1,87 +1,295 @@
-import React from 'react';
-import { Input, Typography, Table, Empty } from 'antd';
-import { SearchOutlined, QrcodeOutlined } from '@ant-design/icons';
+import React, { useState, useRef } from 'react';
+import {
+	Input, Typography, Table, Button, Space, Tag, message, Modal, Form,
+	Select, Spin, Empty, InputRef, Tooltip, Avatar,
+} from 'antd';
+import { SearchOutlined, PlusOutlined, UserOutlined, DeleteOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { useRequest } from 'umi';
+import { searchCopyByCode, searchReaders, createBorrowLibrarian } from '@/services/ThuThu';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
-interface Book {
-	key?: React.Key;
-	barcode?: string;
-	title?: string;
-	location?: string;
-	status?: string;
+interface CopyInfo {
+	id: string;
+	copy_code: string;
+	document_title: string;
+	author?: string;
+	cover_image?: string;
+	status: string;
+	condition: string;
 }
 
-const Checkout: React.FC = () => {
-	// Dữ liệu mẫu cho bảng "Sách khả dụng"
-	const dataSource: Book[] = [
-		// Tạm thời để trống để hiện Empty giống Figma hoặc thêm data mẫu
-	];
+const CheckoutTab: React.FC = () => {
+	const barcodeRef = useRef<InputRef>(null);
+	const [barcodeInput, setBarcodeInput] = useState('');
+	const [selectedCopies, setSelectedCopies] = useState<CopyInfo[]>([]);
+	const [searchingCopy, setSearchingCopy] = useState(false);
 
-	const columns = [
-		{ title: 'Mã vạch', dataIndex: 'barcode', key: 'barcode' },
-		{ title: 'Tên sách', dataIndex: 'title', key: 'title' },
-		{ title: 'Vị trí', dataIndex: 'location', key: 'location' },
-		{ title: 'Trạng thái', dataIndex: 'status', key: 'status' },
+	// Reader search state
+	const [readerKeyword, setReaderKeyword] = useState('');
+	const [selectedReader, setSelectedReader] = useState<{ id: string; username: string; email: string } | null>(null);
+	const [submitting, setSubmitting] = useState(false);
+
+	// Tìm reader
+	const { data: readersData, loading: searchingReader } = useRequest(
+		() => searchReaders({ keyword: readerKeyword, page_size: 10 }),
+		{
+			refreshDeps: [readerKeyword],
+			debounceInterval: 400,
+			ready: readerKeyword.length >= 2,
+			formatResult: (res) => res.data?.items || [],
+		},
+	);
+
+	// Quét mã vạch / nhập mã
+	const handleBarcodeSearch = async () => {
+		const code = barcodeInput.trim();
+		if (!code) return;
+		if (selectedCopies.some((c) => c.copy_code === code)) {
+			message.warning('Mã vạch này đã được thêm!');
+			setBarcodeInput('');
+			return;
+		}
+		setSearchingCopy(true);
+		try {
+			const res = await searchCopyByCode(code);
+			const copy: CopyInfo = res.data;
+			if (copy.status !== 'available') {
+				message.error(`Bản sao "${code}" hiện không khả dụng (${copy.status})`);
+			} else {
+				setSelectedCopies((prev) => [...prev, copy]);
+				message.success(`Đã thêm: ${copy.document_title}`);
+			}
+		} catch {
+			message.error(`Không tìm thấy bản sao với mã: "${code}"`);
+		} finally {
+			setSearchingCopy(false);
+			setBarcodeInput('');
+			barcodeRef.current?.focus();
+		}
+	};
+
+	// Xác nhận cho mượn
+	const handleSubmit = async () => {
+		if (!selectedReader) {
+			message.warning('Vui lòng chọn độc giả!');
+			return;
+		}
+		if (selectedCopies.length === 0) {
+			message.warning('Vui lòng thêm ít nhất 1 cuốn sách!');
+			return;
+		}
+		setSubmitting(true);
+		try {
+			await createBorrowLibrarian({
+				reader_id: selectedReader.id,
+				copy_codes: selectedCopies.map((c) => c.copy_code),
+			});
+			message.success(`✅ Tạo phiếu mượn thành công cho: ${selectedReader.username}`);
+			setSelectedCopies([]);
+			setSelectedReader(null);
+			setReaderKeyword('');
+		} catch (err: any) {
+			const detail = err?.response?.data?.detail;
+			if (typeof detail === 'object') {
+				message.error(detail.message || 'Có lỗi xảy ra');
+			} else {
+				message.error(detail || 'Tạo phiếu mượn thất bại!');
+			}
+		} finally {
+			setSubmitting(false);
+		}
+	};
+
+	const copiesColumns = [
+		{
+			title: 'Mã vạch',
+			dataIndex: 'copy_code',
+			key: 'copy_code',
+			width: 120,
+			render: (val: string) => <Tag>{val}</Tag>,
+		},
+		{
+			title: 'Tên sách',
+			dataIndex: 'document_title',
+			key: 'document_title',
+		},
+		{
+			title: 'Tác giả',
+			dataIndex: 'author',
+			key: 'author',
+			render: (val?: string) => val || '—',
+		},
+		{
+			title: 'Trạng thái',
+			dataIndex: 'status',
+			key: 'status',
+			width: 120,
+			render: (val: string) => (
+				<Tag color={val === 'available' ? 'success' : 'default'}>
+					{val === 'available' ? 'Khả dụng' : val}
+				</Tag>
+			),
+		},
+		{
+			title: '',
+			key: 'action',
+			width: 60,
+			render: (_: any, record: CopyInfo) => (
+				<Tooltip title='Xóa khỏi danh sách'>
+					<Button
+						type='text'
+						danger
+						icon={<DeleteOutlined />}
+						onClick={() => setSelectedCopies((prev) => prev.filter((c) => c.copy_code !== record.copy_code))}
+					/>
+				</Tooltip>
+			),
+		},
 	];
 
 	return (
 		<div>
-			{/* Search Input */}
-			<Input
-				size='large'
-				placeholder='Tìm sách để cho mượn...'
-				prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-				style={{
-					borderRadius: 8,
-					height: 50,
-					marginBottom: 24,
-					background: '#fcfcfc',
-				}}
-			/>
+			{/* Chọn Độc giả */}
+			<div style={{ marginBottom: 20 }}>
+				<div style={{ fontWeight: 600, marginBottom: 8 }}>
+					<UserOutlined style={{ marginRight: 6 }} /> Độc giả
+				</div>
+				{selectedReader ? (
+					<div
+						style={{
+							display: 'flex',
+							alignItems: 'center',
+							gap: 12,
+							background: '#f6ffed',
+							border: '1px solid #b7eb8f',
+							borderRadius: 8,
+							padding: '10px 16px',
+						}}
+					>
+						<Avatar style={{ backgroundColor: '#52c41a' }}>
+							{selectedReader.username.charAt(0).toUpperCase()}
+						</Avatar>
+						<div>
+							<div style={{ fontWeight: 600 }}>{selectedReader.username}</div>
+							<div style={{ fontSize: 12, color: '#8c8c8c' }}>{selectedReader.email}</div>
+						</div>
+						<Button
+							size='small'
+							type='text'
+							danger
+							onClick={() => setSelectedReader(null)}
+							style={{ marginLeft: 'auto' }}
+						>
+							Đổi
+						</Button>
+					</div>
+				) : (
+					<Select
+						showSearch
+						size='large'
+						style={{ width: '100%' }}
+						placeholder='Tìm kiếm theo tên hoặc email độc giả...'
+						filterOption={false}
+						onSearch={setReaderKeyword}
+						loading={searchingReader}
+						notFoundContent={
+							readerKeyword.length < 2 ? (
+								<Text type='secondary'>Nhập ít nhất 2 ký tự...</Text>
+							) : searchingReader ? (
+								<Spin size='small' />
+							) : (
+								<Empty description='Không tìm thấy' />
+							)
+						}
+						onSelect={(_: string, opt: any) => {
+							setSelectedReader({ id: opt.value, username: opt.username, email: opt.email });
+							setReaderKeyword('');
+						}}
+					>
+						{(readersData || []).map((r: any) => (
+							<Option key={String(r.id)} value={String(r.id)} username={r.username} email={r.email}>
+								<div>
+									<span style={{ fontWeight: 500 }}>{r.username}</span>
+									<Text type='secondary' style={{ marginLeft: 8, fontSize: 12 }}>
+										{r.email}
+									</Text>
+								</div>
+							</Option>
+						))}
+					</Select>
+				)}
+			</div>
 
-			{/* QR Scanning Area - Ô nét đứt giống Figma */}
-			{/* <div 
-        style={{
-          border: '2px dashed #d9d9d9',
-          borderRadius: 12,
-          padding: '60px 20px',
-          textAlign: 'center',
-          background: '#fafafa',
-          cursor: 'pointer',
-          marginBottom: 40,
-          transition: 'all 0.3s',
-        }}
-        onMouseOver={(e) => (e.currentTarget.style.borderColor = '#e3000f')}
-        onMouseOut={(e) => (e.currentTarget.style.borderColor = '#d9d9d9')}
-      >
-        <QrcodeOutlined style={{ fontSize: 64, color: '#8c8c8c', marginBottom: 16 }} />
-        <div>
-          <Title level={5} style={{ margin: 0, color: '#595959' }}>
-            Quét mã QR/Mã vạch
-          </Title>
-          <Text type="secondary">hoặc tìm kiếm thủ công ở trên</Text>
-        </div>
-      </div> */}
+			{/* Quét / nhập mã vạch */}
+			<div style={{ marginBottom: 20 }}>
+				<div style={{ fontWeight: 600, marginBottom: 8 }}>
+					<SearchOutlined style={{ marginRight: 6 }} /> Thêm sách bằng mã vạch
+				</div>
+				<div style={{ display: 'flex', gap: 8 }}>
+					<Input
+						ref={barcodeRef}
+						size='large'
+						placeholder='Quét mã vạch hoặc nhập mã bản sao...'
+						value={barcodeInput}
+						onChange={(e) => setBarcodeInput(e.target.value)}
+						onPressEnter={handleBarcodeSearch}
+						style={{ borderRadius: 8 }}
+					/>
+					<Button
+						type='primary'
+						size='large'
+						icon={<PlusOutlined />}
+						onClick={handleBarcodeSearch}
+						loading={searchingCopy}
+						style={{ background: '#e3000f', borderColor: '#e3000f', borderRadius: 8 }}
+					>
+						Thêm
+					</Button>
+				</div>
+			</div>
 
-			{/* Sách khả dụng Section */}
-			<div style={{ marginTop: 20 }}>
-				<Title level={5} style={{ marginBottom: 16, fontWeight: 600 }}>
-					Sách khả dụng
-				</Title>
-
+			{/* Danh sách sách đã chọn */}
+			<div style={{ marginTop: 4 }}>
+				<div style={{ fontWeight: 600, marginBottom: 8 }}>
+					Sách được chọn ({selectedCopies.length})
+				</div>
 				<Table
-					dataSource={dataSource}
-					columns={columns}
+					dataSource={selectedCopies}
+					columns={copiesColumns}
+					rowKey='copy_code'
 					pagination={false}
-					locale={{
-						emptyText: <Empty description='Không có dữ liệu sách' />,
-					}}
+					locale={{ emptyText: <Empty description='Chưa có sách nào' /> }}
 					style={{ borderRadius: 8, overflow: 'hidden' }}
+					size='small'
 				/>
 			</div>
+
+			{/* Nút xác nhận */}
+			{selectedCopies.length > 0 && (
+				<div style={{ marginTop: 20, textAlign: 'right' }}>
+					<Button
+						type='primary'
+						size='large'
+						icon={<CheckCircleOutlined />}
+						loading={submitting}
+						onClick={handleSubmit}
+						disabled={!selectedReader}
+						style={{ background: '#e3000f', borderColor: '#e3000f', borderRadius: 8, fontWeight: 600 }}
+					>
+						Xác nhận cho mượn ({selectedCopies.length} cuốn)
+					</Button>
+					{!selectedReader && (
+						<div style={{ color: '#faad14', marginTop: 8, fontSize: 13 }}>
+							⚠️ Vui lòng chọn độc giả trước khi xác nhận
+						</div>
+					)}
+				</div>
+			)}
 		</div>
 	);
 };
 
-export default Checkout;
+export default CheckoutTab;

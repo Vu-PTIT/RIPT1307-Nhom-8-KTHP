@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from odmantic import ObjectId
 from app.db.session import engine
 from app.api import deps
-from app.models.borrow import BorrowRecordItem, BorrowRecord
+from app.models.borrow import BorrowRecordItem, BorrowRecord, RenewalRequest
 from app.models.document import Document, DocumentCopy
 from app.models.user import User
 from app.schemas import borrow as borrow_schema
@@ -41,6 +41,7 @@ async def _build_renewal_response(renewal):
         document_title=doc.title,
         author=doc.author,
         cover_image=doc.cover_image,
+        borrow_date=record.borrow_date,
         old_due_date=record.due_date,
         new_due_date=renewal.new_due_date,
         status=renewal.status,
@@ -115,6 +116,7 @@ async def list_pending_renewals(
     """List renewal requests (default: pending)."""
     requests = await borrow_crud.get_pending_renewals(engine, status_filter=status)
     response = []
+    renewal_col = engine.get_collection(RenewalRequest)
     for req in requests:
         item_id = _resolve_reference_id(req.borrow_record_item)
         item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == item_id)
@@ -124,18 +126,30 @@ async def list_pending_renewals(
         copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_id)
         doc_id = _resolve_reference_id(copy.document)
         doc = await engine.find_one(Document, Document.id == doc_id)
+        # reader info
+        reader_id = _resolve_reference_id(record.reader)
+        reader = await engine.find_one(User, User.id == reader_id)
+        # count approved renewals for this item
+        approved_count = await renewal_col.count_documents({
+            "borrow_record_item": item_id,
+            "status": "approved"
+        })
         response.append(borrow_schema.RenewalRequestResponse(
             id=req.id,
             borrow_record_item_id=str(item.id),
             document_title=doc.title,
             author=doc.author,
             cover_image=doc.cover_image,
+            borrow_date=record.borrow_date,
             old_due_date=record.due_date,
             new_due_date=req.new_due_date,
             status=req.status,
             request_date=req.request_date,
             reviewed_at=req.reviewed_at,
-            reject_reason=req.reject_reason
+            reject_reason=req.reject_reason,
+            reader_name=reader.full_name or reader.username if reader else None,
+            reader_username=reader.username if reader else None,
+            renewal_count=approved_count,
         ))
     return response
 

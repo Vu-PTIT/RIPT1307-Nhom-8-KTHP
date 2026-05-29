@@ -10,7 +10,29 @@ from app.crud import dashboard as dashboard_crud
 
 router = APIRouter()
 
-# ===================== USER MANAGEMENT =====================
+# ===================== READER SEARCH (Librarian accessible) =====================
+
+@router.get("/users/search", response_model=user_schema.UserListResponse)
+async def search_readers(
+    keyword: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """Search users (readers) by keyword — accessible to Librarian and Admin."""
+    users, total = await user_crud.get_all_users(
+        engine, keyword=keyword, page=page, page_size=page_size
+    )
+    items = []
+    for u in users:
+        role = await engine.find_one(Role, Role.id == u.role.id)
+        items.append(user_schema.UserListItem(
+            id=u.id, username=u.username, email=u.email,
+            role_name=role.name if role else "Unknown",
+            is_active=u.is_active, created_at=u.created_at
+        ))
+    return {"items": items, "total": total, "page": page, "page_size": page_size}
+
 
 @router.get("/users", response_model=user_schema.UserListResponse)
 async def list_users(

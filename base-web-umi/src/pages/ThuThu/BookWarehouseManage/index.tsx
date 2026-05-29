@@ -1,13 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { Input, Select, Row, Col, Typography, message, Pagination, Empty, Spin } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import {
+	Input, Select, Row, Col, Typography, message, Pagination, Empty, Spin,
+	Button, Modal, Form,
+} from 'antd';
+import { SearchOutlined, PlusOutlined } from '@ant-design/icons';
 import BookCard, { BookData } from './components/BookCard';
 import * as TaiLieuService from '@/services/TaiLieu';
 import * as ThuThuService from '@/services/ThuThu';
 import { history } from 'umi';
+import { ipLibrary } from '@/utils/ip';
+import getCoverForTitle from '@/utils/coverMap';
 
 const { Title } = Typography;
 const { Option } = Select;
+
+const OBJ_ID_REGEX = /^[a-fA-F0-9]{24}$/;
+
+const buildImageUrl = (doc: any): string => {
+	const mapped = getCoverForTitle(doc.title);
+	let cover = doc.cover_image || mapped || '/default-cover.png';
+	if (typeof cover === 'string' && OBJ_ID_REGEX.test(cover)) {
+		return `${ipLibrary}/documents/covers/${cover}`;
+	}
+	return cover;
+};
 
 const BookWarehouseManage: React.FC = () => {
 	const [books, setBooks] = useState<BookData[]>([]);
@@ -19,12 +35,10 @@ const BookWarehouseManage: React.FC = () => {
 	const [pageSize] = useState(12);
 	const [total, setTotal] = useState(0);
 
-	const buildImageUrl = (cover_image?: string) => {
-		if (!cover_image) return undefined;
-		// Nếu là GridFS file_id thì dùng API serve, ngược lại dùng trực tiếp
-		if (cover_image.startsWith('http')) return cover_image;
-		return `http://localhost:8000/api/v1/documents/covers/${cover_image}`;
-	};
+	// Modal Thêm đầu sách mới
+	const [addBookVisible, setAddBookVisible] = useState(false);
+	const [addBookLoading, setAddBookLoading] = useState(false);
+	const [addBookForm] = Form.useForm();
 
 	const load = async (p = page, kw = searchText, cat_id?: string) => {
 		setLoading(true);
@@ -43,9 +57,12 @@ const BookWarehouseManage: React.FC = () => {
 				title: doc.title,
 				author: doc.author,
 				category: doc.category_name || 'Không có danh mục',
+				category_id: doc.category_id,
 				availableCount: doc.available_copies ?? 0,
 				totalCount: doc.total_copies ?? 0,
-				image: buildImageUrl(doc.cover_image) || 'https://via.placeholder.com/300x180?text=No+Cover',
+				image: buildImageUrl(doc),
+				isbn: doc.isbn,
+				description: doc.description,
 			}));
 
 			setBooks(mapped);
@@ -57,16 +74,16 @@ const BookWarehouseManage: React.FC = () => {
 		}
 	};
 
-	// Load categories từ API
+	const loadCategories = async () => {
+		try {
+			const res = await TaiLieuService.getCategories();
+			setCategories(res.data || []);
+		} catch (e) {
+			// ignore
+		}
+	};
+
 	useEffect(() => {
-		const loadCategories = async () => {
-			try {
-				const res = await TaiLieuService.getCategories();
-				setCategories(res.data || []);
-			} catch (e) {
-				// ignore
-			}
-		};
 		loadCategories();
 		load(1, '', undefined);
 	}, []);
@@ -87,13 +104,52 @@ const BookWarehouseManage: React.FC = () => {
 		history.push(`/thu-thu/tai-lieu/${id}`);
 	};
 
+	const handleRefresh = () => {
+		load(page, searchText, selectedCategory);
+	};
+
+	const handleAddBook = async (values: any) => {
+		setAddBookLoading(true);
+		try {
+			await ThuThuService.createDocument({
+				title: values.title,
+				author: values.author,
+				isbn: values.isbn,
+				category_id: values.category_id,
+				description: values.description,
+			});
+			message.success(`Đã thêm đầu sách "${values.title}" thành công!`);
+			setAddBookVisible(false);
+			addBookForm.resetFields();
+			load(1, '', undefined);
+		} catch (err: any) {
+			message.error(err?.response?.data?.detail || 'Thêm đầu sách thất bại!');
+		} finally {
+			setAddBookLoading(false);
+		}
+	};
+
 	return (
 		<div style={{ padding: '24px', background: '#f5f7f9', minHeight: '100vh' }}>
 			{/* Header trang */}
-			<div style={{ marginBottom: 24 }}>
-				<Title level={3} style={{ margin: 0, fontWeight: 700 }}>
-					Tra cứu tài liệu
-				</Title>
+			<div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+				<div>
+					<Title level={3} style={{ margin: 0, fontWeight: 700 }}>
+						Quản lý kho sách
+					</Title>
+					<span style={{ color: '#8c8c8c' }}>
+						{total} đầu sách · Thủ thư có thể thêm, sửa, xóa và quản lý bản sao
+					</span>
+				</div>
+				<Button
+					type='primary'
+					icon={<PlusOutlined />}
+					size='large'
+					style={{ background: '#e3000f', borderColor: '#e3000f', borderRadius: 8, fontWeight: 600 }}
+					onClick={() => setAddBookVisible(true)}
+				>
+					Thêm đầu sách
+				</Button>
 			</div>
 
 			{/* Thanh bộ lọc */}
@@ -137,7 +193,12 @@ const BookWarehouseManage: React.FC = () => {
 					<Row gutter={[20, 20]}>
 						{books.map((book) => (
 							<Col xs={24} sm={12} md={8} lg={8} xl={6} key={book.id}>
-								<BookCard book={book} onDetail={handleViewDetail} />
+								<BookCard
+									book={book}
+									categories={categories.map((c: any) => ({ id: c.id, name: c.name }))}
+									onDetail={handleViewDetail}
+									onRefresh={handleRefresh}
+								/>
 							</Col>
 						))}
 					</Row>
@@ -158,9 +219,45 @@ const BookWarehouseManage: React.FC = () => {
 					/>
 				</div>
 			)}
+
+			{/* Modal Thêm đầu sách mới */}
+			<Modal
+				title={<><PlusOutlined style={{ marginRight: 8 }} />Thêm đầu sách mới</>}
+				open={addBookVisible}
+				onCancel={() => { setAddBookVisible(false); addBookForm.resetFields(); }}
+				onOk={() => addBookForm.submit()}
+				okText='Thêm đầu sách'
+				cancelText='Hủy'
+				confirmLoading={addBookLoading}
+				okButtonProps={{ style: { background: '#e3000f', borderColor: '#e3000f' } }}
+				width={600}
+			>
+				<Form form={addBookForm} layout='vertical' onFinish={handleAddBook} style={{ marginTop: 16 }}>
+					<Form.Item name='title' label='Tên sách' rules={[{ required: true, message: 'Vui lòng nhập tên sách!' }]}>
+						<Input size='large' placeholder='Nhập tên đầu sách...' />
+					</Form.Item>
+					<Form.Item name='author' label='Tác giả' rules={[{ required: true, message: 'Vui lòng nhập tác giả!' }]}>
+						<Input size='large' placeholder='Nhập tên tác giả...' />
+					</Form.Item>
+					<Form.Item name='isbn' label='ISBN'>
+						<Input size='large' placeholder='Ví dụ: 978-0-13-468599-1' />
+					</Form.Item>
+					<Form.Item name='category_id' label='Danh mục' rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}>
+						<Select size='large' placeholder='Chọn danh mục'>
+							{categories.map((c: any) => (
+								<Option key={c.id} value={c.id}>
+									{c.name}
+								</Option>
+							))}
+						</Select>
+					</Form.Item>
+					<Form.Item name='description' label='Mô tả'>
+						<Input.TextArea rows={3} placeholder='Mô tả nội dung sách...' />
+					</Form.Item>
+				</Form>
+			</Modal>
 		</div>
 	);
 };
 
 export default BookWarehouseManage;
-

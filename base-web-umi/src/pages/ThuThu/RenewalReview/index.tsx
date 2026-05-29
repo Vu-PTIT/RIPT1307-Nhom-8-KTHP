@@ -1,80 +1,104 @@
 import React, { useState } from 'react';
-import { Typography, message } from 'antd';
+import { Typography, message, Spin, Empty } from 'antd';
+import { useRequest } from 'umi';
+import dayjs from 'dayjs';
 import PendingList, { PendingRenewalItem } from './components/PendingList';
 import HistoryList, { HistoryRenewalItem } from './components/HistoryList';
+import { getPendingRenewals, reviewRenewal } from '@/services/ThuThu';
 
 const { Title, Text } = Typography;
 
+/** Map dữ liệu từ API sang cấu trúc PendingList component mong đợi */
+function mapToPending(item: any): PendingRenewalItem {
+	const dueDate = dayjs(item.old_due_date);
+	const now = dayjs();
+	const overdueDays = now.diff(dueDate, 'day');
+	const isOverdue = overdueDays > 0;
+
+	return {
+		id: String(item.id),
+		bookTitle: item.document_title || 'Không rõ tên sách',
+		bookImage: item.cover_image,
+		readerName: item.reader_name || item.reader_username || 'Độc giả',
+		borrowDate: item.borrow_date ? dayjs(item.borrow_date).format('DD/MM/YYYY') : '—',
+		currentDueDate: dueDate.format('DD/MM/YYYY'),
+		renewalCount: item.renewal_count != null ? `${item.renewal_count}/2` : '0/2',
+		requestTime: dayjs(item.request_date).format('DD/MM/YYYY HH:mm'),
+		isOverdue,
+		overdueDays: isOverdue ? overdueDays : undefined,
+	};
+}
+
+function mapToHistory(item: any, status: 'APPROVED' | 'REJECTED'): HistoryRenewalItem {
+	return {
+		id: String(item.id),
+		bookTitle: item.document_title || 'Không rõ tên sách',
+		readerName: item.reader_name || item.reader_username || 'Độc giả',
+		requestTime: dayjs(item.request_date).format('DD/MM/YYYY HH:mm'),
+		handleTime: item.reviewed_at ? dayjs(item.reviewed_at).format('DD/MM/YYYY HH:mm') : dayjs().format('DD/MM/YYYY HH:mm'),
+		status,
+	};
+}
+
 const RenewalReview: React.FC = () => {
-	// Mock dữ liệu chờ duyệt đúng chuẩn ảnh Figma mẫu
-	const [pendingData, setPendingData] = useState<PendingRenewalItem[]>([
-		{
-			id: 'req_01',
-			bookTitle: 'The Pragmatic Programmer',
-			bookImage: 'https://images-na.ssl-images-amazon.com/images/I/41as+w6Z7gL._SX396_BO1,204,203,200_.jpg', // Link ảnh mẫu
-			readerName: 'Nguyễn Văn An',
-			borrowDate: '20/04/2026',
-			currentDueDate: '05/05/2026',
-			renewalCount: '1/2',
-			requestTime: '04/05/2026 07:00',
-			isOverdue: true,
-			overdueDays: 20,
+	const [historyData, setHistoryData] = useState<HistoryRenewalItem[]>([]);
+
+	// Lấy danh sách chờ duyệt từ API
+	const {
+		data: pendingApiData,
+		loading,
+		mutate: mutatePending,
+	} = useRequest(() => getPendingRenewals('pending'), {
+		formatResult: (res) => res.data,
+	});
+
+	// Lấy lịch sử đã xử lý (approved + rejected)
+	const { data: historyApiData } = useRequest(() => getPendingRenewals('approved'), {
+		formatResult: (res) => res.data as any[],
+		onSuccess: (data) => {
+			const approvedItems = (data || []).map((item: any) => mapToHistory(item, 'APPROVED'));
+			setHistoryData((prev) => {
+				// Merge: ưu tiên local state (vừa thao tác), thêm từ API nếu chưa có
+				const existingIds = new Set(prev.map((h) => h.id));
+				const fromApi = approvedItems.filter((h: HistoryRenewalItem) => !existingIds.has(h.id));
+				return [...prev, ...fromApi];
+			});
 		},
-	]);
+	});
 
-	// Mock dữ liệu lịch sử đã duyệt giống Figma
-	const [historyData, setHistoryData] = useState<HistoryRenewalItem[]>([
-		{
-			id: 'req_02',
-			bookTitle: 'Clean Code',
-			readerName: 'Nguyễn Văn An',
-			requestTime: '08/05/2026 07:00',
-			handleTime: '09/05/2026 07:00',
-			status: 'APPROVED',
-		},
-	]);
+	const pendingData: PendingRenewalItem[] = (pendingApiData || []).map(mapToPending);
 
-	// Hàm xử lý khi bấm nút "Duyệt"
-	const handleAccept = (id: string) => {
-		const target = pendingData.find((item) => item.id === id);
-		if (!target) return;
-
-		message.success(`Đã phê duyệt gia hạn sách: ${target.bookTitle}`);
-
-		// Xóa khỏi hàng chờ
-		setPendingData(pendingData.filter((item) => item.id !== id));
-		// Đẩy vào bảng lịch sử lịch trình xử lý
-		setHistoryData([
-			{
-				id: target.id,
-				bookTitle: target.bookTitle,
-				readerName: target.readerName,
-				requestTime: target.requestTime,
-				handleTime: '25/05/2026 22:30', // Lấy mốc thời gian hiện tại
-				status: 'APPROVED',
-			},
-			...historyData,
-		]);
+	// Hàm xử lý Duyệt
+	const handleAccept = async (id: string) => {
+		const target = pendingApiData?.find((item: any) => String(item.id) === id);
+		try {
+			await reviewRenewal(id, { status: 'approved' });
+			message.success(`✅ Đã phê duyệt gia hạn: ${target?.document_title}`);
+			// Cập nhật local state
+			mutatePending((prev: any[]) => prev?.filter((item: any) => String(item.id) !== id) ?? []);
+			if (target) {
+				setHistoryData((prev) => [mapToHistory({ ...target, reviewed_at: new Date().toISOString() }, 'APPROVED'), ...prev]);
+			}
+		} catch (err: any) {
+			const detail = err?.response?.data?.detail || 'Có lỗi xảy ra!';
+			message.error(`❌ ${detail}`);
+		}
 	};
 
-	// Hàm xử lý khi bấm nút "Từ chối"
-	const handleReject = (id: string) => {
-		const target = pendingData.find((item) => item.id === id);
-		if (!target) return;
-
-		message.info(`Đã từ chối yêu cầu của độc giả: ${target.readerName}`);
-		setPendingData(pendingData.filter((item) => item.id !== id));
-		setHistoryData([
-			{
-				id: target.id,
-				bookTitle: target.bookTitle,
-				readerName: target.readerName,
-				requestTime: target.requestTime,
-				handleTime: '25/05/2026 22:30',
-				status: 'REJECTED',
-			},
-			...historyData,
-		]);
+	// Hàm xử lý Từ chối
+	const handleReject = async (id: string) => {
+		const target = pendingApiData?.find((item: any) => String(item.id) === id);
+		try {
+			await reviewRenewal(id, { status: 'rejected' });
+			message.info(`Đã từ chối yêu cầu của: ${target?.reader_name || target?.reader_username}`);
+			mutatePending((prev: any[]) => prev?.filter((item: any) => String(item.id) !== id) ?? []);
+			if (target) {
+				setHistoryData((prev) => [mapToHistory({ ...target, reviewed_at: new Date().toISOString() }, 'REJECTED'), ...prev]);
+			}
+		} catch (err: any) {
+			const detail = err?.response?.data?.detail || 'Có lỗi xảy ra!';
+			message.error(`❌ ${detail}`);
+		}
 	};
 
 	return (
@@ -87,11 +111,31 @@ const RenewalReview: React.FC = () => {
 				<Text type='secondary'>Xem xét và xử lý yêu cầu gia hạn từ độc giả</Text>
 			</div>
 
-			{/* 1. Phần danh sách chờ duyệt */}
-			<PendingList data={pendingData} onAccept={handleAccept} onReject={handleReject} />
+			{loading ? (
+				<div style={{ textAlign: 'center', padding: 80 }}>
+					<Spin size='large' />
+				</div>
+			) : (
+				<>
+					{/* 1. Danh sách chờ duyệt */}
+					{pendingData.length === 0 ? (
+						<Empty
+							description='Không có yêu cầu gia hạn đang chờ duyệt'
+							style={{
+								background: '#fff',
+								padding: '40px 20px',
+								borderRadius: 12,
+								marginBottom: 32,
+							}}
+						/>
+					) : (
+						<PendingList data={pendingData} onAccept={handleAccept} onReject={handleReject} />
+					)}
 
-			{/* 2. Phần danh sách lịch sử xử lý */}
-			<HistoryList data={historyData} />
+					{/* 2. Lịch sử xử lý */}
+					<HistoryList data={historyData} />
+				</>
+			)}
 		</div>
 	);
 };

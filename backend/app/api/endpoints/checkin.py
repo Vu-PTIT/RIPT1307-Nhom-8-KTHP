@@ -90,15 +90,52 @@ async def list_checkin_logs(
     return response
 
 
+@router.get("/librarian/stats")
+async def get_checkin_stats(
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """Get today's check-in statistics for the dashboard cards."""
+    from datetime import date as dt_date
+    from odmantic import ObjectId as OID
+    from app.models.log import CheckinLog
+    today = dt_date.today()
+    col = engine.get_collection(CheckinLog)
+    from datetime import datetime
+    today_start = datetime.combine(today, datetime.min.time())
+    today_end = datetime.combine(today, datetime.max.time())
+    today_in = await col.count_documents({"check_type": "in", "check_time": {"$gte": today_start, "$lte": today_end}})
+    # currently inside = users whose last log today is "in" (approximate: count IN without matching OUT)
+    total_logs = await col.count_documents({})
+    # people currently inside = logged IN today and haven't logged OUT yet
+    in_ids = await col.distinct("user", {"check_type": "in", "check_time": {"$gte": today_start, "$lte": today_end}})
+    out_ids = await col.distinct("user", {"check_type": "out", "check_time": {"$gte": today_start, "$lte": today_end}})
+    currently_in = len([u for u in in_ids if u not in out_ids])
+    return {
+        "currently_in_library": currently_in,
+        "today_checkin": today_in,
+        "total_logs": total_logs,
+    }
+
+
 @router.post("/librarian/manual", response_model=log_schema.CheckinLogListItem)
 async def manual_checkin(
     log_in: log_schema.CheckinLogCreate,
     current_user: User = Depends(deps.get_current_librarian),
 ) -> Any:
-    """Create a manual check-in log by librarian."""
+    """Create a manual check-in/out log by librarian. Accepts user_id OR username."""
     try:
+        # Support lookup by username if user_id looks like a username (not 24-char hex)
+        user_id = log_in.user_id
+        from odmantic import ObjectId
+        import re
+        if not re.match(r'^[0-9a-fA-F]{24}$', user_id):
+            # Treat as username/student_code
+            found_user = await engine.find_one(User, User.username == user_id)
+            if not found_user:
+                raise ValueError(f"User '{user_id}' not found")
+            user_id = str(found_user.id)
         log = await log_crud.manual_checkin(
-            engine, user_id=log_in.user_id, check_type=log_in.check_type,
+            engine, user_id=user_id, check_type=log_in.check_type,
             handled_by_id=str(current_user.id)
         )
         user = await engine.find_one(User, User.id == log.user.id)
