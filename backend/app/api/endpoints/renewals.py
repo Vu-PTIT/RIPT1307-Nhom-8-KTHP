@@ -35,6 +35,7 @@ async def _build_renewal_response(renewal):
     if not doc:
         raise HTTPException(status_code=400, detail="Document not found")
 
+    item_due_date = getattr(item, "due_date", None) or record.due_date
     return borrow_schema.RenewalRequestResponse(
         id=renewal.id,
         borrow_record_item_id=str(item.id),
@@ -42,7 +43,7 @@ async def _build_renewal_response(renewal):
         author=doc.author,
         cover_image=doc.cover_image,
         borrow_date=record.borrow_date,
-        old_due_date=record.due_date,
+        old_due_date=item_due_date,
         new_due_date=renewal.new_due_date,
         status=renewal.status,
         request_date=renewal.request_date,
@@ -134,6 +135,7 @@ async def list_pending_renewals(
             "borrow_record_item": item_id,
             "status": "approved"
         })
+        item_due_date = getattr(item, "due_date", None) or record.due_date
         response.append(borrow_schema.RenewalRequestResponse(
             id=req.id,
             borrow_record_item_id=str(item.id),
@@ -141,7 +143,7 @@ async def list_pending_renewals(
             author=doc.author,
             cover_image=doc.cover_image,
             borrow_date=record.borrow_date,
-            old_due_date=record.due_date,
+            old_due_date=item_due_date,
             new_due_date=req.new_due_date,
             status=req.status,
             request_date=req.request_date,
@@ -179,13 +181,14 @@ async def review_renewal(
         doc_id = _resolve_reference_id(copy.document)
         doc = await engine.find_one(Document, Document.id == doc_id)
         
+        item_due_date = getattr(item, "due_date", None) or record.due_date
         return borrow_schema.RenewalRequestResponse(
             id=renewal.id,
             borrow_record_item_id=str(item.id),
             document_title=doc.title,
             author=doc.author,
             cover_image=doc.cover_image,
-            old_due_date=record.due_date,
+            old_due_date=item_due_date,
             new_due_date=renewal.new_due_date,
             status=renewal.status,
             request_date=renewal.request_date,

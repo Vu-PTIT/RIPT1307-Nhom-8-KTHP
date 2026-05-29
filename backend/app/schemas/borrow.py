@@ -84,6 +84,7 @@ class BorrowRecord(BorrowRecordBase):
 class BorrowRecordItemBase(BaseModel):
     return_date: Optional[date] = None
     condition_on_return: Optional[str] = None
+    due_date: Optional[date] = None
 
 class BorrowRecordItemCreate(BorrowRecordItemBase):
     borrow_record_id: str
@@ -200,4 +201,5 @@ class BorrowRecordListItem(BaseModel):
     due_date: date
     status: str
     item_count: int
+    copy_codes: List[str] = []
     created_at: datetime

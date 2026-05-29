@@ -64,25 +64,29 @@ async def get_top_borrowed_books(engine: AIOEngine, limit: int = 5) -> List[TopB
 
 async def get_overdue_stats(engine: AIOEngine) -> OverdueStats:
     today = datetime.utcnow()
-    # Find active borrow items that are overdue
-    active_records = await engine.find(BorrowRecord, (BorrowRecord.status == "borrowed") & (BorrowRecord.due_date < today))
+    # Find active borrow items
+    active_items = await engine.find(BorrowRecordItem, BorrowRecordItem.return_date == None)
     
     overdue_items = []
-    for record in active_records:
-        items = await engine.find(BorrowRecordItem, (BorrowRecordItem.borrow_record == record.id) & (BorrowRecordItem.return_date == None))
-        reader = await engine.find_one(User, User.id == record.reader.id)
-        
-        for item in items:
-            copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
-            doc = await engine.find_one(Document, Document.id == copy.document.id)
+    for item in active_items:
+        record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
+        if not record or record.status != "borrowed":
+            continue
             
-            days_overdue = (today.date() - record.due_date.date()).days
+        item_due_date = getattr(item, "due_date", None) or record.due_date
+        
+        if item_due_date < today:
+            reader = await engine.find_one(User, User.id == record.reader.id)
+            copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
+            doc = await engine.find_one(Document, Document.id == copy.document.id) if copy else None
+            
+            days_overdue = (today.date() - item_due_date.date()).days
             
             overdue_items.append(OverdueItem(
                 borrow_id=record.id,
                 reader_username=reader.username if reader else "Unknown",
                 document_title=doc.title if doc else "Unknown",
-                due_date=record.due_date,
+                due_date=item_due_date,
                 days_overdue=days_overdue
             ))
             

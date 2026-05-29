@@ -33,14 +33,15 @@ async def _get_borrow_detail_logic(record_id: str):
         if not copy or not doc:
             continue
         
+        item_due_date = getattr(item, "due_date", None) or record.due_date
         status = "returned" if item.return_date else "borrowed"
-        if not item.return_date and _as_date(record.due_date) < datetime.now().date():
+        if not item.return_date and _as_date(item_due_date) < datetime.now().date():
             status = "overdue"
             
         item_summaries.append(borrow_schema.BorrowRecordItemSummary(
             id=item.id, copy_code=copy.copy_code, document_title=doc.title,
             author=doc.author, cover_image=doc.cover_image,
-            borrow_date=_as_date(record.borrow_date), due_date=_as_date(record.due_date),
+            borrow_date=_as_date(record.borrow_date), due_date=_as_date(item_due_date),
             return_date=_as_date(item.return_date) if item.return_date else None, status=status
         ))
         
@@ -122,14 +123,22 @@ async def list_borrow_records_librarian(
     )
     response = []
     from app.crud.borrow import get_record_items
+    from app.models.document import DocumentCopy
     for rec in records:
         reader = await engine.find_one(User, User.id == rec.reader.id)
         items = await get_record_items(engine, str(rec.id))
+        
+        copy_codes = []
+        for item in items:
+            copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
+            if copy:
+                copy_codes.append(copy.copy_code)
+
         response.append(borrow_schema.BorrowRecordListItem(
             id=rec.id, reader_username=reader.username if reader else "Unknown",
             reader_email=reader.email if reader else "",
             borrow_date=rec.borrow_date, due_date=rec.due_date,
-            status=rec.status, item_count=len(items), created_at=rec.created_at
+            status=rec.status, item_count=len(items), copy_codes=copy_codes, created_at=rec.created_at
         ))
     return response
 
@@ -148,6 +157,30 @@ async def return_book_librarian(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+@router.put("/librarian/{id}/confirm")
+async def confirm_reservation_librarian(
+    id: str,
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """Confirm handover of reserved books. Changes status from pending to borrowed."""
+    try:
+        record = await borrow_crud.confirm_borrow_handover(engine, id, str(current_user.id))
+        return {"message": "Success", "status": record.status}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/librarian/{id}/cancel")
+async def cancel_reservation_librarian(
+    id: str,
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """Cancel a pending reservation. Copies return to available."""
+    try:
+        record = await borrow_crud.cancel_borrow_reservation(engine, id)
+        return {"message": "Success", "status": record.status}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # ===================== USER ENDPOINT (DYNAMIC) =====================
 # Route /{id} phải đặt SAU tất cả các route cụ thể khác

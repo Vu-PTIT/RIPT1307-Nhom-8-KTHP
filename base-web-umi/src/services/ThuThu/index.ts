@@ -63,6 +63,12 @@ export async function processReturn(data: {
 }) {
   return axios.post(`${ipLibrary}/borrows/librarian/return`, data);
 }
+export async function confirmReservation(id: string) {
+  return axios.put(`${ipLibrary}/borrows/librarian/${id}/confirm`);
+}
+export async function cancelReservation(id: string) {
+  return axios.put(`${ipLibrary}/borrows/librarian/${id}/cancel`);
+}
 
 // ===================== Renewal Management =====================
 export async function getPendingRenewals(status?: string) {

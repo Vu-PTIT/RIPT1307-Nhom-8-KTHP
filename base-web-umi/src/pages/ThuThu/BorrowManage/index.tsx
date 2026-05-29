@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Typography, Card } from 'antd';
-import { BookOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { BookOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import Checkout from './components/Checkout';
 import ReturnTab from './components/ReturnTab';
+import ReserveTab from './components/ReserveTab';
 
 const { Title, Text } = Typography;
 
 const BorrowManage: React.FC = () => {
-	const [activeTab, setActiveTab] = useState<'borrow' | 'return'>('borrow');
+	const [activeTab, setActiveTab] = useState<'borrow' | 'return' | 'reserve'>('borrow');
 
 	return (
 		<div style={{ padding: '24px', background: '#f5f7f9', minHeight: '100vh' }}>
@@ -41,7 +42,7 @@ const BorrowManage: React.FC = () => {
 							borderRadius: 6,
 							fontWeight: 600,
 							transition: 'all 0.3s',
-							backgroundColor: activeTab === 'borrow' ? '#e3000f' : 'transparent', // Màu đỏ PTIT
+							backgroundColor: activeTab === 'borrow' ? '#e3000f' : 'transparent',
 							color: activeTab === 'borrow' ? '#fff' : '#595959',
 						}}
 					>
@@ -65,13 +66,33 @@ const BorrowManage: React.FC = () => {
 					>
 						<CheckCircleOutlined style={{ marginRight: 8, fontSize: 18 }} /> Nhận trả
 					</div>
+					<div
+						onClick={() => setActiveTab('reserve')}
+						style={{
+							flex: 1,
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							padding: '12px 0',
+							cursor: 'pointer',
+							borderRadius: 6,
+							fontWeight: 600,
+							transition: 'all 0.3s',
+							backgroundColor: activeTab === 'reserve' ? '#e3000f' : 'transparent',
+							color: activeTab === 'reserve' ? '#fff' : '#595959',
+						}}
+					>
+						<ClockCircleOutlined style={{ marginRight: 8, fontSize: 18 }} /> Đặt trước
+					</div>
 				</div>
 
 				{/* Nội dung thay đổi theo Tab */}
 				{activeTab === 'borrow' ? (
 					<Checkout />
-				) : (
+				) : activeTab === 'return' ? (
 					<ReturnTab />
+				) : (
+					<ReserveTab />
 				)}
 			</Card>
 		</div>

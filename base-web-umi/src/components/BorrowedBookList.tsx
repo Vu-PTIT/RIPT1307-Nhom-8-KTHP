@@ -43,11 +43,17 @@ const getStatus = (item: any) => {
 	if (item.return_date || item.status === 'returned') {
 		return { className: 'neutral', label: 'Đã trả', lateDays: 0 };
 	}
+	if (item.status === 'pending') {
+		return { className: 'warning', label: 'Chờ lấy sách', lateDays: 0 };
+	}
+	if (item.status === 'cancelled') {
+		return { className: 'danger', label: 'Đã hủy', lateDays: 0 };
+	}
 	const lateDays = daysLate(item.due_date || item.record_due_date);
 	if (item.status === 'overdue' || lateDays > 0) {
 		return { className: 'danger', label: 'Quá hạn', lateDays };
 	}
-	return { className: 'neutral', label: 'Đang mượn', lateDays: 0 };
+	return { className: 'success', label: 'Đang mượn', lateDays: 0 };
 };
 
 const BorrowedBookList: React.FC<BorrowedBookListProps> = ({

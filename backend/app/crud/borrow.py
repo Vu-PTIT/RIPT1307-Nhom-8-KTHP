@@ -142,21 +142,21 @@ async def create_borrow_from_cart(
             raise ValueError(f"Unable to load copy for document '{doc.title}'")
         copies.append(copy)
 
-    # Create borrow record; for self-checkout we set librarian = reader
+    # Create borrow record; for self-checkout we set librarian = reader, status = pending
     record = BorrowRecord(
         reader=reader,
         librarian=reader,
         borrow_date=datetime.utcnow(),
         due_date=datetime.utcnow() + timedelta(days=max_days),
-        status="borrowed",
+        status="pending",
     )
     await engine.save(record)
 
     # Create items and update copy/document counts
     for copy in copies:
-        item = BorrowRecordItem(borrow_record=record, document_copy=copy)
+        item = BorrowRecordItem(borrow_record=record, document_copy=copy, due_date=record.due_date)
         await engine.save(item)
-        copy.status = "borrowed"
+        copy.status = "reserved"
         await engine.save(copy)
 
         doc = await engine.find_one(Document, Document.id == copy.document.id)
@@ -167,6 +167,69 @@ async def create_borrow_from_cart(
     # Clear cart
     await cart_collection.delete_many({"user": ObjectId(user_id)})
 
+    return record
+
+async def confirm_borrow_handover(engine: AIOEngine, record_id: str, librarian_id: str) -> BorrowRecord:
+    """Librarian confirms handover of reserved books. Record status becomes borrowed."""
+    record = await engine.find_one(BorrowRecord, BorrowRecord.id == ObjectId(record_id))
+    if not record or record.status != "pending":
+        raise ValueError("Record not found or not in pending state")
+        
+    librarian = await engine.find_one(User, User.id == ObjectId(librarian_id))
+    if librarian:
+        record.librarian = librarian
+
+    now = datetime.utcnow()
+    # Recalculate max_days
+    max_days = 14
+    if record.reader.max_days_allowed is not None:
+        max_days = record.reader.max_days_allowed
+    
+    record.status = "borrowed"
+    record.borrow_date = now
+    record.due_date = now + timedelta(days=max_days)
+    await engine.save(record)
+    
+    # Update copies and items
+    item_collection = engine.get_collection(BorrowRecordItem)
+    items_raw = await item_collection.find({"borrow_record": record.id}).to_list(length=None)
+    for raw in items_raw:
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == raw["_id"])
+        if item:
+            item.due_date = record.due_date
+            await engine.save(item)
+            
+            copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
+            if copy:
+                copy.status = "borrowed"
+                await engine.save(copy)
+                
+    return record
+
+async def cancel_borrow_reservation(engine: AIOEngine, record_id: str) -> BorrowRecord:
+    """Cancel a pending reservation. Copies return to available."""
+    record = await engine.find_one(BorrowRecord, BorrowRecord.id == ObjectId(record_id))
+    if not record or record.status != "pending":
+        raise ValueError("Record not found or not in pending state")
+        
+    record.status = "cancelled"
+    await engine.save(record)
+    
+    item_collection = engine.get_collection(BorrowRecordItem)
+    items_raw = await item_collection.find({"borrow_record": record.id}).to_list(length=None)
+    for raw in items_raw:
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == raw["_id"])
+        if item:
+            copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
+            if copy:
+                copy.status = "available"
+                await engine.save(copy)
+                
+                doc = await engine.find_one(Document, Document.id == copy.document.id)
+                if doc:
+                    doc.available_copies += 1
+                    await engine.save(doc)
+                    
     return record
 
 # Borrow Records
@@ -327,7 +390,7 @@ async def create_borrow_record(
 
     # Create items and update copy/document
     for copy in copies:
-        item = BorrowRecordItem(borrow_record=record, document_copy=copy)
+        item = BorrowRecordItem(borrow_record=record, document_copy=copy, due_date=record.due_date)
         await engine.save(item)
         copy.status = "borrowed"
         await engine.save(copy)
@@ -424,10 +487,8 @@ async def review_renewal(
     elif new_status == "approved":
         item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == renewal.borrow_record_item.id)
         if item:
-            record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
-            if record:
-                record.due_date = renewal.new_due_date
-                await engine.save(record)
+            item.due_date = renewal.new_due_date
+            await engine.save(item)
 
     await engine.save(renewal)
     return renewal

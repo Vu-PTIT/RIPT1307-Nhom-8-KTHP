@@ -51,16 +51,18 @@ class BorrowRecordItem(Model):
     document_copy: DocumentCopy = Reference()
     return_date: datetime | None = Field(default=None)
     condition_on_return: str | None = Field(default=None)
+    due_date: datetime | None = Field(default=None)
 
     model_config = {
         "collection": "borrow_record_items"
     }
 
     @model_validator(mode="before")
-    def _coerce_return_date(cls, values: dict):
-        v = values.get("return_date")
-        if isinstance(v, datetime):
-            values["return_date"] = v.date()
+    def _coerce_dates(cls, values: dict):
+        for k in ("return_date", "due_date"):
+            v = values.get(k)
+            if isinstance(v, datetime):
+                values[k] = v.date()
         return values
 
 class RenewalRequest(Model):
