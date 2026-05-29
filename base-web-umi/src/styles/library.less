@@ -194,6 +194,20 @@ body {
 	}
 }
 
+/* clickable stat cards (Đang mượn / Trong giỏ) */
+.library-stat.clickable {
+	cursor: pointer;
+	transition: box-shadow 0.12s ease, transform 0.06s ease, border-color 0.12s ease;
+}
+.library-stat.clickable:hover {
+	box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.3);
+	transform: translateY(-2px);
+}
+.library-stat.clickable.active {
+	background: linear-gradient(180deg, #fff, #fff);
+	border: 1px solid rgba(201, 0, 0, 0.18);
+}
+
 .library-action-bar {
 	display: flex;
 	flex-wrap: wrap;
@@ -316,7 +330,8 @@ body {
 	display: grid;
 	grid-template-columns: minmax(220px, 340px) minmax(0, 1fr);
 	gap: 28px;
-	align-items: start;
+	/* make columns equal height so actions can align to the cover bottom */
+	align-items: stretch;
 }
 
 .library-detail-cover {
@@ -338,7 +353,10 @@ body {
 }
 
 .library-detail-main {
+	display: flex;
+	flex-direction: column;
 	min-width: 0;
+	/* height determined by cover column so actions align to image bottom */
 
 	h2 {
 		margin: 0 0 8px;
@@ -364,11 +382,32 @@ body {
 	margin-bottom: 16px;
 }
 
+/* make the right-hand tag group in detail header spread out a bit */
+.library-detail-header > div:last-child {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+}
+
 .library-detail-actions {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 10px;
-	margin-top: 18px;
+	align-items: center;
+	margin-top: auto;
+	/* Make buttons equal size and visually consistent */
+	.ant-btn {
+		flex: 1 1 0;
+		min-width: 160px;
+		height: 48px;
+		padding: 0 18px;
+		font-weight: 800;
+		border-radius: 14px;
+	}
+	/* keep primary button styles but ensure same height */
+	.ant-btn-primary {
+		height: 48px;
+	}
 }
 
 .borrow-detail-stack {
@@ -481,5 +520,14 @@ body {
 
 	.library-detail-header {
 		flex-direction: column;
+	}
+
+	/* Make detail page action buttons stack nicely on small screens */
+	.library-detail-actions {
+		.ant-btn {
+			flex: none;
+			width: 100%;
+			margin-bottom: 8px;
+		}
 	}
 }

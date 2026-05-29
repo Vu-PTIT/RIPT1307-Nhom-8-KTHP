@@ -78,7 +78,8 @@ async def update_user(engine: AIOEngine, user_id: str, user_in: dict) -> User:
     db_obj = await get_user_by_id(engine, user_id)
     if not db_obj:
         raise ValueError("User not found")
-    
+
+
     if "role_id" in user_in:
         role = await engine.find_one(Role, Role.id == ObjectId(user_in.pop("role_id")))
         if role:
@@ -89,6 +90,8 @@ async def update_user(engine: AIOEngine, user_id: str, user_in: dict) -> User:
         
     for field, value in user_in.items():
         if hasattr(db_obj, field):
+            if isinstance(value, datetime) and value.tzinfo is not None:
+                value = value.replace(tzinfo=None)
             setattr(db_obj, field, value)
             
     db_obj.updated_at = datetime.utcnow()

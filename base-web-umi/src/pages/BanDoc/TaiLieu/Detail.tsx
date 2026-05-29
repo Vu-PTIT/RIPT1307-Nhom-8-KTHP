@@ -110,10 +110,6 @@ export default function DocumentDetailPage(props: any) {
 									<Descriptions.Item label='Mô tả'>{document.description || 'Chưa có mô tả'}</Descriptions.Item>
 									<Descriptions.Item label='Tổng bản'>{document.total_copies ?? 0}</Descriptions.Item>
 									<Descriptions.Item label='Bản còn lại'>{document.available_copies ?? 0}</Descriptions.Item>
-									<Descriptions.Item label='Người tạo'>
-										{document.created_by?.full_name || document.created_by?.username || 'Không rõ'}
-									</Descriptions.Item>
-									<Descriptions.Item label='Ngày tạo'>{document.created_at || 'Không rõ'}</Descriptions.Item>
 								</Descriptions>
 
 								<div className='library-detail-actions'>

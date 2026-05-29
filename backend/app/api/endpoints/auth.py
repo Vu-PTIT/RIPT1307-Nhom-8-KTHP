@@ -1,7 +1,10 @@
 from datetime import timedelta
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import StreamingResponse
+import io
+from bson import ObjectId
 from app.db.session import engine
 from app.core import security
 from app.core.config import settings
@@ -93,3 +96,91 @@ async def read_user_me(
     Get current user.
     """
     return current_user
+
+
+@router.put("/me", response_model=user_schema.User)
+async def update_user_me(
+    user_in: user_schema.UserUpdate,
+    current_user = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Update current user profile.
+    """
+    update_data = user_in.model_dump(exclude_unset=True)
+    updated_user = await user_crud.update_user(engine, str(current_user.id), update_data)
+    return updated_user
+
+
+@router.post("/me/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: user_schema.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Upload an avatar image and store it in GridFS. Saves the file id string into User.avatar.
+    """
+    # get DB and GridFS bucket
+    db_name = engine.database_name
+    db = engine.client[db_name]
+    from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+    bucket = AsyncIOMotorGridFSBucket(db)
+
+    # read file bytes
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Empty file")
+
+    # upload to gridfs
+    try:
+        file_id = await bucket.upload_from_stream(file.filename or "avatar", contents, metadata={"contentType": file.content_type})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to store file: {e}")
+
+    # update user record
+    user = await user_crud.get_user_by_id(engine, str(current_user.id))
+    if not user:
+        try:
+            await bucket.delete(file_id)
+        except Exception:
+            pass
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # If user already had an avatar, delete the old one
+    if user.avatar:
+        try:
+            await bucket.delete(ObjectId(user.avatar))
+        except Exception:
+            pass
+
+    user.avatar = str(file_id)
+    await engine.save(user)
+    return {"file_id": str(file_id), "avatar": user.avatar}
+
+
+@router.get("/avatars/{file_id}")
+async def serve_avatar(file_id: str) -> Any:
+    """Stream an avatar image previously stored in GridFS by id."""
+    db_name = engine.database_name
+    db = engine.client[db_name]
+    from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+    bucket = AsyncIOMotorGridFSBucket(db)
+
+    try:
+        oid = ObjectId(file_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid file id")
+
+    try:
+        grid_out = await bucket.open_download_stream(oid)
+    except Exception:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    data = await grid_out.read()
+    content_type = None
+    try:
+        md = grid_out.metadata or {}
+        content_type = md.get("contentType")
+    except Exception:
+        content_type = None
+
+    return StreamingResponse(io.BytesIO(data), media_type=content_type or "application/octet-stream")

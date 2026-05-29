@@ -2,6 +2,7 @@ import React from 'react';
 import { Avatar, Dropdown, Menu } from 'antd';
 import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { history, useModel } from 'umi';
+import { ipLibrary } from '@/utils/ip';
 
 type Props = {
 	menu?: boolean;
@@ -10,6 +11,8 @@ type Props = {
 const AvatarDropdown: React.FC<Props> = ({ menu = false }) => {
 	const { initialState } = useModel('@@initialState');
 	const user: any = initialState?.currentUser;
+	const displayName = user?.name || user?.fullname || user?.username || 'Người dùng';
+	const initial = displayName.trim().charAt(0).toUpperCase() || 'U';
 
 	const handleLogout = () => {
 		try {
@@ -25,7 +28,7 @@ const AvatarDropdown: React.FC<Props> = ({ menu = false }) => {
 
 	const menuOverlay = (
 		<Menu>
-			<Menu.Item key='profile' onClick={() => history.push('/tai-khoan')}>
+			<Menu.Item key='profile' onClick={() => history.push('/ban-doc/tai-khoan')}>
 				<UserOutlined />
 				&nbsp;Thông tin
 			</Menu.Item>
@@ -37,10 +40,16 @@ const AvatarDropdown: React.FC<Props> = ({ menu = false }) => {
 		</Menu>
 	);
 
+	const avatarSrc = user?.avatar ? `${ipLibrary}/auth/avatars/${user.avatar}` : undefined;
+
 	const avatar = (
 		<span style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-			<Avatar style={{ backgroundColor: '#87d068' }} icon={<UserOutlined />} />
-			<span style={{ marginLeft: 8 }}>{user?.name || user?.fullname || user?.username || 'Người dùng'}</span>
+			{avatarSrc ? (
+				<Avatar src={avatarSrc} />
+			) : (
+				<Avatar style={{ backgroundColor: '#87d068' }}>{initial}</Avatar>
+			)}
+			<span style={{ marginLeft: 8 }}>{displayName}</span>
 		</span>
 	);
 
