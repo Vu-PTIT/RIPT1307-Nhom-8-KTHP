@@ -83,11 +83,11 @@ export default [
 				name: 'Quản lý kho sách',
 				component: './ThuThu/BookWarehouseManage',
 			},
-			{
-				path: '/thu-thu/tra-cuu-sach',
-				name: 'Tra cứu sách',
-				component: './ThuThu/LookupBook',
-			},
+			// {
+			// 	path: '/thu-thu/tra-cuu-sach',
+			// 	name: 'Tra cứu sách',
+			// 	component: './ThuThu/LookupBook',
+			// },
 			{
 				path: '/thu-thu/xu-ly-muon-tra',
 				name: 'Xử lý mượn trả',
