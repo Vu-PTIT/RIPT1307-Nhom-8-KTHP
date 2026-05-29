@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import datetime, date, timedelta
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Tuple
 from odmantic import AIOEngine, ObjectId
 from app.models.borrow import Wishlist, BorrowCartItem, BorrowRecord, BorrowRecordItem, RenewalRequest
 from app.models.document import Document, DocumentCopy
@@ -171,17 +171,16 @@ async def create_borrow_from_cart(
 
 # Borrow Records
 async def get_my_borrow_records(engine: AIOEngine, user_id: str, status: Optional[str] = None) -> List[BorrowRecord]:
-    collection = engine.get_collection(BorrowRecord)
-    query = {"reader": ObjectId(user_id)}
+    # Dùng odmantic engine.find thay vì raw Motor query để khớp với cách odmantic lưu Reference
+    filters = [BorrowRecord.reader == ObjectId(user_id)]
     if status:
-        query["status"] = status
-    raw = await collection.find(query).sort("borrow_date", -1).to_list(length=None)
-    records: List[BorrowRecord] = []
-    for doc in raw:
-        record = await engine.find_one(BorrowRecord, BorrowRecord.id == doc["_id"])
-        if record:
-            records.append(record)
-    return records
+        filters.append(BorrowRecord.status == status)
+    records = await engine.find(
+        BorrowRecord,
+        *filters,
+        sort=BorrowRecord.borrow_date.desc()
+    )
+    return list(records)
 
 
 async def count_current_borrowed(engine: AIOEngine, user_id: str) -> int:

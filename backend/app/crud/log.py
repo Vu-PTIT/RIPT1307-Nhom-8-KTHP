@@ -35,17 +35,16 @@ async def get_my_checkin_logs(
     page_size: int = 20
 ) -> Tuple[List[CheckinLog], int]:
     skip = (page - 1) * page_size
-    collection = engine.get_collection(CheckinLog)
-    query = {"user": ObjectId(user_id)}
-    raw_logs = await collection.find(query).sort("check_time", -1).skip(skip).limit(page_size).to_list(length=None)
-    total = await collection.count_documents(query)
-
-    logs: List[CheckinLog] = []
-    for raw in raw_logs:
-        log = await engine.find_one(CheckinLog, CheckinLog.id == raw["_id"])
-        if log:
-            logs.append(log)
-    return logs, total
+    # Dùng odmantic engine.find thay vì raw Motor query để khớp cách lưu Reference
+    total = await engine.count(CheckinLog, CheckinLog.user == ObjectId(user_id))
+    logs = await engine.find(
+        CheckinLog,
+        CheckinLog.user == ObjectId(user_id),
+        skip=skip,
+        limit=page_size,
+        sort=CheckinLog.check_time.desc()
+    )
+    return list(logs), total
 
 
 # ===================== LIBRARIAN OPERATIONS =====================

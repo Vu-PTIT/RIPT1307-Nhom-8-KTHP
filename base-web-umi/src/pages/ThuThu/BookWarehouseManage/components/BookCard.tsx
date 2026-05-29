@@ -10,6 +10,7 @@ export interface BookData {
 	author: string;
 	category: string;
 	availableCount: number;
+	totalCount?: number;
 	image: string;
 }
 

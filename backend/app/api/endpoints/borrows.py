@@ -90,26 +90,8 @@ async def get_current_borrow_count(
     return {"current_borrowed": count}
 
 
-@router.get("/{id}", response_model=borrow_schema.BorrowRecordDetailResponse)
-async def get_borrow_detail(
-    id: str,
-    current_user: User = Depends(deps.get_current_reader)
-) -> Any:
-    """Get detailed information about a specific borrow record (Reader)."""
-    # Check if this record belongs to the user
-    from app.models.borrow import BorrowRecord
-    from odmantic import ObjectId
-
-    collection = engine.get_collection(BorrowRecord)
-    record_raw = await collection.find_one({"_id": ObjectId(id), "reader": ObjectId(str(current_user.id))})
-    record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_raw["_id"]) if record_raw else None
-    if not record:
-        raise HTTPException(status_code=404, detail="Borrow record not found or access denied")
-    
-    return await _get_borrow_detail_logic(id)
-
-
 # ===================== LIBRARIAN ENDPOINTS =====================
+# Phải đặt TRƯỜC route /{id} để FastAPI khộng nhầm lẵn path cụ thể với param động
 
 @router.post("/librarian", response_model=borrow_schema.BorrowRecordDetailResponse)
 async def create_borrow_librarian(
@@ -165,3 +147,27 @@ async def return_book_librarian(
         return {"message": "Success", "return_date": str(item.return_date)}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ===================== USER ENDPOINT (DYNAMIC) =====================
+# Route /{id} phải đặt SAU tất cả các route cụ thể khác
+
+@router.get("/{id}", response_model=borrow_schema.BorrowRecordDetailResponse)
+async def get_borrow_detail(
+    id: str,
+    current_user: User = Depends(deps.get_current_reader)
+) -> Any:
+    """Get detailed information about a specific borrow record (Reader)."""
+    from app.models.borrow import BorrowRecord
+    from odmantic import ObjectId
+
+    # Dùng odmantic thay vì raw Motor query để khớp Reference
+    record = await engine.find_one(
+        BorrowRecord,
+        (BorrowRecord.id == ObjectId(id)) & (BorrowRecord.reader == ObjectId(str(current_user.id)))
+    )
+    if not record:
+        raise HTTPException(status_code=404, detail="Borrow record not found or access denied")
+    
+    return await _get_borrow_detail_logic(id)
+

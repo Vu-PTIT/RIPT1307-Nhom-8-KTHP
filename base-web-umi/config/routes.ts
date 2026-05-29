@@ -107,13 +107,7 @@ export default [
 		component: './ThuThu/CheckinLogs',
 		access: 'isLibrarian',
 	},
-	{
-		path: '/thu-thu/bulk-upload-images',
-		name: 'Upload ảnh bìa',
-		icon: 'UploadOutlined',
-		component: './BulkUploadImages',
-		access: 'isLibrarian',
-	},
+
 
 	// === ADMIN PAGES ===
 	{
