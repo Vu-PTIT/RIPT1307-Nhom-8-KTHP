@@ -80,17 +80,10 @@ export default [
 
 	// === LIBRARIAN PAGES ===
 	{
-		path: '/thu-thu/tai-lieu',
-		name: 'Quản lý tài liệu',
+		path: '/thu-thu/kho-sach',
+		name: 'Quản lý kho sách',
 		icon: 'BookOutlined',
-		component: './ThuThu/DocumentManage',
-		access: 'isLibrarian',
-	},
-	{
-		path: '/thu-thu/danh-muc',
-		name: 'Danh mục',
-		icon: 'AppstoreOutlined',
-		component: './ThuThu/CategoryManage',
+		component: './ThuThu/BookWarehouseManage',
 		access: 'isLibrarian',
 	},
 	{
