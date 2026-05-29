@@ -20,8 +20,16 @@ export async function getUserInfo() {
 	return axios.get(`${ipLibrary}/auth/me`);
 }
 
-export async function updateUserInfo(payload: { gender?: string; date_of_birth?: string | null }) {
+export async function updateUserInfo(payload: { full_name?: string; gender?: string; date_of_birth?: string | null; avatar?: string }) {
 	return axios.put(`${ipLibrary}/auth/me`, payload);
+}
+
+export async function uploadUserAvatar(file: File | Blob) {
+	const form = new FormData();
+	form.append('file', file);
+	return axios.post(`${ipLibrary}/auth/me/avatar`, form, {
+		headers: { 'Content-Type': 'multipart/form-data' },
+	});
 }
 
 export async function adminlogin(payload: { username?: string; password?: string }) {

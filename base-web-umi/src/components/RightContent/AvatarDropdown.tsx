@@ -2,6 +2,7 @@ import React from 'react';
 import { Avatar, Dropdown, Menu } from 'antd';
 import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { history, useModel } from 'umi';
+import { ipLibrary } from '@/utils/ip';
 
 type Props = {
 	menu?: boolean;
@@ -39,9 +40,15 @@ const AvatarDropdown: React.FC<Props> = ({ menu = false }) => {
 		</Menu>
 	);
 
+	const avatarSrc = user?.avatar ? `${ipLibrary}/auth/avatars/${user.avatar}` : undefined;
+
 	const avatar = (
 		<span style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-			<Avatar style={{ backgroundColor: '#87d068' }}>{initial}</Avatar>
+			{avatarSrc ? (
+				<Avatar src={avatarSrc} />
+			) : (
+				<Avatar style={{ backgroundColor: '#87d068' }}>{initial}</Avatar>
+			)}
 			<span style={{ marginLeft: 8 }}>{displayName}</span>
 		</span>
 	);

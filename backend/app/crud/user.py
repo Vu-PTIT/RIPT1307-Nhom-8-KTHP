@@ -79,14 +79,7 @@ async def update_user(engine: AIOEngine, user_id: str, user_in: dict) -> User:
     if not db_obj:
         raise ValueError("User not found")
 
-    immutable_fields = {"gender", "date_of_birth"}
-    requested_immutable_fields = immutable_fields.intersection(user_in.keys())
-    if requested_immutable_fields:
-        current_values = {field: getattr(db_obj, field, None) for field in requested_immutable_fields}
-        requested_values = {field: user_in.get(field) for field in requested_immutable_fields}
-        if any(requested_values[field] != current_values[field] for field in requested_immutable_fields):
-            raise ValueError("Gender and date of birth cannot be changed")
-    
+
     if "role_id" in user_in:
         role = await engine.find_one(Role, Role.id == ObjectId(user_in.pop("role_id")))
         if role:
@@ -97,6 +90,8 @@ async def update_user(engine: AIOEngine, user_id: str, user_in: dict) -> User:
         
     for field, value in user_in.items():
         if hasattr(db_obj, field):
+            if isinstance(value, datetime) and value.tzinfo is not None:
+                value = value.replace(tzinfo=None)
             setattr(db_obj, field, value)
             
     db_obj.updated_at = datetime.utcnow()

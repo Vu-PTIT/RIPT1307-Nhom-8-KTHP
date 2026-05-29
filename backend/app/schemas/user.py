@@ -29,7 +29,10 @@ class UserBase(BaseModel):
     username: str
     email: EmailStr
     gender: Optional[str] = None
-    date_of_birth: Optional[date] = None
+    date_of_birth: Optional[datetime] = None
+    full_name: Optional[str] = None
+    avatar: Optional[str] = None
+    phone: Optional[str] = None
     max_books_allowed: Optional[int] = None
     max_days_allowed: Optional[int] = None
     is_active: bool = True
@@ -48,7 +51,10 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     password: Optional[str] = None
     gender: Optional[str] = None
-    date_of_birth: Optional[date] = None
+    date_of_birth: Optional[datetime] = None
+    full_name: Optional[str] = None
+    avatar: Optional[str] = None
+    phone: Optional[str] = None
     max_books_allowed: Optional[int] = None
     max_days_allowed: Optional[int] = None
     is_active: Optional[bool] = None
@@ -58,7 +64,10 @@ class AdminUserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     gender: Optional[str] = None
-    date_of_birth: Optional[date] = None
+    date_of_birth: Optional[datetime] = None
+    full_name: Optional[str] = None
+    avatar: Optional[str] = None
+    phone: Optional[str] = None
     max_books_allowed: Optional[int] = None
     max_days_allowed: Optional[int] = None
     is_active: Optional[bool] = None
