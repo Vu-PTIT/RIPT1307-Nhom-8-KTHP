@@ -50,8 +50,9 @@ export default function BorrowCartPage() {
 	const loadBorrowedItems = async () => {
 		if (mountedRef.current) setBorrowedLoading(true);
 		try {
-			const res = await MuonSach.getMyBorrows('borrowed');
-			const records = Array.isArray(res.data) ? res.data : [];
+			const res = await MuonSach.getMyBorrows();
+			const allRecords = Array.isArray(res.data) ? res.data : [];
+			const records = allRecords.filter((r: any) => r.status === 'borrowed' || r.status === 'pending');
 			const detailResults = await Promise.allSettled(records.map((record: any) => MuonSach.getBorrowDetail(record.id)));
 			const activeItems = detailResults.flatMap((result: any) => {
 				if (result.status !== 'fulfilled') return [];
