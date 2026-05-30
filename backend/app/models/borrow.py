@@ -39,11 +39,15 @@ class BorrowRecord(Model):
 
     @model_validator(mode="before")
     def _coerce_dates(cls, values: dict):
-        # Some stored documents contain datetimes for date-only fields; coerce them to date
+        # Ensure they are datetime objects, strip time if needed
         for k in ("borrow_date", "due_date"):
             v = values.get(k)
-            if isinstance(v, datetime):
-                values[k] = v.date()
+            if isinstance(v, date) and not isinstance(v, datetime):
+                values[k] = datetime(v.year, v.month, v.day)
+            elif isinstance(v, datetime):
+                # Optionally strip time if required
+                # values[k] = datetime(v.year, v.month, v.day)
+                pass
         return values
 
 class BorrowRecordItem(Model):
@@ -61,8 +65,10 @@ class BorrowRecordItem(Model):
     def _coerce_dates(cls, values: dict):
         for k in ("return_date", "due_date"):
             v = values.get(k)
-            if isinstance(v, datetime):
-                values[k] = v.date()
+            if isinstance(v, date) and not isinstance(v, datetime):
+                values[k] = datetime(v.year, v.month, v.day)
+            elif isinstance(v, datetime):
+                pass
         return values
 
 class RenewalRequest(Model):
@@ -82,6 +88,8 @@ class RenewalRequest(Model):
     @model_validator(mode="before")
     def _coerce_new_due_date(cls, values: dict):
         v = values.get("new_due_date")
-        if isinstance(v, datetime):
-            values["new_due_date"] = v.date()
+        if isinstance(v, date) and not isinstance(v, datetime):
+            values["new_due_date"] = datetime(v.year, v.month, v.day)
+        elif isinstance(v, datetime):
+            pass
         return values

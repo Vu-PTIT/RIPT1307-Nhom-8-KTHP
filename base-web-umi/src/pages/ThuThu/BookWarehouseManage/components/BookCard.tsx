@@ -131,8 +131,7 @@ const BookCard: React.FC<BookCardProps> = ({ book, categories = [], onDetail, on
 					</Tooltip>,
 					<Tooltip title='Xóa đầu sách' key="delete">
 						<Popconfirm
-							title={`Xóa sách "${book.title}"?`}
-							description='Xóa tất cả bản sao và không thể hoàn tác!'
+							title={`Xóa sách "${book.title}"? Tất cả bản sao sẽ bị xóa và không thể hoàn tác!`}
 							onConfirm={handleDelete}
 							okText='Xóa'
 							cancelText='Hủy'
@@ -141,20 +140,22 @@ const BookCard: React.FC<BookCardProps> = ({ book, categories = [], onDetail, on
 							<Button danger className="icon-btn remove-btn" icon={<DeleteOutlined />} />
 						</Popconfirm>
 					</Tooltip>
+
 				]}
 			/>
 
 			{/* Modal Thêm bản sao */}
 			<Modal
 				title={<><CopyOutlined style={{ marginRight: 8 }} />Thêm bản sao — {book.title}</>}
-				open={addCopyVisible}
+				visible={addCopyVisible}
 				onCancel={() => { setAddCopyVisible(false); addCopyForm.resetFields(); }}
 				onOk={() => addCopyForm.submit()}
 				okText='Thêm bản sao'
 				cancelText='Hủy'
 				confirmLoading={addCopyLoading}
-				okButtonProps={{ style: { background: '#e3000f', borderColor: '#e3000f' } }}
+				okButtonProps={{ className: 'btn-primary-danger' }}
 			>
+
 				<Form form={addCopyForm} layout='vertical' onFinish={handleAddCopy} style={{ marginTop: 16 }}>
 					<Form.Item
 						name='copy_code'
@@ -176,15 +177,16 @@ const BookCard: React.FC<BookCardProps> = ({ book, categories = [], onDetail, on
 			{/* Modal Sửa sách */}
 			<Modal
 				title={<><EditOutlined style={{ marginRight: 8 }} />Chi tiết & Chỉnh sửa sách</>}
-				open={editVisible}
+				visible={editVisible}
 				onCancel={() => setEditVisible(false)}
 				onOk={() => editForm.submit()}
 				okText='Lưu thay đổi'
 				cancelText='Hủy'
 				confirmLoading={editLoading}
-				okButtonProps={{ style: { background: '#e3000f', borderColor: '#e3000f' } }}
+				okButtonProps={{ className: 'btn-primary-danger' }}
 				width={600}
 			>
+
 				<Form form={editForm} layout='vertical' onFinish={handleEdit} style={{ marginTop: 16 }}>
 					<Form.Item name='title' label='Tên sách' rules={[{ required: true }]}>
 						<Input size='large' />

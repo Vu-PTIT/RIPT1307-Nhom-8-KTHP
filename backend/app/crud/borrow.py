@@ -109,7 +109,7 @@ async def create_borrow_from_cart(
 
     # Count current active borrowed items using motor
     borrow_collection = engine.get_collection(BorrowRecord)
-    active_raw = await borrow_collection.find({"reader": ObjectId(user_id), "status": "borrowed"}).to_list(length=None)
+    active_raw = await borrow_collection.find({"reader": ObjectId(user_id), "status": {"$in": ["borrowed", "pending"]}}).to_list(length=None)
     current_borrowed = 0
     item_collection = engine.get_collection(BorrowRecordItem)
     for rec in active_raw:
@@ -252,7 +252,7 @@ async def count_current_borrowed(engine: AIOEngine, user_id: str) -> int:
     item_collection = engine.get_collection(BorrowRecordItem)
 
     # Find active borrow records for reader
-    active_raw = await borrow_collection.find({"reader": ObjectId(user_id), "status": "borrowed"}).to_list(length=None)
+    active_raw = await borrow_collection.find({"reader": ObjectId(user_id), "status": {"$in": ["borrowed", "pending"]}}).to_list(length=None)
     total = 0
     for rec in active_raw:
         cnt = await item_collection.count_documents({"borrow_record": rec["_id"], "return_date": None})

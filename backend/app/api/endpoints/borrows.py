@@ -137,7 +137,7 @@ async def list_borrow_records_librarian(
         response.append(borrow_schema.BorrowRecordListItem(
             id=rec.id, reader_username=reader.username if reader else "Unknown",
             reader_email=reader.email if reader else "",
-            borrow_date=rec.borrow_date, due_date=rec.due_date,
+            borrow_date=_as_date(rec.borrow_date), due_date=_as_date(rec.due_date),
             status=rec.status, item_count=len(items), copy_codes=copy_codes, created_at=rec.created_at
         ))
     return response

@@ -6,7 +6,9 @@ import {
 import { SearchOutlined, PlusOutlined, UserOutlined, DeleteOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useRequest } from 'umi';
 import { searchCopyByCode, searchReaders, createBorrowLibrarian } from '@/services/ThuThu';
+import { getApiError } from '@/utils/getApiError';
 import dayjs from 'dayjs';
+
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -92,16 +94,12 @@ const CheckoutTab: React.FC = () => {
 			setSelectedReader(null);
 			setReaderKeyword('');
 		} catch (err: any) {
-			const detail = err?.response?.data?.detail;
-			if (typeof detail === 'object') {
-				message.error(detail.message || 'Có lỗi xảy ra');
-			} else {
-				message.error(detail || 'Tạo phiếu mượn thất bại!');
-			}
+			message.error(getApiError(err, 'Tạo phiếu mượn thất bại!'));
 		} finally {
 			setSubmitting(false);
 		}
 	};
+
 
 	const copiesColumns = [
 		{
@@ -153,44 +151,29 @@ const CheckoutTab: React.FC = () => {
 	return (
 		<div>
 			{/* Chọn Độc giả */}
-			<div style={{ marginBottom: 20 }}>
-				<div style={{ fontWeight: 600, marginBottom: 8 }}>
-					<UserOutlined style={{ marginRight: 6 }} /> Độc giả
+			<div className='tt-checkout-section'>
+				<div className='tt-section-title'>
+					<UserOutlined /> Độc giả
 				</div>
 				{selectedReader ? (
-					<div
-						style={{
-							display: 'flex',
-							alignItems: 'center',
-							gap: 12,
-							background: '#f6ffed',
-							border: '1px solid #b7eb8f',
-							borderRadius: 8,
-							padding: '10px 16px',
-						}}
-					>
-						<Avatar style={{ backgroundColor: '#52c41a' }}>
-							{selectedReader.username.charAt(0).toUpperCase()}
-						</Avatar>
-						<div>
-							<div style={{ fontWeight: 600 }}>{selectedReader.username}</div>
-							<div style={{ fontSize: 12, color: '#8c8c8c' }}>{selectedReader.email}</div>
-						</div>
-						<Button
-							size='small'
-							type='text'
-							danger
-							onClick={() => setSelectedReader(null)}
-							style={{ marginLeft: 'auto' }}
-						>
-							Đổi
-						</Button>
+				<div className='tt-reader-selected'>
+					<Avatar className='tt-reader-avatar'>
+						{selectedReader.username.charAt(0).toUpperCase()}
+					</Avatar>
+					<div className='tt-reader-info'>
+						<div className='name'>{selectedReader.username}</div>
+						<div className='email'>{selectedReader.email}</div>
 					</div>
+					<Button size='small' type='text' danger onClick={() => setSelectedReader(null)} style={{ marginLeft: 'auto' }}>
+						Đổi
+					</Button>
+				</div>
+
 				) : (
 					<Select
 						showSearch
 						size='large'
-						style={{ width: '100%' }}
+						className='w-100'
 						placeholder='Tìm kiếm theo tên hoặc email độc giả...'
 						filterOption={false}
 						onSearch={setReaderKeyword}
@@ -228,7 +211,7 @@ const CheckoutTab: React.FC = () => {
 				<div style={{ fontWeight: 600, marginBottom: 8 }}>
 					<SearchOutlined style={{ marginRight: 6 }} /> Thêm sách bằng mã vạch
 				</div>
-				<div style={{ display: 'flex', gap: 8 }}>
+				<div className='tt-checkin-input-row'>
 					<Input
 						ref={barcodeRef}
 						size='large'
@@ -236,7 +219,6 @@ const CheckoutTab: React.FC = () => {
 						value={barcodeInput}
 						onChange={(e) => setBarcodeInput(e.target.value)}
 						onPressEnter={handleBarcodeSearch}
-						style={{ borderRadius: 8 }}
 					/>
 					<Button
 						type='primary'
@@ -244,11 +226,12 @@ const CheckoutTab: React.FC = () => {
 						icon={<PlusOutlined />}
 						onClick={handleBarcodeSearch}
 						loading={searchingCopy}
-						style={{ background: '#e3000f', borderColor: '#e3000f', borderRadius: 8 }}
+						className='btn-primary-danger'
 					>
 						Thêm
 					</Button>
 				</div>
+
 			</div>
 
 			{/* Danh sách sách đã chọn */}
@@ -277,7 +260,7 @@ const CheckoutTab: React.FC = () => {
 						loading={submitting}
 						onClick={handleSubmit}
 						disabled={!selectedReader}
-						style={{ background: '#e3000f', borderColor: '#e3000f', borderRadius: 8, fontWeight: 600 }}
+						className='btn-primary-danger'
 					>
 						Xác nhận cho mượn ({selectedCopies.length} cuốn)
 					</Button>
@@ -288,6 +271,7 @@ const CheckoutTab: React.FC = () => {
 					)}
 				</div>
 			)}
+
 		</div>
 	);
 };
