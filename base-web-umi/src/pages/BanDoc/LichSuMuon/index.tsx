@@ -52,9 +52,9 @@ export default function BorrowHistoryPage() {
 						loading={loading}
 						dataSource={items}
 						renderItem={(it: any) => (
-							<List.Item onClick={() => history.push(`/lich-su-muon/${it.id}`)} style={{ cursor: 'pointer' }}>
+							<List.Item onClick={() => history.push(`/ban-doc/lich-su-muon/${it.id}`)} style={{ cursor: 'pointer' }}>
 								<List.Item.Meta
-									title={`Phiếu mượn ${it.id}`}
+									title={`Phiếu mượn`}
 									description={`Ngày mượn: ${it.borrow_date || 'Không rõ'} | Hạn trả: ${it.due_date || 'Không rõ'}`}
 								/>
 								<div>

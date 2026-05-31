@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Empty, List, message, Tag } from 'antd';
-import { BookOutlined, FieldTimeOutlined, SyncOutlined } from '@ant-design/icons';
+import { BookOutlined, FieldTimeOutlined, SyncOutlined, CalendarOutlined } from '@ant-design/icons';
 import PageSkeleton from '@/components/PageSkeleton';
 import BorrowedBookList from '@/components/BorrowedBookList';
 import * as MuonSach from '@/services/MuonSach';
+import getCoverForTitle from '@/utils/coverMap';
+import { ipLibrary } from '@/utils/ip';
 
 const addDays = (value: string, days: number) => {
 	const dueDate = value ? new Date(`${value}T00:00:00`) : new Date();
@@ -20,6 +22,7 @@ export default function RenewalsPage() {
 	const [loading, setLoading] = useState(false);
 	const [borrowedLoading, setBorrowedLoading] = useState(false);
 	const [requestingId, setRequestingId] = useState<string | null>(null);
+	const [activeTab, setActiveTab] = useState<'borrowed' | 'requests'>('borrowed');
 
 	const loadRenewals = async () => {
 		setLoading(true);
@@ -97,77 +100,133 @@ export default function RenewalsPage() {
 	return (
 		<PageSkeleton title='Yêu cầu gia hạn'>
 			<div className='library-panel'>
-				<div className='borrowed-now-panel'>
-					<div className='borrowed-now-header'>
-						<div className='library-stat'>
-							<BookOutlined />
-							<div>
-								<span>Sách đang mượn có thể gia hạn</span>
-								<strong>{borrowedItems.length}</strong>
-							</div>
+				<div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+					<div 
+						className={`library-stat ${activeTab === 'borrowed' ? 'active' : ''}`}
+						style={{ 
+							cursor: 'pointer', 
+							border: activeTab === 'borrowed' ? '1px solid #1677ff' : '1px solid #f0f0f0', 
+							backgroundColor: activeTab === 'borrowed' ? '#e6f4ff' : '#fff',
+							minWidth: '200px'
+						}}
+						onClick={() => setActiveTab('borrowed')}
+					>
+						<BookOutlined style={{ color: activeTab === 'borrowed' ? '#1677ff' : undefined }} />
+						<div>
+							<span style={{ color: activeTab === 'borrowed' ? '#1677ff' : undefined }}>Sách đang mượn có thể gia hạn</span>
+							<strong style={{ color: activeTab === 'borrowed' ? '#1677ff' : undefined }}>{borrowedItems.length}</strong>
 						</div>
 					</div>
-					{borrowedItems.length === 0 ? (
-						<Empty
-							image={Empty.PRESENTED_IMAGE_SIMPLE}
-							description={borrowedLoading ? 'Đang tải sách đang mượn' : 'Không có sách đang mượn để gia hạn'}
-						/>
-					) : (
-						<BorrowedBookList
-							loading={borrowedLoading}
-							items={borrowedItems}
-							emptyDescription='Không có sách đang mượn để gia hạn'
-							actionRender={(borrowed: any) => {
-								const pending = getPendingRenewal(borrowed);
-								return pending ? (
-									<Tag className='library-status-tag neutral'>Đã gửi yêu cầu</Tag>
-								) : (
-									<Button
-										type='primary'
-										icon={<FieldTimeOutlined />}
-										loading={requestingId === borrowed.id}
-										onClick={() => handleRequestRenewal(borrowed)}
-									>
-										Gia hạn thêm 7 ngày
-									</Button>
-								);
-							}}
-						/>
-					)}
+					<div 
+						className={`library-stat ${activeTab === 'requests' ? 'active' : ''}`}
+						style={{ 
+							cursor: 'pointer', 
+							border: activeTab === 'requests' ? '1px solid #1677ff' : '1px solid #f0f0f0', 
+							backgroundColor: activeTab === 'requests' ? '#e6f4ff' : '#fff',
+							minWidth: '200px'
+						}}
+						onClick={() => setActiveTab('requests')}
+					>
+						<SyncOutlined style={{ color: activeTab === 'requests' ? '#1677ff' : undefined }} />
+						<div>
+							<span style={{ color: activeTab === 'requests' ? '#1677ff' : undefined }}>Yêu cầu gia hạn</span>
+							<strong style={{ color: activeTab === 'requests' ? '#1677ff' : undefined }}>{items.length}</strong>
+						</div>
+					</div>
 				</div>
 
-				<div className='library-action-bar'>
-					<div className='library-action-left'>
-						<div className='library-stat'>
-							<SyncOutlined />
-							<div>
-								<span>Yêu cầu gia hạn</span>
-								<strong>{items.length}</strong>
-							</div>
-						</div>
+				{activeTab === 'borrowed' && (
+					<div className='borrowed-now-panel'>
+						{borrowedItems.length === 0 ? (
+							<Empty
+								image={Empty.PRESENTED_IMAGE_SIMPLE}
+								description={borrowedLoading ? 'Đang tải sách đang mượn' : 'Không có sách đang mượn để gia hạn'}
+							/>
+						) : (
+							<BorrowedBookList
+								loading={borrowedLoading}
+								items={borrowedItems}
+								emptyDescription='Không có sách đang mượn để gia hạn'
+								actionRender={(borrowed: any) => {
+									const pending = getPendingRenewal(borrowed);
+									return pending ? (
+										<Tag className='library-status-tag neutral'>Đã gửi yêu cầu</Tag>
+									) : (
+										<Button
+											type='primary'
+											icon={<FieldTimeOutlined />}
+											loading={requestingId === borrowed.id}
+											onClick={() => handleRequestRenewal(borrowed)}
+										>
+											Gia hạn thêm 7 ngày
+										</Button>
+									);
+								}}
+							/>
+						)}
 					</div>
-				</div>
-				<div className='library-list-card'>
-					{items.length === 0 ? (
-						<Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description='Chưa có yêu cầu gia hạn nào' />
-					) : (
-						<List
-							loading={loading}
-							dataSource={items}
-							renderItem={(it: any) => (
-								<List.Item>
-									<List.Item.Meta
-										title={it.document_title || 'Yêu cầu gia hạn'}
-										description={`Hạn cũ: ${it.old_due_date || 'Không rõ'} | Hạn mới: ${it.new_due_date || 'Không rõ'}`}
-									/>
-									<div>
-										<Tag className={`library-status-tag ${statusClass(it.status)}`}>{it.status || 'Đang cập nhật'}</Tag>
-									</div>
-								</List.Item>
-							)}
-						/>
-					)}
-				</div>
+				)}
+
+				{activeTab === 'requests' && (
+					<div className='borrowed-now-panel'>
+						{items.length === 0 ? (
+							<Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description='Chưa có yêu cầu gia hạn nào' />
+						) : (
+							<List
+								className='borrowed-book-list'
+								loading={loading}
+								dataSource={items}
+								renderItem={(it: any) => {
+									let cover = it.cover_image || getCoverForTitle(it.document_title) || '/default-cover.png';
+									if (typeof cover === 'string' && /^[a-fA-F0-9]{24}$/.test(cover)) {
+										cover = `${ipLibrary}/documents/covers/${cover}`;
+									}
+									const statusText = it.status === 'pending' ? 'Chờ duyệt' : it.status === 'approved' ? 'Đã duyệt' : it.status === 'rejected' ? 'Từ chối' : it.status;
+									return (
+										<List.Item className="borrowed-book-card">
+											<div className="borrowed-book-cover" style={{ backgroundImage: `url(${cover})` }} />
+											<div className="borrowed-book-main">
+												<div className="borrowed-book-heading">
+													<div>
+														<h3>{it.document_title || 'Yêu cầu gia hạn'}</h3>
+														<p>{it.author || 'Chưa rõ tác giả'}</p>
+													</div>
+													<div className="borrowed-book-status">
+														<Tag className={`library-status-tag ${statusClass(it.status)}`}>{statusText}</Tag>
+													</div>
+												</div>
+												<div className="borrowed-book-dates">
+													<div>
+														<span>Ngày mượn</span>
+														<strong>
+															<CalendarOutlined /> {it.borrow_date ? new Date(`${it.borrow_date}`.includes('T') ? it.borrow_date : `${it.borrow_date}T00:00:00`).toLocaleDateString('vi-VN') : 'Không rõ'}
+														</strong>
+													</div>
+													<div>
+														<span>Hạn cũ</span>
+														<strong>
+															<CalendarOutlined /> {it.old_due_date ? new Date(`${it.old_due_date}`.includes('T') ? it.old_due_date : `${it.old_due_date}T00:00:00`).toLocaleDateString('vi-VN') : 'Không rõ'}
+														</strong>
+													</div>
+													<div>
+														<span>Hạn mới</span>
+														<strong>
+															<CalendarOutlined /> {it.new_due_date ? new Date(`${it.new_due_date}`.includes('T') ? it.new_due_date : `${it.new_due_date}T00:00:00`).toLocaleDateString('vi-VN') : 'Không rõ'}
+														</strong>
+													</div>
+													<div>
+														<span>Mã bản sao</span>
+														<strong>{it.copy_code || 'Không rõ'}</strong>
+													</div>
+												</div>
+											</div>
+										</List.Item>
+									);
+								}}
+							/>
+						)}
+					</div>
+				)}
 			</div>
 		</PageSkeleton>
 	);

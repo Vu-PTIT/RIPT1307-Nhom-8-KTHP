@@ -46,7 +46,6 @@ export default function BorrowDetailPage(props: any) {
 					) : (
 						<div className='borrow-detail-stack'>
 							<Descriptions bordered column={{ xs: 1, sm: 2 }} size='small'>
-								<Descriptions.Item label='Mã phiếu'>{String(record.id)}</Descriptions.Item>
 								<Descriptions.Item label='Trạng thái'>
 									{(() => {
 										const s = RecordStatus[record.status] || { className: 'neutral', label: record.status };

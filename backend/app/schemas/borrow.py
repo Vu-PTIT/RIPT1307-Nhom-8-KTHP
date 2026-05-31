@@ -167,6 +167,8 @@ class RenewalRequestResponse(BaseModel):
     request_date: datetime
     reviewed_at: Optional[datetime] = None
     reject_reason: Optional[str] = None
+    borrow_date: Optional[date] = None
+    copy_code: Optional[str] = None
 
 # ====== Librarian Schemas ======
 

@@ -44,7 +44,7 @@ export default function CheckinPage() {
 					<h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--library-ink)', marginBottom: 8 }}>Thống kê điểm danh</h2>
 					<p style={{ color: 'var(--library-muted)', fontWeight: 550 }}>Theo dõi lịch sử vào/ra thư viện của bạn.</p>
 				</div>
-				<div className='library-list-card'>
+				<div>
 						{historyError ? (
 							<Alert type='warning' showIcon message={historyError} style={{ margin: '16px 16px 0' }} />
 						) : null}
@@ -61,9 +61,6 @@ export default function CheckinPage() {
 									pageSize: pageSize,
 									total: total,
 									onChange: (p, s) => load(p, s),
-									showSizeChanger: true,
-									pageSizeOptions: ['10', '20', '50'],
-									showTotal: (t) => `Tổng số ${t} lượt check-in/out`,
 								}}
 								renderItem={(it: any) => (
 									<List.Item className='checkin-log-item' style={{ padding: '16px', background: '#fafafa', borderRadius: '8px', marginBottom: '12px', border: '1px solid #f0f0f0' }}>
