@@ -7,13 +7,10 @@ import BorrowedBookList from '@/components/BorrowedBookList';
 import * as MuonSach from '@/services/MuonSach';
 
 const RecordStatus: Record<string, { className: string; label: string }> = {
-	pending: { className: 'warning', label: 'Chờ lấy sách' },
 	active: { className: 'warning', label: 'Đang mượn' },
-	borrowed: { className: 'warning', label: 'Đang mượn' },
 	returned: { className: 'success', label: 'Đã trả hết' },
 	overdue: { className: 'danger', label: 'Quá hạn' },
 	completed: { className: 'success', label: 'Hoàn thành' },
-	cancelled: { className: 'danger', label: 'Đã hủy' },
 };
 
 export default function BorrowDetailPage(props: any) {
