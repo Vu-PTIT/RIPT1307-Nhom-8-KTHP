@@ -16,7 +16,7 @@ const Settings: LayoutSettings & {
 	colorWeak: false,
 	title: 'Library System',
 	pwa: false,
-	logo: '/pro_icon.svg',
+	logo: '/logo.png',
 	iconfontUrl: '',
 	headerTheme: 'light',
 	headerHeight: 60,

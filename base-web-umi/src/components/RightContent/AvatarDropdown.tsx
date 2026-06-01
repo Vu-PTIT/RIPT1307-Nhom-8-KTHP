@@ -27,7 +27,7 @@ const AvatarDropdown: React.FC<Props> = ({ menu = false }) => {
 	};
 
 	const menuOverlay = (
-		<Menu>
+		<Menu style={{ minWidth: 160 }}>
 			<Menu.Item key='profile' onClick={() => history.push('/ban-doc/tai-khoan')}>
 				<UserOutlined />
 				&nbsp;Thông tin
