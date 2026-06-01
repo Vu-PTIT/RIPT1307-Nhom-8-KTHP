@@ -85,7 +85,7 @@ export default function WishlistPage() {
 								<DocumentCard
 									item={it}
 									onDetail={() => history.push(`/ban-doc/tai-lieu/${it.document_id}`)}
-									onWishlist={() => {}}
+									onWishlist={() => { }}
 									onCart={() => handleMoveToCart(it)}
 									accent={true}
 									actions={[

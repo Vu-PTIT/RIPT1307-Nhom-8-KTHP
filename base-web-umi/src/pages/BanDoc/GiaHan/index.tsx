@@ -100,43 +100,40 @@ export default function RenewalsPage() {
 	return (
 		<PageSkeleton title='Yêu cầu gia hạn'>
 			<div className='library-panel'>
-				<div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+				<div
+					className='library-stats-switch'
+					style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}
+				>
 					<div 
-						className={`library-stat ${activeTab === 'borrowed' ? 'active' : ''}`}
-						style={{ 
-							cursor: 'pointer', 
-							border: activeTab === 'borrowed' ? '1px solid #1677ff' : '1px solid #f0f0f0', 
-							backgroundColor: activeTab === 'borrowed' ? '#e6f4ff' : '#fff',
-							minWidth: '200px'
-						}}
+						className={`library-stat clickable ${activeTab === 'borrowed' ? 'active' : ''}`}
+						role='button'
+						tabIndex={0}
 						onClick={() => setActiveTab('borrowed')}
+						onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setActiveTab('borrowed')}
 					>
-						<BookOutlined style={{ color: activeTab === 'borrowed' ? '#1677ff' : undefined }} />
+						<BookOutlined />
 						<div>
-							<span style={{ color: activeTab === 'borrowed' ? '#1677ff' : undefined }}>Sách đang mượn có thể gia hạn</span>
-							<strong style={{ color: activeTab === 'borrowed' ? '#1677ff' : undefined }}>{borrowedItems.length}</strong>
+							<span>Sách đang mượn có thể gia hạn</span>
+							<strong>{borrowedItems.length}</strong>
 						</div>
 					</div>
 					<div 
-						className={`library-stat ${activeTab === 'requests' ? 'active' : ''}`}
-						style={{ 
-							cursor: 'pointer', 
-							border: activeTab === 'requests' ? '1px solid #1677ff' : '1px solid #f0f0f0', 
-							backgroundColor: activeTab === 'requests' ? '#e6f4ff' : '#fff',
-							minWidth: '200px'
-						}}
+						className={`library-stat clickable ${activeTab === 'requests' ? 'active' : ''}`}
+						role='button'
+						tabIndex={0}
 						onClick={() => setActiveTab('requests')}
+						onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setActiveTab('requests')}
 					>
-						<SyncOutlined style={{ color: activeTab === 'requests' ? '#1677ff' : undefined }} />
+						<SyncOutlined />
 						<div>
-							<span style={{ color: activeTab === 'requests' ? '#1677ff' : undefined }}>Yêu cầu gia hạn</span>
-							<strong style={{ color: activeTab === 'requests' ? '#1677ff' : undefined }}>{items.length}</strong>
+							<span>Yêu cầu gia hạn</span>
+							<strong>{items.length}</strong>
 						</div>
 					</div>
 				</div>
 
 				{activeTab === 'borrowed' && (
-					<div className='borrowed-now-panel'>
+					<div style={{ marginTop: 12 }}>
 						{borrowedItems.length === 0 ? (
 							<Empty
 								image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -168,7 +165,7 @@ export default function RenewalsPage() {
 				)}
 
 				{activeTab === 'requests' && (
-					<div className='borrowed-now-panel'>
+					<div style={{ marginTop: 12 }}>
 						{items.length === 0 ? (
 							<Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description='Chưa có yêu cầu gia hạn nào' />
 						) : (
