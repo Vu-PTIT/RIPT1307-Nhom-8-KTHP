@@ -173,6 +173,8 @@ class RenewalRequestResponse(BaseModel):
     reader_name: Optional[str] = None
     reader_username: Optional[str] = None
     renewal_count: Optional[int] = None
+    borrow_date: Optional[date] = None
+    copy_code: Optional[str] = None
 
 # ====== Librarian Schemas ======
 

@@ -49,6 +49,8 @@ async def _build_renewal_response(renewal):
         request_date=renewal.request_date,
         reviewed_at=renewal.reviewed_at,
         reject_reason=renewal.reject_reason,
+        borrow_date=record.borrow_date,
+        copy_code=copy.copy_code,
     )
 
 @router.post("", response_model=borrow_schema.RenewalRequestResponse)
@@ -152,6 +154,8 @@ async def list_pending_renewals(
             reader_name=reader.full_name or reader.username if reader else None,
             reader_username=reader.username if reader else None,
             renewal_count=approved_count,
+            borrow_date=record.borrow_date,
+            copy_code=copy.copy_code
         ))
     return response
 
@@ -193,7 +197,9 @@ async def review_renewal(
             status=renewal.status,
             request_date=renewal.request_date,
             reviewed_at=renewal.reviewed_at,
-            reject_reason=renewal.reject_reason
+            reject_reason=renewal.reject_reason,
+            borrow_date=record.borrow_date,
+            copy_code=copy.copy_code
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
