@@ -4,8 +4,7 @@ import {
 	Input, Select, message, Popconfirm,
 } from 'antd';
 import {
-	InfoCircleOutlined, PlusOutlined, EditOutlined,
-	DeleteOutlined, CopyOutlined,
+	InfoCircleOutlined, PlusOutlined, DeleteOutlined, CopyOutlined,
 } from '@ant-design/icons';
 import * as ThuThuService from '@/services/ThuThu';
 import DocumentCard from '@/components/DocumentCard';
@@ -38,11 +37,6 @@ const BookCard: React.FC<BookCardProps> = ({ book, categories = [], onDetail, on
 	const [addCopyLoading, setAddCopyLoading] = useState(false);
 	const [addCopyForm] = Form.useForm();
 
-	// Modal Sửa sách
-	const [editVisible, setEditVisible] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [editForm] = Form.useForm();
-
 	const handleAddCopy = async (values: any) => {
 		setAddCopyLoading(true);
 		try {
@@ -61,26 +55,6 @@ const BookCard: React.FC<BookCardProps> = ({ book, categories = [], onDetail, on
 		}
 	};
 
-	const handleEdit = async (values: any) => {
-		setEditLoading(true);
-		try {
-			await ThuThuService.updateDocument(book.id, {
-				title: values.title,
-				author: values.author,
-				isbn: values.isbn,
-				description: values.description,
-				category_id: values.category_id,
-			});
-			message.success('Đã cập nhật thông tin sách!');
-			setEditVisible(false);
-			onRefresh?.();
-		} catch (err: any) {
-			message.error(err?.response?.data?.detail || 'Cập nhật thất bại!');
-		} finally {
-			setEditLoading(false);
-		}
-	};
-
 	const handleDelete = async () => {
 		try {
 			await ThuThuService.deleteDocument(book.id);
@@ -89,17 +63,6 @@ const BookCard: React.FC<BookCardProps> = ({ book, categories = [], onDetail, on
 		} catch (err: any) {
 			message.error(err?.response?.data?.detail || 'Xóa thất bại!');
 		}
-	};
-
-	const openEditModal = () => {
-		editForm.setFieldsValue({
-			title: book.title,
-			author: book.author,
-			isbn: book.isbn,
-			description: book.description,
-			category_id: book.category_id,
-		});
-		setEditVisible(true);
 	};
 
 	return (
@@ -113,12 +76,12 @@ const BookCard: React.FC<BookCardProps> = ({ book, categories = [], onDetail, on
 					available_copies: book.availableCount,
 					cover_image: book.image,
 				}}
-				onDetail={openEditModal}
+				onDetail={() => onDetail(book.id)}
 				actions={[
 					<Button
 						key="detail"
 						className="detail-btn small"
-						onClick={openEditModal}
+						onClick={() => onDetail(book.id)}
 					>
 						<InfoCircleOutlined /> Chi tiết & Sửa
 					</Button>,
@@ -170,44 +133,6 @@ const BookCard: React.FC<BookCardProps> = ({ book, categories = [], onDetail, on
 							<Select.Option value='fair'>Khá</Select.Option>
 							<Select.Option value='damaged'>Hỏng</Select.Option>
 						</Select>
-					</Form.Item>
-				</Form>
-			</Modal>
-
-			{/* Modal Sửa sách */}
-			<Modal
-				title={<><EditOutlined style={{ marginRight: 8 }} />Chi tiết & Chỉnh sửa sách</>}
-				visible={editVisible}
-				onCancel={() => setEditVisible(false)}
-				onOk={() => editForm.submit()}
-				okText='Lưu thay đổi'
-				cancelText='Hủy'
-				confirmLoading={editLoading}
-				okButtonProps={{ className: 'btn-primary-danger' }}
-				width={600}
-			>
-
-				<Form form={editForm} layout='vertical' onFinish={handleEdit} style={{ marginTop: 16 }}>
-					<Form.Item name='title' label='Tên sách' rules={[{ required: true }]}>
-						<Input size='large' />
-					</Form.Item>
-					<Form.Item name='author' label='Tác giả' rules={[{ required: true }]}>
-						<Input size='large' />
-					</Form.Item>
-					<Form.Item name='isbn' label='ISBN'>
-						<Input size='large' />
-					</Form.Item>
-					{categories.length > 0 && (
-						<Form.Item name='category_id' label='Danh mục'>
-							<Select size='large' placeholder='Chọn danh mục'>
-								{categories.map((c) => (
-									<Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
-								))}
-							</Select>
-						</Form.Item>
-					)}
-					<Form.Item name='description' label='Mô tả'>
-						<Input.TextArea rows={3} />
 					</Form.Item>
 				</Form>
 			</Modal>

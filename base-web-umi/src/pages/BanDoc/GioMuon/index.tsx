@@ -8,7 +8,7 @@ import {
 	SearchOutlined,
 	ShoppingCartOutlined,
 } from '@ant-design/icons';
-import { history } from 'umi';
+import { history, useModel } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import * as MuonSach from '@/services/MuonSach';
 import axios from '@/utils/axios';
@@ -31,6 +31,9 @@ export default function BorrowCartPage() {
 	const [loading, setLoading] = useState(false);
 	const [borrowedLoading, setBorrowedLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	const { initialState } = useModel('@@initialState');
+	const currentUser = initialState?.currentUser as any;
 
 	const load = async () => {
 		if (mountedRef.current) setLoading(true);
@@ -117,6 +120,11 @@ export default function BorrowCartPage() {
 					setLoading(false);
 				}
 				return;
+			}
+
+			// Override with user's specific limit if available
+			if (currentUser && currentUser.max_books_allowed !== undefined && currentUser.max_books_allowed !== null) {
+				maxBooks = currentUser.max_books_allowed;
 			}
 
 			if (currentBorrowed + items.length > maxBooks) {

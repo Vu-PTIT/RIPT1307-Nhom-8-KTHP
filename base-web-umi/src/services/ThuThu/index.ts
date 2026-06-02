@@ -63,6 +63,9 @@ export async function processReturn(data: {
 }) {
   return axios.post(`${ipLibrary}/borrows/librarian/return`, data);
 }
+export async function getBorrowDetailLibrarian(id: string) {
+  return axios.get(`${ipLibrary}/borrows/librarian/${id}`);
+}
 export async function confirmReservation(id: string) {
   return axios.put(`${ipLibrary}/borrows/librarian/${id}/confirm`);
 }

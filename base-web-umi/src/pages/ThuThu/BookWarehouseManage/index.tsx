@@ -114,7 +114,7 @@ const BookWarehouseManage: React.FC = () => {
                   <BookCard
                     book={book}
                     categories={categories.map((c: any) => ({ id: c.id, name: c.name }))}
-                    onDetail={(id) => history.push(`/thu-thu/tai-lieu/${id}`)}
+                    onDetail={(id) => history.push(`/thu-thu/kho-sach/${id}`)}
                     onRefresh={refresh}
                   />
                 </Col>

@@ -93,6 +93,12 @@ export default [
 		access: 'isLibrarian',
 	},
 	{
+		path: '/thu-thu/kho-sach/:id',
+		component: './ThuThu/BookWarehouseManage/Detail',
+		hideInMenu: true,
+		access: 'isLibrarian',
+	},
+	{
 		path: '/thu-thu/muon-tra',
 		name: 'Mượn / Trả',
 		icon: 'SwapOutlined',

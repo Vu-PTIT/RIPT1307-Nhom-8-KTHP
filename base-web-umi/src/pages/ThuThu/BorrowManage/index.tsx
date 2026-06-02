@@ -18,12 +18,10 @@ const BorrowManage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('borrow');
 
   return (
-    <PageSkeleton title='Xử lý mượn trả'>
+    <PageSkeleton title='Xử lý mượn trả' subtitle='Khu vực nghiệp vụ thư viện mượn trả sách.'>
+      <TabSwitcher activeTab={activeTab} onChange={setActiveTab} />
       <div className='library-panel'>
-        <Card bordered={false} style={{ borderRadius: 12 }}>
-          <TabSwitcher activeTab={activeTab} onChange={setActiveTab} />
-          {TAB_CONTENT[activeTab]}
-        </Card>
+        {TAB_CONTENT[activeTab]}
       </div>
     </PageSkeleton>
   );

@@ -38,30 +38,23 @@ async def get_all_users(
     page: int = 1,
     page_size: int = 20
 ) -> tuple[list[User], int]:
-    # If we have role_id, keyword, or need complex filtering, use motor collection
-    if role_id or keyword:
-        collection = engine.get_collection(User)
-        mongo_query = {}
-        if role_id: 
-            mongo_query["role"] = ObjectId(role_id)
-        if is_active is not None: 
-            mongo_query["is_active"] = is_active
-        if keyword:
-            mongo_query["$or"] = [
-                {"username": {"$regex": keyword, "$options": "i"}},
-                {"email": {"$regex": keyword, "$options": "i"}}
-            ]
-        total = await collection.count_documents(mongo_query)
-        cursor = collection.find(mongo_query).skip((page - 1) * page_size).limit(page_size)
-        raw_users = await cursor.to_list(length=page_size)
-        users = [engine.database_to_model(User, u) for u in raw_users]
-        return users, total
+    import re
+    from odmantic import query
     
-    # Simple case: only filter by is_active
     filters = []
+    if role_id:
+        filters.append(User.role == ObjectId(role_id))
     if is_active is not None:
         filters.append(User.is_active == is_active)
-    
+    if keyword:
+        pattern = re.compile(keyword, re.IGNORECASE)
+        filters.append(
+            query.or_(
+                User.username.match(pattern),
+                User.email.match(pattern)
+            )
+        )
+        
     total = await engine.count(User, *filters)
     users = await engine.find(
         User, *filters, 

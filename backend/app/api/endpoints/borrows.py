@@ -142,6 +142,16 @@ async def list_borrow_records_librarian(
         ))
     return response
 
+@router.get("/librarian/{id}", response_model=borrow_schema.BorrowRecordDetailResponse)
+async def get_borrow_detail_librarian(
+    id: str,
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """Get detailed information about a specific borrow record (Librarian)."""
+    detail = await _get_borrow_detail_logic(id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Borrow record not found")
+    return detail
 
 @router.post("/librarian/return")
 async def return_book_librarian(

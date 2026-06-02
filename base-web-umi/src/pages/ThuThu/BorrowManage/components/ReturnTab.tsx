@@ -3,10 +3,11 @@ import {
 	Input, Button, Tag, Table, message, Empty, Tooltip, Select, Spin, InputRef,
 	Typography, Card, Statistic,
 } from 'antd';
-import { SearchOutlined, RollbackOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { processReturn, getAllBorrowsLibrarian } from '@/services/ThuThu';
+import { SearchOutlined, RollbackOutlined, CheckCircleOutlined, EyeOutlined } from '@ant-design/icons';
+import { processReturn, getAllBorrowsLibrarian, getBorrowDetailLibrarian } from '@/services/ThuThu';
 import { useRequest } from 'umi';
 import dayjs from 'dayjs';
+import { Modal } from 'antd';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -17,6 +18,21 @@ const ReturnTab: React.FC = () => {
 	const [condition, setCondition] = useState<string>('good');
 	const [processing, setProcessing] = useState(false);
 	const [recentReturns, setRecentReturns] = useState<any[]>([]);
+
+	// Detail Modal state
+	const [detailVisible, setDetailVisible] = useState(false);
+	const [selectedBorrowId, setSelectedBorrowId] = useState<string | null>(null);
+
+	const { data: borrowDetail, loading: detailLoading, run: fetchDetail } = useRequest(
+		(id: string) => getBorrowDetailLibrarian(id),
+		{ manual: true, formatResult: (res) => res.data }
+	);
+
+	const handleViewDetail = (id: string) => {
+		setSelectedBorrowId(id);
+		setDetailVisible(true);
+		fetchDetail(id);
+	};
 
 	// Danh sách phiếu mượn đang active để thủ thư tra cứu
 	const { data: activeBorrows, loading: borrowsLoading } = useRequest(
@@ -90,6 +106,15 @@ const ReturnTab: React.FC = () => {
 			render: (v: string) => <Tag color={v === 'borrowed' ? 'processing' : 'default'}>{v === 'borrowed' ? 'Đang mượn' : v}</Tag>,
 		},
 		{ title: 'Số cuốn', dataIndex: 'item_count', key: 'item_count', render: (v: number) => `${v} cuốn` },
+		{
+			title: 'Hành động',
+			key: 'action',
+			render: (_: any, record: any) => (
+				<Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record.id)}>
+					Chi tiết
+				</Button>
+			)
+		}
 	];
 
 	return (
@@ -164,6 +189,67 @@ const ReturnTab: React.FC = () => {
 					size='small'
 				/>
 			</div>
+
+			<Modal
+				title={<div style={{ fontSize: 18, fontWeight: 600 }}>Chi tiết phiếu mượn</div>}
+				visible={detailVisible}
+				onCancel={() => setDetailVisible(false)}
+				footer={[
+					<Button key="close" onClick={() => setDetailVisible(false)}>Đóng</Button>
+				]}
+				width={700}
+			>
+				{detailLoading ? (
+					<div style={{ textAlign: 'center', padding: '40px 0' }}><Spin /></div>
+				) : borrowDetail ? (
+					<div>
+						<div style={{ marginBottom: 16 }}>
+							<Text type="secondary">Mã phiếu mượn:</Text> <Text strong>{borrowDetail.id}</Text>
+							<br />
+							<Text type="secondary">Ngày mượn:</Text> <Text strong>{dayjs(borrowDetail.borrow_date).format('DD/MM/YYYY')}</Text>
+							<br />
+							<Text type="secondary">Hạn trả:</Text> <Text strong style={{ color: '#d46b08' }}>{dayjs(borrowDetail.due_date).format('DD/MM/YYYY')}</Text>
+							<br />
+							<Text type="secondary">Trạng thái:</Text>{' '}
+							<Tag color={borrowDetail.status === 'borrowed' ? 'processing' : 'default'}>
+								{borrowDetail.status === 'borrowed' ? 'Đang mượn' : borrowDetail.status}
+							</Tag>
+						</div>
+						
+						<Text strong>Danh sách sách mượn ({borrowDetail.items?.length || 0} cuốn):</Text>
+						<Table
+							dataSource={borrowDetail.items || []}
+							rowKey="id"
+							pagination={false}
+							size="small"
+							style={{ marginTop: 8 }}
+							columns={[
+								{ title: 'Mã vạch', dataIndex: 'copy_code', render: (v: string) => <Tag>{v}</Tag> },
+								{ title: 'Tên sách', dataIndex: 'document_title' },
+								{ 
+									title: 'Trạng thái', 
+									dataIndex: 'status',
+									render: (v: string) => {
+										const map: any = { 
+											borrowed: { label: 'Đang mượn', color: 'processing' }, 
+											returned: { label: 'Đã trả', color: 'success' },
+											overdue: { label: 'Quá hạn', color: 'error' }
+										};
+										return <Tag color={map[v]?.color || 'default'}>{map[v]?.label || v}</Tag>;
+									}
+								},
+								{ 
+									title: 'Ngày trả', 
+									dataIndex: 'return_date',
+									render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '—'
+								}
+							]}
+						/>
+					</div>
+				) : (
+					<Empty description="Không tìm thấy thông tin phiếu mượn" />
+				)}
+			</Modal>
 		</div>
 	);
 };
