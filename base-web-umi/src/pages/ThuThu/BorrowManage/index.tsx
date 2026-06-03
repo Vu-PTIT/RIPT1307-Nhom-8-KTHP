@@ -6,11 +6,10 @@ import ReturnTab from './components/ReturnTab';
 import ReserveTab from './components/ReserveTab';
 import TabSwitcher from './components/TabSwitcher';
 
-type TabKey = 'borrow' | 'return' | 'reserve';
+type TabKey = 'borrow' | 'reserve';
 
 const TAB_CONTENT: Record<TabKey, React.ReactNode> = {
   borrow: <Checkout />,
-  return: <ReturnTab />,
   reserve: <ReserveTab />,
 };
 
@@ -18,7 +17,7 @@ const BorrowManage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('borrow');
 
   return (
-    <PageSkeleton title='Xử lý mượn trả' subtitle='Khu vực nghiệp vụ thư viện mượn trả sách.'>
+    <PageSkeleton title='Xử lý mượn sách' subtitle='Khu vực nghiệp vụ thư viện cho mượn sách.'>
       <TabSwitcher activeTab={activeTab} onChange={setActiveTab} />
       <div className='library-panel'>
         {TAB_CONTENT[activeTab]}

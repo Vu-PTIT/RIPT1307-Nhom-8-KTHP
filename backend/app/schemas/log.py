@@ -41,3 +41,8 @@ class CheckinLogHistoryResponse(BaseModel):
     page: int
     page_size: int
 
+class CheckinLogListResponse(BaseModel):
+    items: list[CheckinLogListItem]
+    total: int
+    page: int
+    page_size: int

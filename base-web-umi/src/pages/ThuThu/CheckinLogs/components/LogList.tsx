@@ -25,9 +25,10 @@ export interface LogItem {
 interface LogListProps {
 	data: LogItem[];
 	loading?: boolean;
+	pagination?: any;
 }
 
-const LogList: React.FC<LogListProps> = ({ data, loading }) => {
+const LogList: React.FC<LogListProps> = ({ data, loading, pagination }) => {
 	if (loading) {
 		return (
 			<div style={{ textAlign: 'center', padding: 60 }}>
@@ -43,6 +44,7 @@ const LogList: React.FC<LogListProps> = ({ data, loading }) => {
 	return (
 		<List
 			dataSource={data}
+			pagination={pagination}
 			renderItem={(item) => {
 				// Hỗ trợ cả dữ liệu API thực và mock data cũ
 				const displayName = item.name || item.username || '';

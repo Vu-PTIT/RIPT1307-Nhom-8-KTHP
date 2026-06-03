@@ -110,13 +110,15 @@ async def cancel_renewal_request(
 
 # ===================== LIBRARIAN ENDPOINTS =====================
 
-@router.get("/librarian/pending", response_model=List[borrow_schema.RenewalRequestResponse])
+@router.get("/librarian/pending", response_model=borrow_schema.RenewalRequestListResponse)
 async def list_pending_renewals(
     status: str = Query("pending"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(deps.get_current_librarian),
 ) -> Any:
     """List renewal requests (default: pending)."""
-    requests = await borrow_crud.get_pending_renewals(engine, status_filter=status)
+    requests, total = await borrow_crud.get_pending_renewals(engine, status_filter=status, page=page, page_size=page_size)
     response = []
     renewal_col = engine.get_collection(RenewalRequest)
     for req in requests:
@@ -155,7 +157,13 @@ async def list_pending_renewals(
             renewal_count=approved_count,
             copy_code=copy.copy_code
         ))
-    return response
+    return borrow_schema.RenewalRequestListResponse(
+        items=response,
+        total=total,
+        page=page,
+        page_size=page_size
+    )
+
 
 
 @router.put("/librarian/{id}", response_model=borrow_schema.RenewalRequestResponse)

@@ -1,78 +1,146 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
-	Input, Button, Tag, Table, message, Empty, Tooltip, Select, Spin, InputRef,
-	Typography, Card, Statistic,
+	Button, Tag, Table, message, Empty, Select, Typography, Row, Col, Spin, Tooltip
 } from 'antd';
-import { SearchOutlined, RollbackOutlined, CheckCircleOutlined, EyeOutlined } from '@ant-design/icons';
-import { processReturn, getAllBorrowsLibrarian, getBorrowDetailLibrarian } from '@/services/ThuThu';
+import { RollbackOutlined, CheckCircleOutlined, SearchOutlined } from '@ant-design/icons';
+import { processReturn, getAllBorrowsLibrarian, getBorrowDetailLibrarian, getReturnHistoryLibrarian } from '@/services/ThuThu';
 import { useRequest } from 'umi';
 import dayjs from 'dayjs';
-import { Modal } from 'antd';
+import ReaderSelector, { ReaderInfo } from './ReaderSelector';
 
 const { Text } = Typography;
 const { Option } = Select;
 
 const ReturnTab: React.FC = () => {
-	const barcodeRef = useRef<InputRef>(null);
-	const [barcodeInput, setBarcodeInput] = useState('');
-	const [condition, setCondition] = useState<string>('good');
+	const [selectedReader, setSelectedReader] = useState<ReaderInfo | null>(null);
 	const [processing, setProcessing] = useState(false);
-	const [recentReturns, setRecentReturns] = useState<any[]>([]);
 
-	// Detail Modal state
-	const [detailVisible, setDetailVisible] = useState(false);
-	const [selectedBorrowId, setSelectedBorrowId] = useState<string | null>(null);
+	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(10);
 
-	const { data: borrowDetail, loading: detailLoading, run: fetchDetail } = useRequest(
-		(id: string) => getBorrowDetailLibrarian(id),
-		{ manual: true, formatResult: (res) => res.data }
+	const { data: returnHistoryData, loading: loadingHistory, refresh: refreshHistory } = useRequest(
+		() => getReturnHistoryLibrarian({ page, page_size: pageSize }),
+		{ 
+			refreshDeps: [page, pageSize],
+			formatResult: (res: any) => res?.data || res || [] 
+		}
 	);
 
-	const handleViewDetail = (id: string) => {
-		setSelectedBorrowId(id);
-		setDetailVisible(true);
-		fetchDetail(id);
+	const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+	const [conditions, setConditions] = useState<Record<string, string>>({}); // { copy_code: 'good' }
+
+	// Lấy danh sách sách đang mượn của độc giả
+	const { data: borrowedItems, loading: loadingItems, refresh: refreshItems } = useRequest(
+		async () => {
+			if (!selectedReader) return [];
+			const res = await getAllBorrowsLibrarian({ reader_id: selectedReader.id, page_size: 100 });
+			let borrows = res.data?.items || res.data || [];
+
+			// Filter out returned or cancelled records
+			borrows = borrows.filter((b: any) => ['pending', 'borrowed', 'overdue'].includes(b.status));
+
+			// Fetch details to get items safely
+			const details = await Promise.all(
+				borrows.map((b: any) => getBorrowDetailLibrarian(b.id || b._id).catch(() => null))
+			);
+
+			let allItems: any[] = [];
+			details.forEach((r) => {
+				if (!r) return;
+				const items = r.data?.items || [];
+				allItems = [...allItems, ...items.filter((i: any) => ['borrowed', 'overdue', 'pending'].includes(i.status))];
+			});
+			return allItems;
+		},
+		{
+			refreshDeps: [selectedReader],
+			formatResult: (res) => res || []
+		}
+	);
+
+	const handleConditionChange = (copy_code: string, value: string) => {
+		setConditions(prev => ({ ...prev, [copy_code]: value }));
 	};
 
-	// Danh sách phiếu mượn đang active để thủ thư tra cứu
-	const { data: activeBorrows, loading: borrowsLoading } = useRequest(
-		() => getAllBorrowsLibrarian({ status: 'borrowed', page_size: 20 }),
-		{
-			formatResult: (res) => res.data || [],
-		},
-	);
-
-	const handleReturn = async () => {
-		const code = barcodeInput.trim();
-		if (!code) {
-			message.warning('Vui lòng nhập mã vạch bản sao!');
+	const handleReturnSelected = async () => {
+		if (selectedRowKeys.length === 0) {
+			message.warning('Vui lòng chọn ít nhất 1 sách để trả!');
 			return;
 		}
 		setProcessing(true);
 		try {
-			const res = await processReturn({ copy_code: code, condition_on_return: condition });
-			const result = res.data;
-			message.success(`✅ Nhận trả thành công! Ngày trả: ${dayjs(result.return_date).format('DD/MM/YYYY HH:mm')}`);
-			setRecentReturns((prev) => [
-				{ copy_code: code, condition, return_date: result.return_date, key: Date.now() },
-				...prev.slice(0, 9),
-			]);
-			setBarcodeInput('');
-			barcodeRef.current?.focus();
+			for (const copy_code of selectedRowKeys) {
+				const cond = conditions[copy_code as string] || 'good';
+				await processReturn({ copy_code: copy_code as string, condition_on_return: cond });
+			}
+			message.success(`✅ Nhận trả thành công ${selectedRowKeys.length} cuốn!`);
+
+			setSelectedRowKeys([]);
+			setConditions({});
+			refreshItems();
+			refreshHistory();
 		} catch (err: any) {
-			const detail = err?.response?.data?.detail || 'Không tìm thấy bản sao hoặc bản sao chưa được mượn!';
+			const detail = err?.response?.data?.detail || 'Có lỗi xảy ra khi nhận trả!';
 			message.error(`❌ ${detail}`);
 		} finally {
 			setProcessing(false);
 		}
 	};
 
-	const returnColumns = [
-		{ title: 'Mã vạch', dataIndex: 'copy_code', key: 'copy_code', render: (v: string) => <Tag>{v}</Tag> },
+	const itemsColumns = [
+		{ title: 'Mã vạch', dataIndex: 'copy_code', key: 'copy_code', width: 120, render: (v: string) => <Tag>{v}</Tag> },
+		{ title: 'Tên sách', dataIndex: 'document_title', key: 'document_title' },
+		{
+			title: 'Ngày mượn',
+			dataIndex: 'borrow_date',
+			key: 'borrow_date',
+			render: (v: string) => dayjs(v).format('DD/MM/YYYY')
+		},
+		{
+			title: 'Trạng thái',
+			dataIndex: 'status',
+			key: 'status',
+			render: (v: string) => {
+				return v === 'overdue' ? <Tag color="error">Quá hạn</Tag> : <Tag color="processing">Đang mượn</Tag>;
+			}
+		},
 		{
 			title: 'Tình trạng trả',
-			dataIndex: 'condition',
 			key: 'condition',
+			width: 140,
+			render: (_: any, record: any) => (
+				<Select
+					size="small"
+					value={conditions[record.copy_code] || 'good'}
+					onChange={(val) => handleConditionChange(record.copy_code, val)}
+					style={{ width: '100%' }}
+					onClick={e => e.stopPropagation()}
+				>
+					<Option value="good">Tốt</Option>
+					<Option value="damaged">Hư hỏng</Option>
+					<Option value="lost">Mất</Option>
+				</Select>
+			)
+		}
+	];
+
+	const returnColumns = [
+		{ title: 'Mã vạch', dataIndex: 'copy_code', key: 'copy_code', render: (v: string) => <Tag>{v}</Tag> },
+		{ title: 'Tên sách', dataIndex: 'document_title', key: 'document_title' },
+		{ 
+			title: 'Độc giả', 
+			key: 'reader', 
+			render: (_: any, record: any) => (
+				<div>
+					<div>{record.reader_name}</div>
+					<div style={{ fontSize: 12, color: '#888' }}>{record.reader_email}</div>
+				</div>
+			) 
+		},
+		{
+			title: 'Tình trạng trả',
+			dataIndex: 'condition_on_return',
+			key: 'condition_on_return',
 			render: (v: string) => {
 				const map: any = { good: { label: 'Tốt', color: 'success' }, damaged: { label: 'Hư hỏng', color: 'error' }, lost: { label: 'Mất', color: 'error' } };
 				return <Tag color={map[v]?.color || 'default'}>{map[v]?.label || v}</Tag>;
@@ -86,170 +154,110 @@ const ReturnTab: React.FC = () => {
 		},
 	];
 
-	const borrowColumns = [
-		{ title: 'Độc giả', dataIndex: 'reader_username', key: 'reader_username', render: (v: string) => <strong>{v}</strong> },
-		{ title: 'Email', dataIndex: 'reader_email', key: 'reader_email', render: (v: string) => <Text type='secondary'>{v}</Text> },
-		{ title: 'Ngày mượn', dataIndex: 'borrow_date', key: 'borrow_date', render: (v: string) => dayjs(v).format('DD/MM/YYYY') },
-		{
-			title: 'Hạn trả',
-			dataIndex: 'due_date',
-			key: 'due_date',
-			render: (v: string) => {
-				const isOverdue = dayjs(v).isBefore(dayjs());
-				return <span style={{ color: isOverdue ? '#ff4d4f' : 'inherit' }}>{dayjs(v).format('DD/MM/YYYY')}</span>;
-			},
-		},
-		{
-			title: 'Trạng thái',
-			dataIndex: 'status',
-			key: 'status',
-			render: (v: string) => <Tag color={v === 'borrowed' ? 'processing' : 'default'}>{v === 'borrowed' ? 'Đang mượn' : v}</Tag>,
-		},
-		{ title: 'Số cuốn', dataIndex: 'item_count', key: 'item_count', render: (v: number) => `${v} cuốn` },
-		{
-			title: 'Hành động',
-			key: 'action',
-			render: (_: any, record: any) => (
-				<Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record.id)}>
-					Chi tiết
-				</Button>
-			)
-		}
-	];
-
 	return (
 		<div>
-			{/* Ô nhập mã vạch nhận trả */}
-			<Card style={{ borderRadius: 10, marginBottom: 24 }} bodyStyle={{ padding: 20 }}>
-				<div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>
-					<RollbackOutlined style={{ marginRight: 8 }} /> Nhận trả sách
-				</div>
-				<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-					<Input
-						ref={barcodeRef}
-						size='large'
-						placeholder='Quét mã vạch bản sao hoặc nhập thủ công...'
-						value={barcodeInput}
-						onChange={(e) => setBarcodeInput(e.target.value)}
-						onPressEnter={handleReturn}
-						prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-						style={{ flex: 1, minWidth: 200, borderRadius: 8 }}
+			<Row gutter={24}>
+				{/* Cột Trái: Chọn Độc giả */}
+				<Col xs={24} md={9} lg={8}>
+					<ReaderSelector
+						selectedReader={selectedReader}
+						onSelectReader={(reader) => {
+							setSelectedReader(reader);
+							setSelectedRowKeys([]);
+							setConditions({});
+						}}
 					/>
-					<Select
-						size='large'
-						value={condition}
-						onChange={setCondition}
-						style={{ width: 150, borderRadius: 8 }}
-					>
-						<Option value='good'>Tốt</Option>
-						<Option value='damaged'>Hư hỏng</Option>
-						<Option value='lost'>Mất</Option>
-					</Select>
+				</Col>
+
+				{/* Cột Phải: Sách đang mượn */}
+				<Col xs={24} md={15} lg={16}>
+					<div style={{ marginBottom: 20 }}>
+						<div style={{ fontWeight: 600, marginBottom: 8, fontSize: 15, display: 'flex', alignItems: 'center' }}>
+							<SearchOutlined style={{ marginRight: 6 }} /> Chọn sách để trả
+						</div>
+
+						{!selectedReader ? (
+							<div style={{ padding: '40px 0', textAlign: 'center', background: '#fafafa', borderRadius: 8, border: '1px dashed #d9d9d9' }}>
+								<Empty description="Vui lòng chọn độc giả trước" />
+							</div>
+						) : (
+							<Table
+								dataSource={borrowedItems}
+								columns={itemsColumns}
+								rowKey="copy_code"
+								loading={loadingItems}
+								pagination={false}
+								rowSelection={{
+									selectedRowKeys,
+									onChange: setSelectedRowKeys,
+								}}
+								locale={{ emptyText: <Empty description="Độc giả này không có sách nào cần trả" /> }}
+								style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #f0f0f0' }}
+								size="middle"
+							/>
+						)}
+					</div>
+				</Col>
+			</Row>
+
+			{/* Nút xác nhận */}
+			<div style={{
+				marginTop: 24,
+				paddingTop: 16,
+				borderTop: '1px solid #f0f0f0',
+				display: 'flex',
+				justifyContent: 'space-between',
+				alignItems: 'center',
+				flexWrap: 'wrap',
+				gap: 16
+			}}>
+				<div>
+					{selectedRowKeys.length > 0 && (
+						<Text strong style={{ fontSize: 15 }}>
+							Đã chọn: <span style={{ color: '#c90000', fontSize: 16 }}>{selectedRowKeys.length}</span> cuốn để trả
+						</Text>
+					)}
+				</div>
+				<div>
 					<Button
 						type='primary'
 						size='large'
 						icon={<CheckCircleOutlined />}
-						onClick={handleReturn}
+						onClick={handleReturnSelected}
+						disabled={selectedRowKeys.length === 0}
 						loading={processing}
-						style={{ background: '#e3000f', borderColor: '#e3000f', borderRadius: 8, fontWeight: 600 }}
+						className='btn-primary-danger'
+						style={{ minWidth: 200, height: 48, fontSize: 16, fontWeight: 600 }}
 					>
-						Xác nhận trả
+						XÁC NHẬN TRẢ SÁCH
 					</Button>
 				</div>
-			</Card>
-
-			{/* Lịch sử nhận trả vừa xử lý */}
-			{recentReturns.length > 0 && (
-				<div style={{ marginBottom: 24 }}>
-					<div style={{ fontWeight: 600, marginBottom: 8 }}>Vừa nhận trả ({recentReturns.length})</div>
-					<Table
-						dataSource={recentReturns}
-						columns={returnColumns}
-						rowKey='key'
-						pagination={false}
-						size='small'
-						style={{ borderRadius: 8, overflow: 'hidden' }}
-					/>
-				</div>
-			)}
-
-			{/* Danh sách phiếu mượn đang active */}
-			<div>
-				<div style={{ fontWeight: 600, marginBottom: 12 }}>
-					Phiếu mượn đang hoạt động
-				</div>
-				<Table
-					dataSource={activeBorrows || []}
-					columns={borrowColumns}
-					loading={borrowsLoading}
-					rowKey={(r: any) => String(r.id)}
-					pagination={{ pageSize: 10, showSizeChanger: false }}
-					locale={{ emptyText: <Empty description='Không có phiếu mượn nào đang hoạt động' /> }}
-					style={{ borderRadius: 8, overflow: 'hidden' }}
-					size='small'
-				/>
 			</div>
 
-			<Modal
-				title={<div style={{ fontSize: 18, fontWeight: 600 }}>Chi tiết phiếu mượn</div>}
-				visible={detailVisible}
-				onCancel={() => setDetailVisible(false)}
-				footer={[
-					<Button key="close" onClick={() => setDetailVisible(false)}>Đóng</Button>
-				]}
-				width={700}
-			>
-				{detailLoading ? (
-					<div style={{ textAlign: 'center', padding: '40px 0' }}><Spin /></div>
-				) : borrowDetail ? (
-					<div>
-						<div style={{ marginBottom: 16 }}>
-							<Text type="secondary">Mã phiếu mượn:</Text> <Text strong>{borrowDetail.id}</Text>
-							<br />
-							<Text type="secondary">Ngày mượn:</Text> <Text strong>{dayjs(borrowDetail.borrow_date).format('DD/MM/YYYY')}</Text>
-							<br />
-							<Text type="secondary">Hạn trả:</Text> <Text strong style={{ color: '#d46b08' }}>{dayjs(borrowDetail.due_date).format('DD/MM/YYYY')}</Text>
-							<br />
-							<Text type="secondary">Trạng thái:</Text>{' '}
-							<Tag color={borrowDetail.status === 'borrowed' ? 'processing' : 'default'}>
-								{borrowDetail.status === 'borrowed' ? 'Đang mượn' : borrowDetail.status}
-							</Tag>
-						</div>
-						
-						<Text strong>Danh sách sách mượn ({borrowDetail.items?.length || 0} cuốn):</Text>
-						<Table
-							dataSource={borrowDetail.items || []}
-							rowKey="id"
-							pagination={false}
-							size="small"
-							style={{ marginTop: 8 }}
-							columns={[
-								{ title: 'Mã vạch', dataIndex: 'copy_code', render: (v: string) => <Tag>{v}</Tag> },
-								{ title: 'Tên sách', dataIndex: 'document_title' },
-								{ 
-									title: 'Trạng thái', 
-									dataIndex: 'status',
-									render: (v: string) => {
-										const map: any = { 
-											borrowed: { label: 'Đang mượn', color: 'processing' }, 
-											returned: { label: 'Đã trả', color: 'success' },
-											overdue: { label: 'Quá hạn', color: 'error' }
-										};
-										return <Tag color={map[v]?.color || 'default'}>{map[v]?.label || v}</Tag>;
-									}
-								},
-								{ 
-									title: 'Ngày trả', 
-									dataIndex: 'return_date',
-									render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '—'
-								}
-							]}
-						/>
-					</div>
-				) : (
-					<Empty description="Không tìm thấy thông tin phiếu mượn" />
-				)}
-			</Modal>
+			{/* Lịch sử nhận trả */}
+			<div style={{ marginTop: 32 }}>
+				<div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>Lịch sử trả sách</div>
+				<Table
+					dataSource={returnHistoryData?.items || returnHistoryData || []}
+					columns={returnColumns}
+					rowKey='id'
+					loading={loadingHistory}
+					pagination={{
+						current: page,
+						pageSize: pageSize,
+						total: returnHistoryData?.total || 0,
+						onChange: (p, s) => {
+							setPage(p);
+							setPageSize(s || 10);
+						},
+						showSizeChanger: false,
+						showTotal: (total) => `Tổng ${total} bản ghi`
+					}}
+					size='small'
+					style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #f0f0f0' }}
+					locale={{ emptyText: <Empty description='Chưa có sách nào vừa được trả' /> }}
+				/>
+			</div>
 		</div>
 	);
 };

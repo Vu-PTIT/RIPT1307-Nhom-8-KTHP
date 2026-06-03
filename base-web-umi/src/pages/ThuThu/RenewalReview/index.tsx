@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { message, Spin, Empty } from 'antd';
 import { useRequest } from 'umi';
 import dayjs from 'dayjs';
+import { Pagination } from 'antd';
 import PageSkeleton from '@/components/PageSkeleton';
 import PendingList, { PendingRenewalItem } from './components/PendingList';
 import HistoryList, { HistoryRenewalItem } from './components/HistoryList';
@@ -43,13 +44,19 @@ function mapToHistory(item: any, status: 'APPROVED' | 'REJECTED'): HistoryRenewa
 const RenewalReview: React.FC = () => {
   const [historyData, setHistoryData] = useState<HistoryRenewalItem[]>([]);
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const { data: pendingApiData, loading, mutate: mutatePending } = useRequest(
-    () => getPendingRenewals('pending'),
-    { formatResult: (res) => res.data },
+    () => getPendingRenewals({ status: 'pending', page, page_size: pageSize }),
+    { 
+      refreshDeps: [page, pageSize],
+      formatResult: (res) => res.data 
+    },
   );
 
-  useRequest(() => getPendingRenewals('approved'), {
-    formatResult: (res) => res.data as any[],
+  useRequest(() => getPendingRenewals({ status: 'approved', page: 1, page_size: 100 }), {
+    formatResult: (res) => res.data?.items || res.data || [],
     onSuccess: (data) => {
       const approved = (data || []).map((item: any) => mapToHistory(item, 'APPROVED'));
       setHistoryData((prev) => {
@@ -59,10 +66,12 @@ const RenewalReview: React.FC = () => {
     },
   });
 
-  const pendingData: PendingRenewalItem[] = (pendingApiData || []).map(mapToPending);
+  const pendingItems = pendingApiData?.items || pendingApiData || [];
+  const pendingTotal = pendingApiData?.total || 0;
+  const pendingData: PendingRenewalItem[] = pendingItems.map(mapToPending);
 
   const handleReview = async (id: string, status: 'approved' | 'rejected') => {
-    const target = pendingApiData?.find((item: any) => String(item.id) === id);
+    const target = pendingItems.find((item: any) => String(item.id) === id);
     try {
       await reviewRenewal(id, { status });
       if (status === 'approved') {
@@ -70,7 +79,14 @@ const RenewalReview: React.FC = () => {
       } else {
         message.info(`Đã từ chối yêu cầu của: ${target?.reader_name || target?.reader_username}`);
       }
-      mutatePending((prev: any[]) => prev?.filter((item: any) => String(item.id) !== id) ?? []);
+      mutatePending((prev: any) => {
+        const items = prev?.items || prev || [];
+        const newItems = items.filter((item: any) => String(item.id) !== id);
+        if (prev?.items) {
+          return { ...prev, items: newItems, total: Math.max(0, prev.total - 1) };
+        }
+        return newItems;
+      });
       if (target) {
         setHistoryData((prev) => [
           mapToHistory({ ...target, reviewed_at: new Date().toISOString() }, status === 'approved' ? 'APPROVED' : 'REJECTED'),
@@ -94,11 +110,28 @@ const RenewalReview: React.FC = () => {
               <Empty description='Không có yêu cầu gia hạn đang chờ duyệt' />
             </div>
           ) : (
-            <PendingList
-              data={pendingData}
-              onAccept={(id) => handleReview(id, 'approved')}
-              onReject={(id) => handleReview(id, 'rejected')}
-            />
+            <>
+              <PendingList
+                data={pendingData}
+                onAccept={(id) => handleReview(id, 'approved')}
+                onReject={(id) => handleReview(id, 'rejected')}
+              />
+              {pendingTotal > 0 && (
+                <div style={{ textAlign: 'right', marginBottom: 24 }}>
+                  <Pagination
+                    current={page}
+                    pageSize={pageSize}
+                    total={pendingTotal}
+                    onChange={(p, s) => {
+                      setPage(p);
+                      setPageSize(s || 10);
+                    }}
+                    showSizeChanger={false}
+                    showTotal={(total) => `Tổng ${total} yêu cầu`}
+                  />
+                </div>
+              )}
+            </>
           )}
           <HistoryList data={historyData} />
         </Spin>

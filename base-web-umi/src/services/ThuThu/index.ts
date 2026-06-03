@@ -57,6 +57,12 @@ export async function getAllBorrowsLibrarian(params: {
 }) {
   return axios.get(`${ipLibrary}/borrows/librarian/all`, { params });
 }
+export async function getReturnHistoryLibrarian(params: {
+  page?: number;
+  page_size?: number;
+}) {
+  return axios.get(`${ipLibrary}/borrows/librarian/returns/history`, { params });
+}
 export async function processReturn(data: {
   copy_code: string;
   condition_on_return: string;
@@ -74,9 +80,13 @@ export async function cancelReservation(id: string) {
 }
 
 // ===================== Renewal Management =====================
-export async function getPendingRenewals(status?: string) {
+export async function getPendingRenewals(params?: {
+  status?: string;
+  page?: number;
+  page_size?: number;
+}) {
   return axios.get(`${ipLibrary}/renewals/librarian/pending`, {
-    params: { status },
+    params,
     silent: true,
   });
 }

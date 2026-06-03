@@ -17,15 +17,18 @@ const CheckinLogs: React.FC = () => {
   const [checkoutCode, setCheckoutCode] = useState('');
   const [actionType, setActionType] = useState<'in' | 'out' | null>(null);
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const { data: statsData, refresh: refreshStats } = useRequest(getCheckinStats, {
     formatResult: (res) => res.data,
   });
 
-  const { data: logsData, loading: logsLoading, refresh: refreshLogs } = useRequest(
-    () => getAllCheckinLogs({ check_type: filter === 'all' ? undefined : filter, page_size: 100 }),
+  const { data: logsApiData, loading: logsLoading, refresh: refreshLogs } = useRequest(
+    () => getAllCheckinLogs({ check_type: filter === 'all' ? undefined : filter, page, page_size: pageSize }),
     {
-      refreshDeps: [filter],
-      formatResult: (res) => res.data as LogItem[],
+      refreshDeps: [filter, page, pageSize],
+      formatResult: (res) => res.data,
     },
   );
 
@@ -62,7 +65,8 @@ const CheckinLogs: React.FC = () => {
   };
 
   const stats = statsData || { currently_in_library: 0, today_checkin: 0, total_logs: 0 };
-  const logs = logsData || [];
+  const logs = logsApiData?.items || logsApiData || [];
+  const logsTotal = logsApiData?.total || 0;
 
   return (
     <PageSkeleton
@@ -113,14 +117,28 @@ const CheckinLogs: React.FC = () => {
             size='middle'
           >
             <Radio.Button value='all' style={{ borderRadius: '6px 0 0 6px' }}>
-              Tất cả ({logs.length})
+              Tất cả
             </Radio.Button>
             <Radio.Button value='in'>Trong thư viện ({stats.currently_in_library})</Radio.Button>
             <Radio.Button value='out' style={{ borderRadius: '0 6px 6px 0' }}>Đã ra về</Radio.Button>
           </Radio.Group>
         </div>
 
-        <LogList data={logs} loading={logsLoading} />
+        <LogList 
+          data={logs} 
+          loading={logsLoading} 
+          pagination={{
+            current: page,
+            pageSize: pageSize,
+            total: logsTotal,
+            onChange: (p, s) => {
+              setPage(p);
+              setPageSize(s || 10);
+            },
+            showSizeChanger: false,
+            showTotal: (total) => `Tổng ${total} lượt`
+          }}
+        />
       </div>
     </PageSkeleton>
   );

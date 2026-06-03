@@ -467,6 +467,88 @@ async def get_all_borrow_records(
     return records, total
 
 
+async def get_return_history(
+    engine: AIOEngine,
+    page: int = 1,
+    page_size: int = 20,
+) -> Tuple[List[dict], int]:
+    """Get history of returned items with reader info."""
+    collection = engine.get_collection(BorrowRecordItem)
+    
+    pipeline = [
+        {"$match": {"return_date": {"$ne": None}}},
+        {"$sort": {"return_date": -1}},
+        {
+            "$facet": {
+                "metadata": [{"$count": "total"}],
+                "data": [
+                    {"$skip": (page - 1) * page_size},
+                    {"$limit": page_size},
+                    {
+                        "$lookup": {
+                            "from": "borrow_records",
+                            "localField": "borrow_record",
+                            "foreignField": "_id",
+                            "as": "borrow_record_doc"
+                        }
+                    },
+                    {"$unwind": "$borrow_record_doc"},
+                    {
+                        "$lookup": {
+                            "from": "users",
+                            "localField": "borrow_record_doc.reader",
+                            "foreignField": "_id",
+                            "as": "reader_doc"
+                        }
+                    },
+                    {"$unwind": "$reader_doc"},
+                    {
+                        "$lookup": {
+                            "from": "document_copies",
+                            "localField": "document_copy",
+                            "foreignField": "_id",
+                            "as": "copy_doc"
+                        }
+                    },
+                    {"$unwind": "$copy_doc"},
+                    {
+                        "$lookup": {
+                            "from": "documents",
+                            "localField": "copy_doc.document",
+                            "foreignField": "_id",
+                            "as": "document_doc"
+                        }
+                    },
+                    {"$unwind": "$document_doc"}
+                ]
+            }
+        }
+    ]
+    
+    result = await collection.aggregate(pipeline).to_list(1)
+    if not result:
+        return [], 0
+        
+    res = result[0]
+    total = res["metadata"][0]["total"] if res["metadata"] else 0
+    data = res["data"]
+    
+    formatted = []
+    for d in data:
+        formatted.append({
+            "id": d["_id"],
+            "copy_code": d["copy_doc"]["copy_code"],
+            "document_title": d["document_doc"]["title"],
+            "reader_name": d["reader_doc"].get("full_name") or d["reader_doc"].get("username", "Unknown"),
+            "reader_username": d["reader_doc"].get("username", ""),
+            "reader_email": d["reader_doc"].get("email", ""),
+            "condition_on_return": d.get("condition_on_return", "good"),
+            "return_date": d["return_date"]
+        })
+        
+    return formatted, total
+
+
 async def review_renewal(
     engine: AIOEngine,
     renewal_id: str,
@@ -497,7 +579,16 @@ async def review_renewal(
 async def get_pending_renewals(
     engine: AIOEngine,
     status_filter: str = "pending",
-) -> List[RenewalRequest]:
+    page: int = 1,
+    page_size: int = 20,
+) -> Tuple[List[RenewalRequest], int]:
     """Get renewal requests for review."""
-    return await engine.find(RenewalRequest, RenewalRequest.status == status_filter, sort=RenewalRequest.request_date.desc())
+    total = await engine.count(RenewalRequest, RenewalRequest.status == status_filter)
+    records = await engine.find(
+        RenewalRequest, 
+        RenewalRequest.status == status_filter, 
+        skip=(page - 1) * page_size, limit=page_size,
+        sort=RenewalRequest.request_date.desc()
+    )
+    return list(records), total
 

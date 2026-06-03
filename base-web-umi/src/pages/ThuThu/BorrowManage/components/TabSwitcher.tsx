@@ -1,7 +1,7 @@
 import React from 'react';
 import { BookOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 
-type TabKey = 'borrow' | 'return' | 'reserve';
+type TabKey = 'borrow' | 'reserve';
 
 interface Tab {
   key: TabKey;
@@ -17,7 +17,6 @@ interface TabSwitcherProps {
 
 const TABS: Tab[] = [
   { key: 'borrow', label: 'Cho mượn', subtitle: 'Tạo phiếu mới', icon: <BookOutlined /> },
-  { key: 'return', label: 'Nhận trả', subtitle: 'Thu hồi sách', icon: <CheckCircleOutlined /> },
   { key: 'reserve', label: 'Đặt trước', subtitle: 'Xử lý yêu cầu', icon: <ClockCircleOutlined /> },
 ];
 

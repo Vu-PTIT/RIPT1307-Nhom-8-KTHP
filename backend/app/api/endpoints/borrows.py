@@ -142,6 +142,23 @@ async def list_borrow_records_librarian(
         ))
     return response
 
+@router.get("/librarian/returns/history", response_model=borrow_schema.ReturnHistoryResponse)
+async def get_return_history_librarian(
+    page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(deps.get_current_librarian),
+) -> Any:
+    """Get history of returned books."""
+    records, total = await borrow_crud.get_return_history(engine, page=page, page_size=page_size)
+    items = []
+    for rec in records:
+        items.append(borrow_schema.ReturnHistoryItem(**rec))
+    return borrow_schema.ReturnHistoryResponse(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size
+    )
+
 @router.get("/librarian/{id}", response_model=borrow_schema.BorrowRecordDetailResponse)
 async def get_borrow_detail_librarian(
     id: str,

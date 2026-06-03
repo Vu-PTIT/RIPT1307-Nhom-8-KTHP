@@ -99,10 +99,17 @@ export default [
 		access: 'isLibrarian',
 	},
 	{
-		path: '/thu-thu/muon-tra',
-		name: 'Mượn / Trả',
-		icon: 'SwapOutlined',
+		path: '/thu-thu/muon-sach',
+		name: 'Mượn sách',
+		icon: 'ExportOutlined',
 		component: './ThuThu/BorrowManage',
+		access: 'isLibrarian',
+	},
+	{
+		path: '/thu-thu/tra-sach',
+		name: 'Trả sách',
+		icon: 'ImportOutlined',
+		component: './ThuThu/ReturnManage',
 		access: 'isLibrarian',
 	},
 	{

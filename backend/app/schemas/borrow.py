@@ -205,3 +205,28 @@ class BorrowRecordListItem(BaseModel):
     item_count: int
     copy_codes: List[str] = []
     created_at: datetime
+
+class ReturnHistoryItem(BaseModel):
+    """Schema for return history item."""
+    id: PyObjectId
+    copy_code: str
+    document_title: str
+    reader_name: str
+    reader_username: str
+    reader_email: str
+    condition_on_return: str
+    return_date: datetime
+
+class ReturnHistoryResponse(BaseModel):
+    """Schema for return history list response."""
+    items: List[ReturnHistoryItem]
+    total: int
+    page: int
+    page_size: int
+
+class RenewalRequestListResponse(BaseModel):
+    """Schema for renewal request list response."""
+    items: List[RenewalRequestResponse]
+    total: int
+    page: int
+    page_size: int

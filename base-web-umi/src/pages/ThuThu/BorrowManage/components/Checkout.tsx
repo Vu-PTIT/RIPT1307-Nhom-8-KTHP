@@ -3,12 +3,14 @@ import {
 	Input, Typography, Table, Button, Space, Tag, message, Modal, Form,
 	Select, Spin, Empty, InputRef, Tooltip, Avatar, Row, Col
 } from 'antd';
-import { SearchOutlined, PlusOutlined, UserOutlined, DeleteOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { SearchOutlined, PlusOutlined, UserOutlined, DeleteOutlined, CheckCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useRequest } from 'umi';
-import { searchCopyByCode, searchReaders, createBorrowLibrarian, getDocumentCopies } from '@/services/ThuThu';
+import { searchCopyByCode, searchReaders, createBorrowLibrarian, getDocumentCopies, getAllBorrowsLibrarian, getBorrowDetailLibrarian } from '@/services/ThuThu';
 import { searchDocuments } from '@/services/TaiLieu';
 import { getApiError } from '@/utils/getApiError';
 import moment from 'moment';
+import dayjs from 'dayjs';
+import ReaderSelector, { ReaderInfo } from './ReaderSelector';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -27,20 +29,30 @@ const CheckoutTab: React.FC = () => {
 	const [selectedCopies, setSelectedCopies] = useState<CopyInfo[]>([]);
 	const [searchingCopy, setSearchingCopy] = useState(false);
 
-	// Reader search state
-	const [readerKeyword, setReaderKeyword] = useState('');
-	const [selectedReader, setSelectedReader] = useState<{ id: string; username: string; email: string } | null>(null);
+	const [selectedReader, setSelectedReader] = useState<ReaderInfo | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 	const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
 
-	// Tìm reader
-	const { data: readersData, loading: searchingReader } = useRequest(
-		() => searchReaders({ keyword: readerKeyword, page_size: 10 }),
+	// Detail Modal state
+	const [detailVisible, setDetailVisible] = useState(false);
+	const [selectedBorrowId, setSelectedBorrowId] = useState<string | null>(null);
+
+	const { data: borrowDetail, loading: detailLoading, run: fetchDetail } = useRequest(
+		(id: string) => getBorrowDetailLibrarian(id),
+		{ manual: true, formatResult: (res) => res.data }
+	);
+
+	const handleViewDetail = (id: string) => {
+		setSelectedBorrowId(id);
+		setDetailVisible(true);
+		fetchDetail(id);
+	};
+
+	// Danh sách phiếu mượn vừa tạo
+	const { data: activeBorrows, loading: borrowsLoading, refresh: refreshActiveBorrows } = useRequest(
+		() => getAllBorrowsLibrarian({ status: 'borrowed', page_size: 20 }),
 		{
-			refreshDeps: [readerKeyword],
-			debounceInterval: 400,
-			ready: readerKeyword.length >= 2,
-			formatResult: (res) => res.data?.items || [],
+			formatResult: (res) => res.data || [],
 		},
 	);
 
@@ -63,10 +75,10 @@ const CheckoutTab: React.FC = () => {
 			// Find available copies
 			const res = await getDocumentCopies(docId);
 			const copies = res.data || [];
-			
+
 			// Check if already added, try to find another available copy that is not in selectedCopies
 			const availableCopy = copies.find((c: any) => c.status === 'available' && !selectedCopies.some((sc) => sc.copy_code === c.copy_code));
-			
+
 			if (!availableCopy) {
 				if (copies.some((c: any) => c.status === 'available')) {
 					message.warning('Bạn đã thêm tất cả các bản sao khả dụng của sách này!');
@@ -75,7 +87,7 @@ const CheckoutTab: React.FC = () => {
 				}
 				return;
 			}
-			
+
 			// Add the first available copy
 			setSelectedCopies((prev) => [...prev, {
 				id: availableCopy.id,
@@ -118,8 +130,8 @@ const CheckoutTab: React.FC = () => {
 			message.success(`✅ Tạo phiếu mượn thành công cho: ${selectedReader?.username}`);
 			setSelectedCopies([]);
 			setSelectedReader(null);
-			setReaderKeyword('');
 			setIsConfirmModalVisible(false);
+			refreshActiveBorrows();
 		} catch (err: any) {
 			message.error(getApiError(err, 'Tạo phiếu mượn thất bại!'));
 		} finally {
@@ -127,6 +139,36 @@ const CheckoutTab: React.FC = () => {
 		}
 	};
 
+	const borrowColumns = [
+		{ title: 'Độc giả', dataIndex: 'reader_username', key: 'reader_username', render: (v: string) => <strong>{v}</strong> },
+		{ title: 'Email', dataIndex: 'reader_email', key: 'reader_email', render: (v: string) => <Text type='secondary'>{v}</Text> },
+		{ title: 'Ngày mượn', dataIndex: 'borrow_date', key: 'borrow_date', render: (v: string) => dayjs(v).format('DD/MM/YYYY') },
+		{
+			title: 'Hạn trả',
+			dataIndex: 'due_date',
+			key: 'due_date',
+			render: (v: string) => {
+				const isOverdue = dayjs(v).isBefore(dayjs());
+				return <span style={{ color: isOverdue ? '#ff4d4f' : 'inherit' }}>{dayjs(v).format('DD/MM/YYYY')}</span>;
+			},
+		},
+		{
+			title: 'Trạng thái',
+			dataIndex: 'status',
+			key: 'status',
+			render: (v: string) => <Tag color={v === 'borrowed' ? 'processing' : 'default'}>{v === 'borrowed' ? 'Đang mượn' : v}</Tag>,
+		},
+		{ title: 'Số cuốn', dataIndex: 'item_count', key: 'item_count', render: (v: number) => `${v} cuốn` },
+		{
+			title: 'Hành động',
+			key: 'action',
+			render: (_: any, record: any) => (
+				<Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record.id)}>
+					Chi tiết
+				</Button>
+			)
+		}
+	];
 
 	const copiesColumns = [
 		{
@@ -181,60 +223,7 @@ const CheckoutTab: React.FC = () => {
 			<Row gutter={24}>
 				{/* Cột Trái: Chọn Độc giả */}
 				<Col xs={24} md={9} lg={8}>
-					<div className='tt-checkout-section'>
-						<div className='tt-section-title'>
-							<UserOutlined /> Độc giả
-						</div>
-						{selectedReader ? (
-						<div className='tt-reader-selected'>
-							<Avatar className='tt-reader-avatar' size="large">
-								{selectedReader.username.charAt(0).toUpperCase()}
-							</Avatar>
-							<div className='tt-reader-info' style={{ flex: 1 }}>
-								<div className='name'>{selectedReader.username}</div>
-								<div className='email'>{selectedReader.email}</div>
-							</div>
-							<Button size='small' type='text' danger onClick={() => setSelectedReader(null)}>
-								Đổi
-							</Button>
-						</div>
-
-						) : (
-							<Select
-								showSearch
-								size='large'
-								className='w-100'
-								placeholder='Tìm kiếm theo tên hoặc email độc giả...'
-								filterOption={false}
-								onSearch={setReaderKeyword}
-								loading={searchingReader}
-								notFoundContent={
-									readerKeyword.length < 2 ? (
-										<Text type='secondary'>Nhập ít nhất 2 ký tự...</Text>
-									) : searchingReader ? (
-										<Spin size='small' />
-									) : (
-										<Empty description='Không tìm thấy' />
-									)
-								}
-								onSelect={(_: string, opt: any) => {
-									setSelectedReader({ id: opt.value, username: opt.username, email: opt.email });
-									setReaderKeyword('');
-								}}
-							>
-								{(readersData || []).map((r: any) => (
-									<Option key={String(r.id)} value={String(r.id)} username={r.username} email={r.email}>
-										<div>
-											<span style={{ fontWeight: 500 }}>{r.username}</span>
-											<Text type='secondary' style={{ marginLeft: 8, fontSize: 12 }}>
-												{r.email}
-											</Text>
-										</div>
-									</Option>
-								))}
-							</Select>
-						)}
-					</div>
+					<ReaderSelector selectedReader={selectedReader} onSelectReader={setSelectedReader} />
 				</Col>
 
 				{/* Cột Phải: Chọn sách */}
@@ -302,12 +291,12 @@ const CheckoutTab: React.FC = () => {
 			</div>
 
 			{/* Nút xác nhận */}
-			<div style={{ 
-				marginTop: 24, 
-				paddingTop: 16, 
-				borderTop: '1px solid #f0f0f0', 
-				display: 'flex', 
-				justifyContent: 'space-between', 
+			<div style={{
+				marginTop: 24,
+				paddingTop: 16,
+				borderTop: '1px solid #f0f0f0',
+				display: 'flex',
+				justifyContent: 'space-between',
 				alignItems: 'center',
 				flexWrap: 'wrap',
 				gap: 16
@@ -315,8 +304,8 @@ const CheckoutTab: React.FC = () => {
 				<div>
 					{selectedCopies.length > 0 && (
 						<Text strong style={{ fontSize: 15 }}>
-							Tổng số sách: <span style={{ color: '#c90000', fontSize: 16 }}>{selectedCopies.length}</span> cuốn 
-							<span style={{ margin: '0 12px', color: '#d9d9d9' }}>|</span> 
+							Tổng số sách: <span style={{ color: '#c90000', fontSize: 16 }}>{selectedCopies.length}</span> cuốn
+							<span style={{ margin: '0 12px', color: '#d9d9d9' }}>|</span>
 							Ngày phải trả dự kiến: <span style={{ color: '#c90000' }}>{moment().add(14, 'days').format('DD/MM/YYYY')}</span>
 						</Text>
 					)}
@@ -371,8 +360,8 @@ const CheckoutTab: React.FC = () => {
 					<Text type="secondary">Danh sách sách mượn ({selectedCopies.length} cuốn):</Text>
 					<div style={{ marginTop: 8, maxHeight: 200, overflowY: 'auto', border: '1px solid #f0f0f0', borderRadius: 6 }}>
 						{selectedCopies.map((c, index) => (
-							<div key={c.copy_code} style={{ 
-								padding: '8px 12px', 
+							<div key={c.copy_code} style={{
+								padding: '8px 12px',
 								borderBottom: index < selectedCopies.length - 1 ? '1px solid #f0f0f0' : 'none',
 								display: 'flex',
 								justifyContent: 'space-between',
@@ -393,6 +382,84 @@ const CheckoutTab: React.FC = () => {
 						{moment().add(14, 'days').format('DD/MM/YYYY')}
 					</Text>
 				</div>
+			</Modal>
+
+			{/* Danh sách phiếu mượn vừa tạo */}
+			<div style={{ marginTop: 32 }}>
+				<div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>
+					Phiếu mượn vừa tạo
+				</div>
+				<Table
+					dataSource={activeBorrows || []}
+					columns={borrowColumns}
+					loading={borrowsLoading}
+					rowKey={(r: any) => String(r.id)}
+					pagination={{ pageSize: 10, showSizeChanger: false }}
+					locale={{ emptyText: <Empty description='Không có phiếu mượn nào' /> }}
+					style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #f0f0f0' }}
+					size='small'
+				/>
+			</div>
+
+			<Modal
+				title={<div style={{ fontSize: 18, fontWeight: 600 }}>Chi tiết phiếu mượn</div>}
+				visible={detailVisible}
+				onCancel={() => setDetailVisible(false)}
+				footer={[
+					<Button key="close" onClick={() => setDetailVisible(false)}>Đóng</Button>
+				]}
+				width={700}
+			>
+				{detailLoading ? (
+					<div style={{ textAlign: 'center', padding: '40px 0' }}><Spin /></div>
+				) : borrowDetail ? (
+					<div>
+						<div style={{ marginBottom: 16 }}>
+							<Text type="secondary">Mã phiếu mượn:</Text> <Text strong>{borrowDetail.id}</Text>
+							<br />
+							<Text type="secondary">Ngày mượn:</Text> <Text strong>{dayjs(borrowDetail.borrow_date).format('DD/MM/YYYY')}</Text>
+							<br />
+							<Text type="secondary">Hạn trả:</Text> <Text strong style={{ color: '#d46b08' }}>{dayjs(borrowDetail.due_date).format('DD/MM/YYYY')}</Text>
+							<br />
+							<Text type="secondary">Trạng thái:</Text>{' '}
+							<Tag color={borrowDetail.status === 'borrowed' ? 'processing' : 'default'}>
+								{borrowDetail.status === 'borrowed' ? 'Đang mượn' : borrowDetail.status}
+							</Tag>
+						</div>
+
+						<Text strong>Danh sách sách mượn ({borrowDetail.items?.length || 0} cuốn):</Text>
+						<Table
+							dataSource={borrowDetail.items || []}
+							rowKey="id"
+							pagination={false}
+							size="small"
+							style={{ marginTop: 8 }}
+							columns={[
+								{ title: 'Mã vạch', dataIndex: 'copy_code', render: (v: string) => <Tag>{v}</Tag> },
+								{ title: 'Tên sách', dataIndex: 'document_title' },
+								{
+									title: 'Trạng thái',
+									dataIndex: 'status',
+									render: (v: string) => {
+										const map: any = {
+											borrowed: { label: 'Đang mượn', color: 'processing' },
+											returned: { label: 'Đã trả', color: 'success' },
+											overdue: { label: 'Quá hạn', color: 'error' }
+										};
+										return <Tag color={map[v]?.color || 'default'}>{map[v]?.label || v}</Tag>;
+									}
+								},
+								{
+									title: 'Ngày trả',
+									dataIndex: 'return_date',
+									render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '—'
+								}
+							]}
+						/>
+					</div>
+				) : (
+					<Empty description="Không tìm thấy thông tin phiếu mượn" />
+				)}
 			</Modal>
 		</div>
 	);

@@ -63,7 +63,7 @@ async def get_checkin_history(
 
 # ===================== LIBRARIAN ENDPOINTS =====================
 
-@router.get("/librarian/all", response_model=List[log_schema.CheckinLogListItem])
+@router.get("/librarian/all", response_model=log_schema.CheckinLogListResponse)
 async def list_checkin_logs(
     user_id: Optional[str] = None, check_type: Optional[str] = None,
     page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200),
@@ -87,7 +87,12 @@ async def list_checkin_logs(
             method=log.method, check_time=log.check_time,
             handled_by_name=handled_by_name
         ))
-    return response
+    return log_schema.CheckinLogListResponse(
+        items=response,
+        total=total,
+        page=page,
+        page_size=page_size
+    )
 
 
 @router.get("/librarian/stats")
