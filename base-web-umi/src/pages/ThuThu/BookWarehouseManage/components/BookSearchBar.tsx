@@ -17,6 +17,7 @@ interface BookSearchBarProps {
   onSearchChange: (value: string) => void;
   onCategoryChange: (value: string | undefined) => void;
   onAddBook: () => void;
+  onManageCategory?: () => void;
 }
 
 const BookSearchBar: React.FC<BookSearchBarProps> = ({
@@ -27,9 +28,10 @@ const BookSearchBar: React.FC<BookSearchBarProps> = ({
   onSearchChange,
   onCategoryChange,
   onAddBook,
+  onManageCategory,
 }) => (
-  <div className='library-action-bar' style={{ marginBottom: 24 }}>
-    <div className='library-action-left' style={{ flex: 1 }}>
+  <div className='library-action-bar' style={{ marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+    <div className='library-action-left' style={{ flex: 1, display: 'flex', gap: 16 }}>
       <Input.Search
         size='large'
         placeholder='Tìm kiếm theo tên sách, tác giả, ISBN...'
@@ -53,7 +55,15 @@ const BookSearchBar: React.FC<BookSearchBarProps> = ({
         ))}
       </Select>
     </div>
-    <div className='library-action-right'>
+    <div className='library-action-right' style={{ display: 'flex', gap: 8 }}>
+      {onManageCategory && (
+        <Button
+          size='large'
+          onClick={onManageCategory}
+        >
+          Quản lý danh mục
+        </Button>
+      )}
       <Button
         type='primary'
         icon={<PlusOutlined />}

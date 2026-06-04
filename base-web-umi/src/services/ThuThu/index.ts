@@ -11,6 +11,15 @@ export async function updateDocument(id: string, data: any) {
 export async function deleteDocument(id: string) {
   return axios.delete(`${ipLibrary}/documents/${id}`);
 }
+export async function uploadCover(docId: string, file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return axios.post(`${ipLibrary}/documents/${docId}/cover`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+}
 export async function addDocumentCopy(docId: string, data: any) {
   return axios.post(`${ipLibrary}/documents/${docId}/copies`, data);
 }
@@ -52,6 +61,9 @@ export async function createBorrowLibrarian(data: {
 export async function getAllBorrowsLibrarian(params: {
   status?: string;
   reader_id?: string;
+  username?: string;
+  start_date?: string;
+  end_date?: string;
   page?: number;
   page_size?: number;
 }) {
@@ -101,6 +113,9 @@ export async function reviewRenewal(
 export async function getAllCheckinLogs(params: {
   user_id?: string;
   check_type?: string;
+  username?: string;
+  start_date?: string;
+  end_date?: string;
   page?: number;
   page_size?: number;
 }) {

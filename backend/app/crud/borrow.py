@@ -272,6 +272,12 @@ async def get_record_items(engine: AIOEngine, record_id: str) -> List[BorrowReco
             items.append(item)
     return items
 
+async def get_record_items_dict(engine: AIOEngine, record_id: str) -> List[dict]:
+    """Get all items in a borrow record as raw dicts from MongoDB to avoid ODMantic reference resolution errors."""
+    collection = engine.get_collection(BorrowRecordItem)
+    raw = await collection.find({"borrow_record": ObjectId(record_id)}).to_list(length=None)
+    return raw
+
 # Renewal
 async def create_renewal_request(engine: AIOEngine, item_id: str, user_id: str, new_due_date: date) -> RenewalRequest:
     # Find the item and ensure it belongs to the user
@@ -448,22 +454,60 @@ async def get_all_borrow_records(
     engine: AIOEngine,
     status: Optional[str] = None,
     reader_id: Optional[str] = None,
+    username: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     page: int = 1,
     page_size: int = 20,
-) -> Tuple[List[BorrowRecord], int]:
-    """Get all borrow records (librarian view)."""
-    filters = []
+) -> Tuple[List[dict], int]:
+    """Get all borrow records (librarian view) using raw MongoDB query to avoid ODMantic foreign key validation errors on deleted readers."""
+    collection = engine.get_collection(BorrowRecord)
+    
+    query = {}
     if status:
-        filters.append(BorrowRecord.status == status)
+        if status == "overdue":
+            query["status"] = "borrowed"
+            query["due_date"] = {"$lt": datetime.utcnow()}
+        else:
+            query["status"] = status
     if reader_id:
-        filters.append(BorrowRecord.reader == ObjectId(reader_id))
+        query["reader"] = ObjectId(reader_id)
+    if username:
+        users_col = engine.get_collection(User)
+        user_ids = await users_col.distinct("_id", {
+            "$or": [
+                {"username": {"$regex": username, "$options": "i"}},
+                {"full_name": {"$regex": username, "$options": "i"}},
+                {"email": {"$regex": username, "$options": "i"}}
+            ]
+        })
+        if user_ids:
+            query["reader"] = {"$in": user_ids}
+        else:
+            return [], 0
 
-    total = await engine.count(BorrowRecord, *filters)
-    records = await engine.find(
-        BorrowRecord, *filters,
-        skip=(page - 1) * page_size, limit=page_size,
-        sort=BorrowRecord.created_at.desc()
-    )
+    if start_date or end_date:
+        date_query = {}
+        if start_date:
+            try:
+                dt_start = datetime.strptime(start_date, "%Y-%m-%d")
+                date_query["$gte"] = dt_start
+            except ValueError:
+                pass
+        if end_date:
+            try:
+                dt_end = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+                date_query["$lt"] = dt_end
+            except ValueError:
+                pass
+        if date_query:
+            query["borrow_date"] = date_query
+        
+    total = await collection.count_documents(query)
+    
+    cursor = collection.find(query).sort("created_at", -1).skip((page - 1) * page_size).limit(page_size)
+    records = await cursor.to_list(length=page_size)
+    
     return records, total
 
 

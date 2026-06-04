@@ -8,6 +8,7 @@ import {
 import UserFilterBar from './components/UserFilterBar';
 import UserTable from './components/UserTable';
 import UserFormModal from './components/UserFormModal';
+import UserDetailModal from './components/UserDetailModal';
 
 interface ListParams {
 	keyword?: string;
@@ -20,7 +21,9 @@ interface ListParams {
 const UserManage: React.FC = () => {
 	const [form] = Form.useForm();
 	const [modalVisible, setModalVisible] = useState(false);
+	const [detailModalVisible, setDetailModalVisible] = useState(false);
 	const [editingUser, setEditingUser] = useState<any>(null);
+	const [viewUserId, setViewUserId] = useState<string | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 	const [params, setParams] = useState<ListParams>({ page: 1, page_size: 15 });
 
@@ -46,11 +49,16 @@ const UserManage: React.FC = () => {
 		setEditingUser(record);
 		form.setFieldsValue({
 			username: record.username,
-			fullname: record.fullname,
+			full_name: record.full_name,
 			email: record.email,
-			role: record.role,
+			role_id: record.role_id,
 		});
 		setModalVisible(true);
+	};
+
+	const openView = (id: string) => {
+		setViewUserId(id);
+		setDetailModalVisible(true);
 	};
 
 	// ── API handlers ───────────────────────────────────────────────────
@@ -121,6 +129,7 @@ const UserManage: React.FC = () => {
 					total={total}
 					page={params.page}
 					pageSize={params.page_size}
+					onView={openView}
 					onEdit={openEdit}
 					onToggle={handleToggle}
 					onDelete={handleDelete}
@@ -135,6 +144,12 @@ const UserManage: React.FC = () => {
 				submitting={submitting}
 				onOk={handleSubmit}
 				onCancel={() => setModalVisible(false)}
+			/>
+
+			<UserDetailModal
+				open={detailModalVisible}
+				userId={viewUserId}
+				onClose={() => setDetailModalVisible(false)}
 			/>
 		</PageSkeleton>
 	);

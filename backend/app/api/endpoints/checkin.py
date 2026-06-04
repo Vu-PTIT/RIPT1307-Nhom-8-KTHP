@@ -1,4 +1,5 @@
 from typing import Any, List, Optional
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Query, HTTPException
 from app.db.session import engine
 from app.api import deps
@@ -66,12 +67,28 @@ async def get_checkin_history(
 @router.get("/librarian/all", response_model=log_schema.CheckinLogListResponse)
 async def list_checkin_logs(
     user_id: Optional[str] = None, check_type: Optional[str] = None,
+    username: Optional[str] = None,
+    start_date: Optional[str] = None, end_date: Optional[str] = None,
     page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200),
     current_user: User = Depends(deps.get_current_librarian),
 ) -> Any:
     """List all check-in logs for monitoring (Librarian/Admin only)."""
+    dt_start = None
+    dt_end = None
+    if start_date:
+        try:
+            dt_start = datetime.strptime(start_date, "%Y-%m-%d")
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            dt_end = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+        except ValueError:
+            pass
+
     logs, total = await log_crud.get_all_checkin_logs(
-        engine, user_id=user_id, check_type=check_type, page=page, page_size=page_size
+        engine, user_id=user_id, check_type=check_type, username=username,
+        start_date=dt_start, end_date=dt_end, page=page, page_size=page_size
     )
     response = []
     for log in logs:

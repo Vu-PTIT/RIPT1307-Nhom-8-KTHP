@@ -23,7 +23,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
 }) => (
 	<Modal
 		title={editingUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
-		open={open}
+		visible={open}
 		onOk={onOk}
 		onCancel={onCancel}
 		okText={editingUser ? 'Lưu thay đổi' : 'Tạo mới'}
@@ -53,7 +53,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
 
 			<Form.Item
 				label='Họ và tên'
-				name='fullname'
+				name='full_name'
 				rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}
 			>
 				<Input placeholder='Nguyễn Văn A' />
@@ -72,7 +72,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
 
 			<Form.Item
 				label='Vai trò'
-				name='role'
+				name='role_id'
 				rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
 			>
 				<Select placeholder='Chọn vai trò'>

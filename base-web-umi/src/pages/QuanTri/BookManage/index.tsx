@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Row, Col, Empty, Spin, Pagination, message } from 'antd';
+import { message } from 'antd';
 import { useRequest, history } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
-import BookCard, { BookData } from './components/BookCard';
-import AddBookModal from './components/AddBookModal';
-import BookSearchBar from './components/BookSearchBar';
+import BookTable from './components/BookTable';
+import AddBookModal from '@/pages/ThuThu/BookWarehouseManage/components/AddBookModal';
+import BookSearchBar from '@/pages/ThuThu/BookWarehouseManage/components/BookSearchBar';
+import CategoryManageModal from './components/CategoryManageModal';
 import * as TaiLieuService from '@/services/TaiLieu';
 import * as ThuThuService from '@/services/ThuThu';
 import { ipLibrary } from '@/utils/ip';
@@ -22,16 +23,16 @@ const buildImageUrl = (doc: any): string => {
   return cover;
 };
 
-const PAGE_SIZE = 12;
-
-const BookWarehouseManage: React.FC = () => {
+const BookManage: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
-  const { data: categoriesRes } = useRequest(TaiLieuService.getCategories, {
+  const { data: categoriesRes, refresh: refreshCategories } = useRequest(TaiLieuService.getCategories, {
     formatResult: (res) => res.data || [],
   });
   const categories: any[] = categoriesRes || [];
@@ -41,10 +42,10 @@ const BookWarehouseManage: React.FC = () => {
       keyword: searchText || undefined,
       category_id: selectedCategory,
       page,
-      page_size: PAGE_SIZE,
+      page_size: pageSize,
     }),
     {
-      refreshDeps: [page, selectedCategory],
+      refreshDeps: [page, pageSize, selectedCategory],
       formatResult: (res) => res.data || {},
     },
   );
@@ -52,7 +53,7 @@ const BookWarehouseManage: React.FC = () => {
   const rawItems: any[] = docsRes?.items || docsRes || [];
   const total: number = docsRes?.total || rawItems.length;
 
-  const books: BookData[] = rawItems.map((doc: any) => ({
+  const books = rawItems.map((doc: any) => ({
     id: doc.id || doc._id,
     title: doc.title,
     author: doc.author,
@@ -91,10 +92,20 @@ const BookWarehouseManage: React.FC = () => {
     }
   };
 
+  const handleDeleteBook = async (id: string, title: string) => {
+    try {
+      await ThuThuService.deleteDocument(id);
+      message.success(`Đã xoá đầu sách "${title}"`);
+      refresh();
+    } catch (err: any) {
+      message.error(getApiError(err, 'Xoá đầu sách thất bại!'));
+    }
+  };
+
   return (
     <PageSkeleton
-      title='Quản lý kho sách'
-      subtitle={`${total} đầu sách · Thủ thư có thể thêm, sửa, xóa và quản lý bản sao`}
+      title='Quản lý sách'
+      subtitle='Thêm, sửa, xóa đầu sách và xem danh sách dưới dạng bảng.'
     >
       <div className='library-panel'>
         <BookSearchBar
@@ -105,39 +116,20 @@ const BookWarehouseManage: React.FC = () => {
           onSearchChange={setSearchText}
           onCategoryChange={(v) => { setSelectedCategory(v); setPage(1); }}
           onAddBook={() => setAddModalOpen(true)}
+          onManageCategory={() => setCategoryModalOpen(true)}
         />
 
-        <Spin spinning={loading}>
-          {books.length === 0 && !loading ? (
-            <div className='library-empty-state'>
-              <Empty description='Không có tài liệu phù hợp' />
-            </div>
-          ) : (
-            <Row gutter={[20, 20]}>
-              {books.map((book) => (
-                <Col xs={24} sm={12} md={8} lg={8} xl={6} key={book.id}>
-                  <BookCard
-                    book={book}
-                    categories={categories.map((c: any) => ({ id: c.id, name: c.name }))}
-                    onDetail={(id) => history.push(`${history.location.pathname.replace(/\/$/, '')}/${id}`)}
-                    onRefresh={refresh}
-                  />
-                </Col>
-              ))}
-            </Row>
-          )}
-        </Spin>
-
-        {total > PAGE_SIZE && (
-          <div className='library-pagination'>
-            <Pagination
-              current={page}
-              pageSize={PAGE_SIZE}
-              total={total}
-              onChange={(p) => setPage(p)}
-            />
-          </div>
-        )}
+        <BookTable
+          books={books}
+          loading={loading}
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onEdit={(record) => { /* Chỉnh sửa trong detail hoặc modal riêng. Ở đây ta dùng detail */ }}
+          onDelete={handleDeleteBook}
+          onDetail={(id) => history.push(`/quan-tri/sach/${id}`)}
+          onPageChange={(p, ps) => { setPage(p); setPageSize(ps); }}
+        />
 
         <AddBookModal
           open={addModalOpen}
@@ -146,9 +138,19 @@ const BookWarehouseManage: React.FC = () => {
           onOk={handleAddBook}
           onCancel={() => setAddModalOpen(false)}
         />
+
+        <CategoryManageModal
+          open={categoryModalOpen}
+          onClose={() => setCategoryModalOpen(false)}
+          categories={categories.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug }))}
+          onRefresh={() => {
+            refreshCategories();
+            refresh();
+          }}
+        />
       </div>
     </PageSkeleton>
   );
 };
 
-export default BookWarehouseManage;
+export default BookManage;

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Card, Empty, Select, Spin } from 'antd';
+import { Card, Empty, Select, Spin, Button } from 'antd';
 import { RiseOutlined } from '@ant-design/icons';
+import { history } from 'umi';
 import ColumnChart from '@/components/Chart/ColumnChart';
 
 const { Option } = Select;
@@ -29,11 +30,16 @@ const TrafficChart: React.FC<TrafficChartProps> = ({
 						<RiseOutlined style={{ marginRight: 8, color: '#c90000' }} />
 						Lưu lượng check-in
 					</span>
-					<Select value={period} onChange={onPeriodChange} style={{ width: 140 }} size='small'>
-						<Option value='daily'>Theo ngày</Option>
-						<Option value='weekly'>Theo tuần</Option>
-						<Option value='monthly'>Theo tháng</Option>
-					</Select>
+					<div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+						<Select value={period} onChange={onPeriodChange} style={{ width: 110 }} size='small'>
+							<Option value='daily'>Theo ngày</Option>
+							<Option value='weekly'>Theo tuần</Option>
+							<Option value='monthly'>Theo tháng</Option>
+						</Select>
+						<Button type='link' size='small' onClick={() => history.push('/quan-tri/thong-ke/check-in')} style={{ color: '#c90000', padding: 0, fontWeight: 500 }}>
+							Xem chi tiết
+						</Button>
+					</div>
 				</div>
 			}
 			bordered={false}

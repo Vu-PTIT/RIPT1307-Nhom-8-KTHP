@@ -13,9 +13,15 @@ async def get_user_by_username(engine: AIOEngine, username: str) -> Optional[Use
 
 async def create_user(engine: AIOEngine, user_in: UserCreate) -> User:
     # Check if role exists
-    role = await engine.find_one(Role, Role.id == ObjectId(user_in.role_id))
+    import re
+    try:
+        role_oid = ObjectId(user_in.role_id)
+        role = await engine.find_one(Role, Role.id == role_oid)
+    except Exception:
+        # Fallback to finding by name if role_id is passed as a name string (e.g. 'admin')
+        role = await engine.find_one(Role, Role.name.match(re.compile(f"^{user_in.role_id}$", re.IGNORECASE)))
+        
     if not role:
-        # Default role or error? For now, assume it exists or handle in API
         raise ValueError("Role not found")
         
     db_obj = User(
@@ -74,7 +80,14 @@ async def update_user(engine: AIOEngine, user_id: str, user_in: dict) -> User:
 
 
     if "role_id" in user_in:
-        role = await engine.find_one(Role, Role.id == ObjectId(user_in.pop("role_id")))
+        role_id_val = user_in.pop("role_id")
+        import re
+        try:
+            role_oid = ObjectId(role_id_val)
+            role = await engine.find_one(Role, Role.id == role_oid)
+        except Exception:
+            role = await engine.find_one(Role, Role.name.match(re.compile(f"^{role_id_val}$", re.IGNORECASE)))
+            
         if role:
             db_obj.role = role
             

@@ -12,19 +12,21 @@ const pageCopy: Record<string, string> = {
 	'Check-in / Check-out': 'Ghi nhận lượt vào/ra thư viện phục vụ thống kê sử dụng.',
 };
 
-const PageSkeleton: React.FC<{ title: string; children?: React.ReactNode; subtitle?: string }> = ({
+const PageSkeleton: React.FC<{ title: string; children?: React.ReactNode; subtitle?: string; extra?: React.ReactNode }> = ({
 	title,
 	children,
 	subtitle,
+	extra,
 }) => {
 	return (
 		<PageContainer title={false} className='library-page-container' style={{ background: 'transparent' }}>
 			<div className='library-page-shell'>
-				<div className='library-page-header'>
+				<div className='library-page-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 					<div>
 						<h1>{title}</h1>
 						<p>{subtitle || pageCopy[title] || 'Khu vực nghiệp vụ thư viện mượn trả sách.'}</p>
 					</div>
+					{extra && <div>{extra}</div>}
 				</div>
 				<div className='library-page-content'>
 					{children ? (

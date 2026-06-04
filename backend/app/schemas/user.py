@@ -86,9 +86,12 @@ class UserListItem(BaseModel):
     id: PyObjectId
     username: str
     email: str
+    full_name: Optional[str] = None
+    role_id: str
     role_name: str
     is_active: bool
     created_at: datetime
+    active_borrows_count: int = 0
 
 class UserListResponse(BaseModel):
     items: list[UserListItem]

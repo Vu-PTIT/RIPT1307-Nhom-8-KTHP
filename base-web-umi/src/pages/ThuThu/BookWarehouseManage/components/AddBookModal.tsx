@@ -1,6 +1,6 @@
-import React from 'react';
-import { Modal, Form, Input, Select } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Modal, Form, Input, Select, Upload } from 'antd';
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 
@@ -13,23 +13,33 @@ interface AddBookModalProps {
   open: boolean;
   loading: boolean;
   categories: Category[];
-  onOk: (values: any) => void;
+  onOk: (values: any, file?: File) => void;
   onCancel: () => void;
 }
 
 const AddBookModal: React.FC<AddBookModalProps> = ({ open, loading, categories, onOk, onCancel }) => {
   const [form] = Form.useForm();
+  const [fileList, setFileList] = useState<any[]>([]);
 
   const handleOk = async () => {
     const values = await form.validateFields();
-    await onOk(values);
+    await onOk(values, fileList[0]?.originFileObj);
     form.resetFields();
+    setFileList([]);
   };
 
   const handleCancel = () => {
     form.resetFields();
+    setFileList([]);
     onCancel();
   };
+
+  const uploadButton = (
+    <div>
+      <UploadOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+      <div style={{ marginTop: 8, color: '#666' }}>Tải ảnh bìa</div>
+    </div>
+  );
 
   return (
     <Modal
@@ -59,6 +69,18 @@ const AddBookModal: React.FC<AddBookModalProps> = ({ open, loading, categories, 
               <Option key={c.id} value={c.id}>{c.name}</Option>
             ))}
           </Select>
+        </Form.Item>
+        <Form.Item label='Ảnh bìa (Tùy chọn)'>
+          <Upload
+            listType='picture-card'
+            maxCount={1}
+            fileList={fileList}
+            beforeUpload={() => false}
+            onChange={({ fileList }) => setFileList(fileList)}
+            accept="image/*"
+          >
+            {fileList.length >= 1 ? null : uploadButton}
+          </Upload>
         </Form.Item>
         <Form.Item name='description' label='Mô tả'>
           <Input.TextArea rows={3} placeholder='Mô tả nội dung sách...' />

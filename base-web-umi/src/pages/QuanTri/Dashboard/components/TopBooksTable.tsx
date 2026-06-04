@@ -1,6 +1,7 @@
 import React from 'react';
-import { Card, Empty, Table, Tag, Typography } from 'antd';
+import { Card, Empty, Table, Tag, Typography, Button } from 'antd';
 import { TrophyOutlined } from '@ant-design/icons';
+import { history } from 'umi';
 
 const { Text } = Typography;
 
@@ -48,6 +49,11 @@ const TopBooksTable: React.FC<TopBooksTableProps> = ({ topBooks, loading }) => (
 				<TrophyOutlined style={{ marginRight: 8, color: '#c90000' }} />
 				Top tài liệu được mượn nhiều nhất
 			</span>
+		}
+		extra={
+			<Button type='link' size='small' onClick={() => history.push('/quan-tri/thong-ke/top-sach')} style={{ color: '#c90000', padding: 0, fontWeight: 500 }}>
+				Xem chi tiết
+			</Button>
 		}
 		bordered={false}
 		style={{ borderRadius: 10, border: '1px solid var(--library-line)' }}

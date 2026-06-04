@@ -12,7 +12,13 @@ const { Text } = Typography;
 /** Normalise API response: array or key-value object → flat array */
 const normaliseSettings = (raw: any): any[] => {
 	if (!raw) return [];
-	if (Array.isArray(raw)) return raw;
+	if (Array.isArray(raw)) {
+		return raw.map(item => ({
+			...item,
+			key: item.key ?? item.setting_key,
+			value: item.value ?? item.setting_value,
+		}));
+	}
 	return Object.entries(raw).map(([key, value]) => ({
 		key,
 		value: typeof value === 'object' ? JSON.stringify(value) : String(value),
@@ -33,10 +39,6 @@ const Settings: React.FC = () => {
 
 	const openEdit = (record: any) => {
 		setEditingKey(record);
-		form.setFieldsValue({
-			setting_value: record.value ?? record.setting_value ?? '',
-			description: record.description ?? '',
-		});
 		setModalVisible(true);
 	};
 

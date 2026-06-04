@@ -133,14 +133,58 @@ export default [
 		path: '/quan-tri/thong-ke',
 		name: 'Thống kê',
 		icon: 'LineChartOutlined',
-		component: './QuanTri/Dashboard',
 		access: 'isAdmin',
+		routes: [
+			{
+				path: '/quan-tri/thong-ke',
+				redirect: '/quan-tri/thong-ke/tong-quan',
+				exact: true,
+			},
+			{
+				path: '/quan-tri/thong-ke/tong-quan',
+				name: 'Tổng quan',
+				component: './QuanTri/Dashboard',
+			},
+			{
+				path: '/quan-tri/thong-ke/check-in',
+				name: 'Lưu lượng check-in',
+				component: './QuanTri/Dashboard/CheckInDetail',
+			},
+			{
+				path: '/quan-tri/thong-ke/phieu-muon',
+				name: 'Trạng thái mượn',
+				component: './QuanTri/Dashboard/BorrowStatusDetail',
+			},
+			{
+				path: '/quan-tri/thong-ke/top-sach',
+				name: 'Top tài liệu',
+				component: './QuanTri/Dashboard/TopBooksDetail',
+			},
+			{
+				path: '/quan-tri/thong-ke/qua-han',
+				name: 'Thống kê quá hạn',
+				component: './QuanTri/Dashboard/OverdueDetail',
+			},
+		],
 	},
 	{
 		path: '/quan-tri/nguoi-dung',
 		name: 'Người dùng',
 		icon: 'UserOutlined',
 		component: './QuanTri/UserManage',
+		access: 'isAdmin',
+	},
+	{
+		path: '/quan-tri/sach',
+		name: 'Quản lý sách',
+		icon: 'BookOutlined',
+		component: './QuanTri/BookManage',
+		access: 'isAdmin',
+	},
+	{
+		path: '/quan-tri/sach/:id',
+		component: './ThuThu/BookWarehouseManage/Detail',
+		hideInMenu: true,
 		access: 'isAdmin',
 	},
 	{

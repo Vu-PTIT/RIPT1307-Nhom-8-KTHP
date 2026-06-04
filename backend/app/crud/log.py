@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import List, Tuple, Optional
+from datetime import datetime
 from odmantic import AIOEngine, ObjectId
 from app.models.log import CheckinLog
 from app.models.user import User
@@ -53,6 +54,9 @@ async def get_all_checkin_logs(
     engine: AIOEngine,
     user_id: Optional[str] = None,
     check_type: Optional[str] = None,
+    username: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     page: int = 1,
     page_size: int = 50,
 ) -> Tuple[List[CheckinLog], int]:
@@ -62,6 +66,27 @@ async def get_all_checkin_logs(
         conditions.append({"user": ObjectId(user_id)})
     if check_type:
         conditions.append({"check_type": check_type})
+    if username:
+        users_col = engine.get_collection(User)
+        user_ids = await users_col.distinct("_id", {
+            "$or": [
+                {"username": {"$regex": username, "$options": "i"}},
+                {"full_name": {"$regex": username, "$options": "i"}},
+                {"email": {"$regex": username, "$options": "i"}}
+            ]
+        })
+        if user_ids:
+            conditions.append({"user": {"$in": user_ids}})
+        else:
+            return [], 0
+            
+    if start_date or end_date:
+        time_cond = {}
+        if start_date:
+            time_cond["$gte"] = start_date
+        if end_date:
+            time_cond["$lte"] = end_date
+        conditions.append({"check_time": time_cond})
 
     skip = (page - 1) * page_size
     collection = engine.get_collection(CheckinLog)

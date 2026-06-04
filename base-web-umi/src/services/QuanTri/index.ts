@@ -22,6 +22,10 @@ export async function getBorrowStatusStats() {
   return axios.get(`${ipLibrary}/admin/dashboard/borrow-stats`);
 }
 
+export async function exportDashboardExcel() {
+  return axios.get(`${ipLibrary}/admin/dashboard/export`, { responseType: 'blob' });
+}
+
 // User Management
 export async function listUsers(params: { role_id?: string; is_active?: boolean; keyword?: string; page?: number; page_size?: number }) {
   return axios.get(`${ipLibrary}/admin/users`, { params });

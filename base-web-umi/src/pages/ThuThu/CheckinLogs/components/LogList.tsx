@@ -5,16 +5,14 @@ import dayjs from 'dayjs';
 
 const { Text } = Typography;
 
-// Cấu trúc từ API backend (CheckinLogListItem)
 export interface LogItem {
 	id: string;
 	username: string;
 	email: string;
-	check_type: string; // 'in' | 'out'
+	check_type: string;
 	method: string;
 	check_time: string;
 	handled_by_name?: string;
-	// Legacy fields (mock data) - kept for backward compat
 	name?: string;
 	status?: 'IN' | 'OUT';
 	checkInTime?: string;

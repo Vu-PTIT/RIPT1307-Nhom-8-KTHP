@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Col, Row } from 'antd';
+import { Col, Row, Button, message } from 'antd';
+import { DownloadOutlined } from '@ant-design/icons';
 import { useRequest } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import {
@@ -8,6 +9,7 @@ import {
 	getTopBooks,
 	getOverdueStats,
 	getBorrowStatusStats,
+	exportDashboardExcel,
 } from '@/services/QuanTri';
 import StatCards from './components/StatCards';
 import TrafficChart from './components/TrafficChart';
@@ -43,10 +45,37 @@ const Dashboard: React.FC = () => {
 		formatResult: (res) => res.data || {},
 	});
 
+	const [exporting, setExporting] = useState(false);
+
+	const handleExport = async () => {
+		try {
+			setExporting(true);
+			const res = await exportDashboardExcel();
+			const blobData = (res as any).data || res;
+			const url = window.URL.createObjectURL(new Blob([blobData]));
+			const link = document.createElement('a');
+			link.href = url;
+			link.setAttribute('download', 'dashboard_report.xlsx');
+			document.body.appendChild(link);
+			link.click();
+			link.parentNode?.removeChild(link);
+			message.success('Xuất báo cáo thành công!');
+		} catch (error) {
+			message.error('Có lỗi xảy ra khi xuất báo cáo!');
+		} finally {
+			setExporting(false);
+		}
+	};
+
 	return (
 		<PageSkeleton
 			title='Thống kê hệ thống'
 			subtitle='Tổng quan hoạt động thư viện: người dùng, tài liệu, mượn trả và lượt check-in.'
+			extra={
+				<Button type="primary" icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
+					Xuất báo cáo
+				</Button>
+			}
 		>
 			<div className='library-panel'>
 				<StatCards summary={summary} loading={summaryLoading} />

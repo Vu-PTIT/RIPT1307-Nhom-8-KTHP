@@ -3,7 +3,7 @@ import {
 	Table, Button, Tag, Space, Popconfirm, Tooltip, Typography,
 } from 'antd';
 import {
-	EditOutlined, DeleteOutlined, CheckCircleOutlined, StopOutlined,
+	EditOutlined, DeleteOutlined, CheckCircleOutlined, StopOutlined, EyeOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -21,6 +21,7 @@ interface UserTableProps {
 	total: number;
 	page: number;
 	pageSize: number;
+	onView: (id: string) => void;
 	onEdit: (record: any) => void;
 	onToggle: (id: string, isActive: boolean, username: string) => void;
 	onDelete: (id: string, username: string) => void;
@@ -33,6 +34,7 @@ const UserTable: React.FC<UserTableProps> = ({
 	total,
 	page,
 	pageSize,
+	onView,
 	onEdit,
 	onToggle,
 	onDelete,
@@ -44,7 +46,7 @@ const UserTable: React.FC<UserTableProps> = ({
 			key: 'user',
 			render: (_: any, record: any) => (
 				<div>
-					<div style={{ fontWeight: 700, color: '#111' }}>{record.fullname || record.username}</div>
+					<div style={{ fontWeight: 700, color: '#111' }}>{record.full_name || record.username}</div>
 					<Text type='secondary' style={{ fontSize: 12 }}>@{record.username}</Text>
 				</div>
 			),
@@ -57,7 +59,7 @@ const UserTable: React.FC<UserTableProps> = ({
 		},
 		{
 			title: 'Vai trò',
-			dataIndex: 'role',
+			dataIndex: 'role_name',
 			key: 'role',
 			width: 120,
 			render: (v: string) => {
@@ -86,16 +88,15 @@ const UserTable: React.FC<UserTableProps> = ({
 				v ? <Text style={{ fontSize: 12 }}>{dayjs(v).format('DD/MM/YYYY')}</Text> : '—',
 		},
 		{
-			title: 'Đăng nhập cuối',
-			dataIndex: 'last_login',
-			key: 'last_login',
+			title: 'Số sách đang mượn',
+			dataIndex: 'active_borrows_count',
+			key: 'active_borrows_count',
 			width: 150,
-			render: (v: string) =>
-				v ? (
-					<Text style={{ fontSize: 12 }}>{dayjs(v).format('DD/MM/YYYY HH:mm')}</Text>
-				) : (
-					<Text type='secondary' style={{ fontSize: 12 }}>Chưa đăng nhập</Text>
-				),
+			render: (v: number) => (
+				<Text style={{ fontSize: 13, fontWeight: 500 }}>
+					{v} cuốn
+				</Text>
+			),
 		},
 		{
 			title: 'Thao tác',
@@ -103,12 +104,20 @@ const UserTable: React.FC<UserTableProps> = ({
 			width: 160,
 			render: (_: any, record: any) => (
 				<Space>
+					<Tooltip title='Xem chi tiết'>
+						<Button
+							type='text'
+							icon={<EyeOutlined />}
+							onClick={() => onView(record.id)}
+							style={{ color: '#1a56a8' }}
+						/>
+					</Tooltip>
 					<Tooltip title='Chỉnh sửa'>
 						<Button
 							type='text'
 							icon={<EditOutlined />}
 							onClick={() => onEdit(record)}
-							style={{ color: '#1a56a8' }}
+							style={{ color: '#d4860a' }}
 						/>
 					</Tooltip>
 					<Tooltip title={record.is_active ? 'Khoá tài khoản' : 'Mở khoá'}>

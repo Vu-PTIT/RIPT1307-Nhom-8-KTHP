@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Descriptions, Empty, message, Spin, Tag, Modal, Form, Input, Select } from 'antd';
-import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
+import { Button, Descriptions, Empty, message, Spin, Tag, Modal, Form, Input, Select, Upload } from 'antd';
+import { ArrowLeftOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
 import { history, useRequest } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import * as TaiLieuService from '@/services/TaiLieu';
@@ -18,6 +18,7 @@ export default function BookDetailManagePage(props: any) {
 	const [editVisible, setEditVisible] = useState(false);
 	const [editLoading, setEditLoading] = useState(false);
 	const [editForm] = Form.useForm();
+	const [fileList, setFileList] = useState<any[]>([]);
 
 	const { data: categoriesRes } = useRequest(TaiLieuService.getCategories, {
 		formatResult: (res) => res.data || [],
@@ -42,6 +43,7 @@ export default function BookDetailManagePage(props: any) {
 	}, [id]);
 
 	const openEditModal = () => {
+		setFileList([]);
 		editForm.setFieldsValue({
 			title: document?.title,
 			author: document?.author,
@@ -63,8 +65,12 @@ export default function BookDetailManagePage(props: any) {
 				description: values.description,
 				category_id: values.category_id,
 			});
+			if (fileList.length > 0 && fileList[0].originFileObj) {
+				await ThuThuService.uploadCover(document.id, fileList[0].originFileObj);
+			}
 			message.success('Đã cập nhật thông tin sách!');
 			setEditVisible(false);
+			setFileList([]);
 			load(); // Refresh details
 		} catch (err: any) {
 			message.error(err?.response?.data?.detail || 'Cập nhật thất bại!');
@@ -87,7 +93,7 @@ export default function BookDetailManagePage(props: any) {
 						>
 							Sửa thông tin sách
 						</Button>
-						<Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/thu-thu/kho-sach')}>
+						<Button icon={<ArrowLeftOutlined />} onClick={() => history.push(history.location.pathname.split('/').slice(0, -1).join('/'))}>
 							Quay lại danh sách
 						</Button>
 					</>
@@ -125,6 +131,23 @@ export default function BookDetailManagePage(props: any) {
 							</Select>
 						</Form.Item>
 					)}
+					<Form.Item label='Ảnh bìa (Tùy chọn)'>
+						<Upload
+							listType='picture-card'
+							maxCount={1}
+							fileList={fileList}
+							beforeUpload={() => false}
+							onChange={({ fileList }) => setFileList(fileList)}
+							accept="image/*"
+						>
+							{fileList.length >= 1 ? null : (
+								<div>
+									<UploadOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+									<div style={{ marginTop: 8, color: '#666' }}>Tải ảnh bìa</div>
+								</div>
+							)}
+						</Upload>
+					</Form.Item>
 					<Form.Item name='description' label='Mô tả'>
 						<Input.TextArea rows={3} />
 					</Form.Item>

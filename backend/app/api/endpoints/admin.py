@@ -1,5 +1,8 @@
 from typing import Any, List, Optional
+import io
+import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse, Response
 from app.db.session import engine
 from app.api import deps
 from app.models.user import User, Role
@@ -23,13 +26,18 @@ async def search_readers(
     users, total = await user_crud.get_all_users(
         engine, keyword=keyword, page=page, page_size=page_size
     )
+    from app.crud.borrow import count_current_borrowed
     items = []
     for u in users:
         role = await engine.find_one(Role, Role.id == u.role.id)
+        active_count = await count_current_borrowed(engine, str(u.id))
         items.append(user_schema.UserListItem(
             id=u.id, username=u.username, email=u.email,
+            full_name=u.full_name,
+            role_id=role.name.lower() if role else "",
             role_name=role.name if role else "Unknown",
-            is_active=u.is_active, created_at=u.created_at
+            is_active=u.is_active, created_at=u.created_at,
+            active_borrows_count=active_count
         ))
     return {"items": items, "total": total, "page": page, "page_size": page_size}
 
@@ -48,16 +56,21 @@ async def list_users(
         engine, role_id=role_id, is_active=is_active, keyword=keyword, page=page, page_size=page_size
     )
     
+    from app.crud.borrow import count_current_borrowed
     items = []
     for u in users:
         role = await engine.find_one(Role, Role.id == u.role.id)
+        active_count = await count_current_borrowed(engine, str(u.id))
         items.append(user_schema.UserListItem(
             id=u.id,
             username=u.username,
             email=u.email,
+            full_name=u.full_name,
+            role_id=role.name.lower() if role else "",
             role_name=role.name if role else "Unknown",
             is_active=u.is_active,
-            created_at=u.created_at
+            created_at=u.created_at,
+            active_borrows_count=active_count
         ))
         
     return {
@@ -171,7 +184,40 @@ async def get_borrow_stats(
 async def export_excel(
     current_user: User = Depends(deps.get_current_active_admin),
 ) -> Any:
-    """Export system data to Excel (Stub)."""
-    # This would normally use pandas and StreamingResponse
-    # For now, we return a message as the library isn't installed yet
-    return {"message": "Excel export is ready for implementation. Requires pandas and openpyxl."}
+    """Export system data to Excel."""
+    summary = await dashboard_crud.get_dashboard_summary(engine)
+    traffic = await dashboard_crud.get_checkin_traffic(engine, period="daily")
+    top_books = await dashboard_crud.get_top_borrowed_books(engine, limit=10)
+    overdue_stats = await dashboard_crud.get_overdue_stats(engine)
+    borrow_stats = await dashboard_crud.get_borrow_status_stats(engine)
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        pd.DataFrame([{
+            "Total Users": summary.total_users,
+            "Total Documents": summary.total_documents,
+            "Active Borrows": summary.active_borrows,
+            "Check-ins Today": summary.total_checkins_today,
+        }]).to_excel(writer, sheet_name="Summary", index=False)
+
+        if traffic:
+            traffic_data = [t if isinstance(t, dict) else t.model_dump() for t in traffic]
+            pd.DataFrame(traffic_data).to_excel(writer, sheet_name="Checkin Traffic", index=False)
+
+        if top_books:
+            # exclude id
+            books_data = [{"Title": b.title, "Author": b.author, "Borrow Count": b.borrow_count} for b in top_books]
+            pd.DataFrame(books_data).to_excel(writer, sheet_name="Top Books", index=False)
+
+        if overdue_stats.items:
+            overdue_data = [{"Reader": i.reader_username, "Document": i.document_title, "Due Date": i.due_date.strftime("%Y-%m-%d %H:%M:%S"), "Days Overdue": i.days_overdue} for i in overdue_stats.items]
+            pd.DataFrame(overdue_data).to_excel(writer, sheet_name="Overdue Items", index=False)
+
+        if borrow_stats:
+            pd.DataFrame([s.model_dump() for s in borrow_stats]).to_excel(writer, sheet_name="Borrow Stats", index=False)
+
+    return Response(
+        content=output.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=dashboard_report.xlsx"}
+    )

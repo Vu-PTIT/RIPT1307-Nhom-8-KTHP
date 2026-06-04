@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from app.db.session import engine
 from app.api import deps
 from app.models.user import User
@@ -14,40 +14,42 @@ def _as_date(value):
     return value.date() if isinstance(value, datetime) else value
 
 async def _get_borrow_detail_logic(record_id: str):
-    """Internal helper to get borrow detail without role dependency check."""
+    """Internal helper to get borrow detail without role dependency check. Uses raw Mongo queries to prevent ODMantic validation errors."""
     from app.models.borrow import BorrowRecord, BorrowRecordItem
     from app.models.document import Document, DocumentCopy
     from odmantic import ObjectId
+    from app.crud.borrow import get_record_items_dict
 
-    record = await engine.find_one(BorrowRecord, BorrowRecord.id == ObjectId(record_id))
+    collection = engine.get_collection(BorrowRecord)
+    record = await collection.find_one({"_id": ObjectId(record_id)})
     if not record:
         return None
         
-    from app.crud.borrow import get_record_items
-    items = await get_record_items(engine, record_id)
+    items = await get_record_items_dict(engine, record_id)
     
     item_summaries = []
     for item in items:
-        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
+        copy_ref = item.get("document_copy")
+        copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_ref) if copy_ref else None
         doc = await engine.find_one(Document, Document.id == copy.document.id) if copy else None
         if not copy or not doc:
             continue
         
-        item_due_date = getattr(item, "due_date", None) or record.due_date
-        status = "returned" if item.return_date else "borrowed"
-        if not item.return_date and _as_date(item_due_date) < datetime.now().date():
+        item_due_date = item.get("due_date") or record.get("due_date")
+        status = "returned" if item.get("return_date") else "borrowed"
+        if not item.get("return_date") and item_due_date and _as_date(item_due_date) < datetime.now().date():
             status = "overdue"
             
         item_summaries.append(borrow_schema.BorrowRecordItemSummary(
-            id=item.id, copy_code=copy.copy_code, document_title=doc.title,
+            id=item["_id"], copy_code=copy.copy_code, document_title=doc.title,
             author=doc.author, cover_image=doc.cover_image,
-            borrow_date=_as_date(record.borrow_date), due_date=_as_date(item_due_date),
-            return_date=_as_date(item.return_date) if item.return_date else None, status=status
+            borrow_date=_as_date(record.get("borrow_date")), due_date=_as_date(item_due_date),
+            return_date=_as_date(item.get("return_date")) if item.get("return_date") else None, status=status
         ))
         
     return borrow_schema.BorrowRecordDetailResponse(
-        id=record.id, borrow_date=_as_date(record.borrow_date), due_date=_as_date(record.due_date),
-        status=record.status, items=item_summaries
+        id=record["_id"], borrow_date=_as_date(record.get("borrow_date")), due_date=_as_date(record.get("due_date")),
+        status=record.get("status", "borrowed"), items=item_summaries
     )
 
 @router.get("", response_model=List[borrow_schema.BorrowRecordSummaryResponse])
@@ -113,32 +115,45 @@ async def create_borrow_librarian(
 
 @router.get("/librarian/all", response_model=List[borrow_schema.BorrowRecordListItem])
 async def list_borrow_records_librarian(
+    response: Response,
     status: Optional[str] = None, reader_id: Optional[str] = None,
+    username: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(deps.get_current_librarian),
 ) -> Any:
     """List all borrow records (Librarian view)."""
     records, total = await borrow_crud.get_all_borrow_records(
-        engine, status=status, reader_id=reader_id, page=page, page_size=page_size
+        engine, status=status, reader_id=reader_id, username=username,
+        start_date=start_date, end_date=end_date, page=page, page_size=page_size
     )
+    response.headers["x-total-count"] = str(total)
+    response.headers["Access-Control-Expose-Headers"] = "x-total-count"
     response = []
-    from app.crud.borrow import get_record_items
+    from app.crud.borrow import get_record_items_dict
     from app.models.document import DocumentCopy
     for rec in records:
-        reader = await engine.find_one(User, User.id == rec.reader.id)
-        items = await get_record_items(engine, str(rec.id))
+        rec_id = rec["_id"]
+        reader_ref = rec.get("reader")
+        reader = None
+        if reader_ref:
+            reader = await engine.find_one(User, User.id == reader_ref)
+            
+        items = await get_record_items_dict(engine, str(rec_id))
         
         copy_codes = []
         for item in items:
-            copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
+            copy_ref = item.get("document_copy")
+            copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_ref) if copy_ref else None
             if copy:
                 copy_codes.append(copy.copy_code)
 
         response.append(borrow_schema.BorrowRecordListItem(
-            id=rec.id, reader_username=reader.username if reader else "Unknown",
+            id=rec_id, reader_username=reader.username if reader else "Unknown",
             reader_email=reader.email if reader else "",
-            borrow_date=_as_date(rec.borrow_date), due_date=_as_date(rec.due_date),
-            status=rec.status, item_count=len(items), copy_codes=copy_codes, created_at=rec.created_at
+            borrow_date=_as_date(rec.get("borrow_date")), due_date=_as_date(rec.get("due_date")),
+            status=rec.get("status", "borrowed"), item_count=len(items), copy_codes=copy_codes, created_at=rec.get("created_at")
         ))
     return response
 

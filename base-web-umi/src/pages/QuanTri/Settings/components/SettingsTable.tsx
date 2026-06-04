@@ -18,9 +18,12 @@ const SettingsTable: React.FC<SettingsTableProps> = ({ settings, loading, onEdit
 			dataIndex: 'key',
 			key: 'key',
 			width: 220,
-			render: (v: string) => (
-				<Tag style={{ fontFamily: 'monospace', fontSize: 13, padding: '4px 10px' }}>{v}</Tag>
-			),
+			render: (v: string, record: any) => {
+				const keyVal = v ?? record.setting_key ?? '';
+				return (
+					<Tag style={{ fontFamily: 'monospace', fontSize: 13, padding: '4px 10px' }}>{keyVal}</Tag>
+				);
+			},
 		},
 		{
 			title: 'Giá trị hiện tại',

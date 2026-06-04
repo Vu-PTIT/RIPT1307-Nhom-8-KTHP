@@ -64,28 +64,67 @@ async def get_top_borrowed_books(engine: AIOEngine, limit: int = 5) -> List[TopB
 
 async def get_overdue_stats(engine: AIOEngine) -> OverdueStats:
     today = datetime.utcnow()
-    # Find active borrow items
-    active_items = await engine.find(BorrowRecordItem, BorrowRecordItem.return_date == None)
+    collection = engine.get_collection(BorrowRecordItem)
+    
+    pipeline = [
+        {"$match": {"return_date": None}},
+        {"$lookup": {
+            "from": "borrow_records",
+            "localField": "borrow_record",
+            "foreignField": "_id",
+            "as": "record"
+        }},
+        {"$unwind": "$record"},
+        {"$match": {"record.status": "borrowed"}},
+        {"$lookup": {
+            "from": "users",
+            "localField": "record.reader",
+            "foreignField": "_id",
+            "as": "reader"
+        }},
+        {"$unwind": {"path": "$reader", "preserveNullAndEmptyArrays": True}},
+        {"$lookup": {
+            "from": "document_copies",
+            "localField": "document_copy",
+            "foreignField": "_id",
+            "as": "copy"
+        }},
+        {"$unwind": {"path": "$copy", "preserveNullAndEmptyArrays": True}},
+        {"$lookup": {
+            "from": "documents",
+            "localField": "copy.document",
+            "foreignField": "_id",
+            "as": "doc"
+        }},
+        {"$unwind": {"path": "$doc", "preserveNullAndEmptyArrays": True}}
+    ]
+    
+    cursor = collection.aggregate(pipeline)
+    results = await cursor.to_list(length=None)
     
     overdue_items = []
-    for item in active_items:
-        record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
-        if not record or record.status != "borrowed":
+    for res in results:
+        record = res.get("record", {})
+        item_due_date = res.get("due_date") or record.get("due_date")
+        
+        if not item_due_date:
             continue
             
-        item_due_date = getattr(item, "due_date", None) or record.due_date
-        
         if item_due_date < today:
-            reader = await engine.find_one(User, User.id == record.reader.id)
-            copy = await engine.find_one(DocumentCopy, DocumentCopy.id == item.document_copy.id)
-            doc = await engine.find_one(Document, Document.id == copy.document.id) if copy else None
+            reader = res.get("reader") or {}
+            doc = res.get("doc") or {}
             
-            days_overdue = (today.date() - item_due_date.date()).days
-            
+            # Ensure we can call .date() by checking type
+            if isinstance(item_due_date, datetime):
+                days_overdue = (today.date() - item_due_date.date()).days
+            else:
+                # If it's a date or string, try to handle or just use 0
+                days_overdue = (today.date() - item_due_date).days if isinstance(item_due_date, date) else 0
+                
             overdue_items.append(OverdueItem(
-                borrow_id=record.id,
-                reader_username=reader.username if reader else "Unknown",
-                document_title=doc.title if doc else "Unknown",
+                borrow_id=record.get("_id"),
+                reader_username=reader.get("username", "Unknown") if reader else "Unknown",
+                document_title=doc.get("title", "Unknown") if doc else "Unknown",
                 due_date=item_due_date,
                 days_overdue=days_overdue
             ))
