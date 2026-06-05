@@ -292,11 +292,15 @@ async def create_renewal_request(engine: AIOEngine, item_id: str, user_id: str, 
         
     user = await engine.find_one(User, User.id == ObjectId(user_id))
     
-    # Check if there is already a pending request
+    # Each borrowed item can only have one active/successful renewal.
     collection = engine.get_collection(RenewalRequest)
     existing_raw = await collection.find_one({"borrow_record_item": ObjectId(item_id), "status": "pending"})
     if existing_raw:
         raise ValueError("A renewal request is already pending for this item")
+
+    approved_raw = await collection.find_one({"borrow_record_item": ObjectId(item_id), "status": "approved"})
+    if approved_raw:
+        raise ValueError("This item has already been renewed")
         
     db_obj = RenewalRequest(
         borrow_record_item=item,
@@ -312,6 +316,9 @@ async def get_my_renewals(engine: AIOEngine, user_id: str) -> List[RenewalReques
     raw = await collection.find({"requested_by": ObjectId(user_id)}).sort("request_date", -1).to_list(length=None)
     requests: List[RenewalRequest] = []
     for doc in raw:
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == doc.get("borrow_record_item"))
+        if not item or item.return_date is not None:
+            continue
         request = await engine.find_one(RenewalRequest, RenewalRequest.id == doc["_id"])
         if request:
             requests.append(request)
@@ -429,6 +436,9 @@ async def process_return(
     item.return_date = datetime.utcnow()
     item.condition_on_return = condition_on_return
     await engine.save(item)
+
+    renewal_collection = engine.get_collection(RenewalRequest)
+    await renewal_collection.delete_many({"borrow_record_item": item.id})
 
     copy.status = "available"
     copy.condition = condition_on_return

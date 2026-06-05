@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { message, Spin, Empty } from 'antd';
 import { useRequest } from 'umi';
 import dayjs from 'dayjs';
-import { Pagination } from 'antd';
+import LibraryPagination from '@/components/LibraryPagination';
 import PageSkeleton from '@/components/PageSkeleton';
 import PendingList, { PendingRenewalItem } from './components/PendingList';
 import HistoryList, { HistoryRenewalItem } from './components/HistoryList';
@@ -115,19 +115,16 @@ const RenewalReview: React.FC = () => {
                 onReject={(id) => handleReview(id, 'rejected')}
               />
               {pendingTotal > 0 && (
-                <div style={{ textAlign: 'right', marginBottom: 24 }}>
-                  <Pagination
-                    current={page}
-                    pageSize={pageSize}
-                    total={pendingTotal}
-                    onChange={(p, s) => {
-                      setPage(p);
-                      setPageSize(s || 10);
-                    }}
-                    showSizeChanger={false}
-                    showTotal={(total) => `Tổng ${total} yêu cầu`}
-                  />
-                </div>
+                <LibraryPagination
+                  current={page}
+                  pageSize={pageSize}
+                  total={pendingTotal}
+                  onChange={(p, s) => {
+                    setPage(p);
+                    setPageSize(s || 10);
+                  }}
+                  complex={true}
+                />
               )}
             </>
           )}

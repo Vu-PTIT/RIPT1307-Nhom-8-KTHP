@@ -112,6 +112,7 @@ class BorrowRecordItemSummary(BaseModel):
     due_date: date
     return_date: Optional[date] = None
     status: str
+    renewal_count: Optional[int] = 0
 
 class BorrowRecordDetailResponse(BaseModel):
     id: PyObjectId

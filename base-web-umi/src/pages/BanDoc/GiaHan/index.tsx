@@ -81,6 +81,26 @@ export default function RenewalsPage() {
 				renewal.borrow_record_item_id === String(borrowed.id) && String(renewal.status).toLowerCase() === 'pending',
 		);
 
+	const getApprovedRenewal = (borrowed: any) =>
+		items.find(
+			(renewal: any) =>
+				renewal.borrow_record_item_id === String(borrowed.id) && String(renewal.status).toLowerCase() === 'approved',
+		);
+
+	const canRenewItems = borrowedItems.filter(
+		(borrowed: any) => !getPendingRenewal(borrowed) && !getApprovedRenewal(borrowed) && (borrowed.renewal_count || 0) < 1,
+	);
+
+	const displayBorrowedItems = borrowedItems.map((borrowed: any) => {
+		const approved = getApprovedRenewal(borrowed);
+		if (!approved) return borrowed;
+		return {
+			...borrowed,
+			original_due_date: approved.old_due_date || borrowed.record_due_date,
+			renewed_due_date: approved.new_due_date || borrowed.due_date,
+		};
+	});
+
 	const handleRequestRenewal = async (borrowed: any) => {
 		setRequestingId(borrowed.id);
 		try {
@@ -89,7 +109,7 @@ export default function RenewalsPage() {
 				new_due_date: addDays(borrowed.due_date || borrowed.record_due_date, 7),
 			});
 			message.success('Đã gửi yêu cầu gia hạn');
-			loadRenewals();
+			await Promise.all([loadRenewals(), loadBorrowedItems()]);
 		} catch (e: any) {
 			message.error(e?.response?.data?.detail || 'Không gửi được yêu cầu gia hạn');
 		} finally {
@@ -114,7 +134,7 @@ export default function RenewalsPage() {
 						<BookOutlined />
 						<div>
 							<span>Sách đang mượn có thể gia hạn</span>
-							<strong>{borrowedItems.length}</strong>
+							<strong>{canRenewItems.length}</strong>
 						</div>
 					</div>
 					<div 
@@ -142,12 +162,15 @@ export default function RenewalsPage() {
 						) : (
 							<BorrowedBookList
 								loading={borrowedLoading}
-								items={borrowedItems}
+								items={displayBorrowedItems}
 								emptyDescription='Không có sách đang mượn để gia hạn'
 								actionRender={(borrowed: any) => {
 									const pending = getPendingRenewal(borrowed);
+									const renewed = getApprovedRenewal(borrowed) || (borrowed.renewal_count || 0) >= 1;
 									return pending ? (
 										<Tag className='library-status-tag neutral'>Đã gửi yêu cầu</Tag>
+									) : renewed ? (
+										<Tag className='library-status-tag success'>Đã gia hạn</Tag>
 									) : (
 										<Button
 											type='primary'

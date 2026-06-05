@@ -1,5 +1,6 @@
 import React from 'react';
-import { Card, Typography, Tag, List, Pagination } from 'antd';
+import { Card, Typography, Tag, List } from 'antd';
+import LibraryPagination from '@/components/LibraryPagination';
 
 const { Title, Text } = Typography;
 
@@ -99,16 +100,13 @@ const HistoryList: React.FC<HistoryListProps> = ({ data, total, page, pageSize, 
 			/>
 
 			{total > 0 && (
-				<div style={{ textAlign: 'right', marginTop: 16 }}>
-					<Pagination
-						current={page}
-						pageSize={pageSize}
-						total={total}
-						onChange={onPageChange}
-						showSizeChanger={false}
-						showTotal={(t) => `Tổng ${t} lịch sử`}
-					/>
-				</div>
+				<LibraryPagination
+					current={page}
+					pageSize={pageSize}
+					total={total}
+					onChange={onPageChange}
+					complex={true}
+				/>
 			)}
 		</div>
 	);

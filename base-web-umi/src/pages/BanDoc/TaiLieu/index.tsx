@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { message, Empty, Pagination, Row, Col } from 'antd';
+import { message, Empty, Row, Col } from 'antd';
 import { history, useRequest } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import * as TaiLieuService from '@/services/TaiLieu';
@@ -7,6 +7,7 @@ import * as MuonSach from '@/services/MuonSach';
 import DocumentCard from '@/components/DocumentCard';
 import DocumentSearchBar from './components/DocumentSearchBar';
 import { getApiError } from '@/utils/getApiError';
+import LibraryPagination from '@/components/LibraryPagination';
 
 export default function DocumentsPage() {
   const [keyword, setKeyword] = useState('');
@@ -82,14 +83,12 @@ export default function DocumentsPage() {
                 </Col>
               ))}
             </Row>
-            <div className='library-pagination'>
-              <Pagination
-                current={page}
-                pageSize={pageSize}
-                total={total}
-                onChange={(p, ps) => { setPage(p); setPageSize(ps); }}
-              />
-            </div>
+            <LibraryPagination
+              current={page}
+              pageSize={pageSize}
+              total={total}
+              onChange={(p, ps) => { setPage(p); setPageSize(ps); }}
+            />
           </>
         )}
       </div>

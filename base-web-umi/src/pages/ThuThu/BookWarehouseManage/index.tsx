@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Row, Col, Empty, Spin, Pagination, message } from 'antd';
+import { Row, Col, Empty, Spin, message } from 'antd';
 import { useRequest, history } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import BookCard, { BookData } from './components/BookCard';
@@ -9,6 +9,7 @@ import * as ThuThuService from '@/services/ThuThu';
 import { ipLibrary } from '@/utils/ip';
 import getCoverForTitle from '@/utils/coverMap';
 import { getApiError } from '@/utils/getApiError';
+import LibraryPagination from '@/components/LibraryPagination';
 
 const OBJ_ID_REGEX = /^[a-fA-F0-9]{24}$/;
 
@@ -21,12 +22,11 @@ const buildImageUrl = (doc: any): string => {
   return cover;
 };
 
-const PAGE_SIZE = 12;
-
 const BookWarehouseManage: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
 
   const { data: categoriesRes } = useRequest(TaiLieuService.getCategories, {
     formatResult: (res) => res.data || [],
@@ -38,10 +38,10 @@ const BookWarehouseManage: React.FC = () => {
       keyword: searchText || undefined,
       category_id: selectedCategory,
       page,
-      page_size: PAGE_SIZE,
+      page_size: pageSize,
     }),
     {
-      refreshDeps: [page, selectedCategory],
+      refreshDeps: [page, pageSize, selectedCategory],
       formatResult: (res) => res.data || {},
     },
   );
@@ -104,15 +104,17 @@ const BookWarehouseManage: React.FC = () => {
           )}
         </Spin>
 
-        {total > PAGE_SIZE && (
-          <div className='library-pagination'>
-            <Pagination
-              current={page}
-              pageSize={PAGE_SIZE}
-              total={total}
-              onChange={(p) => setPage(p)}
-            />
-          </div>
+        {total > 0 && (
+          <LibraryPagination
+            complex={true}
+            current={page}
+            pageSize={pageSize}
+            total={total}
+            onChange={(p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            }}
+          />
         )}
       </div>
     </PageSkeleton>

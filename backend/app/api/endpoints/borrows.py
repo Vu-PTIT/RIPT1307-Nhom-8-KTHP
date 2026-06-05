@@ -15,7 +15,7 @@ def _as_date(value):
 
 async def _get_borrow_detail_logic(record_id: str):
     """Internal helper to get borrow detail without role dependency check. Uses raw Mongo queries to prevent ODMantic validation errors."""
-    from app.models.borrow import BorrowRecord, BorrowRecordItem
+    from app.models.borrow import BorrowRecord, BorrowRecordItem, RenewalRequest
     from app.models.document import Document, DocumentCopy
     from odmantic import ObjectId
     from app.crud.borrow import get_record_items_dict
@@ -28,6 +28,7 @@ async def _get_borrow_detail_logic(record_id: str):
     items = await get_record_items_dict(engine, record_id)
     
     item_summaries = []
+    renewal_collection = engine.get_collection(RenewalRequest)
     for item in items:
         copy_ref = item.get("document_copy")
         copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_ref) if copy_ref else None
@@ -39,12 +40,18 @@ async def _get_borrow_detail_logic(record_id: str):
         status = "returned" if item.get("return_date") else "borrowed"
         if not item.get("return_date") and item_due_date and _as_date(item_due_date) < datetime.now().date():
             status = "overdue"
+        renewal_count = await renewal_collection.count_documents({
+            "borrow_record_item": item["_id"],
+            "status": "approved",
+        })
             
         item_summaries.append(borrow_schema.BorrowRecordItemSummary(
             id=item["_id"], copy_code=copy.copy_code, document_title=doc.title,
             author=doc.author, cover_image=doc.cover_image,
             borrow_date=_as_date(record.get("borrow_date")), due_date=_as_date(item_due_date),
-            return_date=_as_date(item.get("return_date")) if item.get("return_date") else None, status=status
+            return_date=_as_date(item.get("return_date")) if item.get("return_date") else None,
+            status=status,
+            renewal_count=renewal_count,
         ))
         
     return borrow_schema.BorrowRecordDetailResponse(

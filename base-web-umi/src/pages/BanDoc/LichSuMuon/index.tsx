@@ -62,6 +62,9 @@ export default function BorrowHistoryPage() {
 						className="borrowed-book-list"
 						loading={loading}
 						dataSource={items}
+						pagination={{
+							pageSize: 5,
+						}}
 						renderItem={(it: any) => (
 							<List.Item 
 								onClick={() => history.push(`/ban-doc/lich-su-muon/${it.id}`)} 

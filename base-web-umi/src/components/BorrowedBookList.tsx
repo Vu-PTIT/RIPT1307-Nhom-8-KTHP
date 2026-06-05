@@ -49,8 +49,8 @@ const getStatus = (item: any) => {
 	if (item.status === 'cancelled') {
 		return { className: 'danger', label: 'Đã hủy', lateDays: 0 };
 	}
-	const lateDays = daysLate(item.due_date || item.record_due_date);
-	if (item.status === 'overdue' || lateDays > 0) {
+	const lateDays = daysLate(item.renewed_due_date || item.due_date || item.record_due_date);
+	if (lateDays > 0) {
 		return { className: 'danger', label: 'Quá hạn', lateDays };
 	}
 	return { className: 'success', label: 'Đang mượn', lateDays: 0 };
@@ -74,7 +74,10 @@ const BorrowedBookList: React.FC<BorrowedBookListProps> = ({
 			renderItem={(item: any) => {
 				const title = item.document_title || item.title || 'Không rõ tên sách';
 				const status = getStatus(item);
-				const dueDate = item.due_date || item.record_due_date;
+				const dueDate = item.original_due_date || item.due_date || item.record_due_date;
+				const renewedDueDate = item.renewed_due_date;
+				const effectiveDueDate = renewedDueDate || dueDate;
+				const isEffectiveDueLate = daysLate(effectiveDueDate) > 0;
 				return (
 					<List.Item className={`borrowed-book-card ${status.className === 'danger' ? 'overdue' : ''}`}>
 						<div className='borrowed-book-cover' style={{ backgroundImage: `url(${getCover(item)})` }} />
@@ -99,10 +102,18 @@ const BorrowedBookList: React.FC<BorrowedBookListProps> = ({
 								</div>
 								<div>
 									<span>Hạn trả</span>
-									<strong className={status.className === 'danger' ? 'danger' : ''}>
+									<strong className={!renewedDueDate && isEffectiveDueLate ? 'danger' : ''}>
 										<CalendarOutlined /> {formatDate(dueDate)}
 									</strong>
 								</div>
+								{renewedDueDate ? (
+									<div>
+										<span>Hạn đã gia hạn</span>
+										<strong className={isEffectiveDueLate ? 'danger' : ''}>
+											<CalendarOutlined /> {formatDate(renewedDueDate)}
+										</strong>
+									</div>
+								) : null}
 								<div>
 									<span>Mã bản sao</span>
 									<strong>{item.copy_code || 'Không rõ'}</strong>

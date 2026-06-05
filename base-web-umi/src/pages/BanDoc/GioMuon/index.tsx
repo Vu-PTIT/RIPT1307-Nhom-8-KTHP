@@ -31,6 +31,7 @@ export default function BorrowCartPage() {
 	const [loading, setLoading] = useState(false);
 	const [borrowedLoading, setBorrowedLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const mountedRef = useRef(true);
 
 	const { initialState } = useModel('@@initialState');
 	const currentUser = initialState?.currentUser as any;
@@ -48,13 +49,14 @@ export default function BorrowCartPage() {
 		}
 	};
 
-	const mountedRef = useRef(true);
-
 	const loadBorrowedItems = async () => {
 		if (mountedRef.current) setBorrowedLoading(true);
 		try {
-			const res = await MuonSach.getMyBorrows();
+			const [res, renewalRes] = await Promise.all([MuonSach.getMyBorrows(), MuonSach.getMyRenewals()]);
 			const allRecords = Array.isArray(res.data) ? res.data : [];
+			const approvedRenewals = (Array.isArray(renewalRes.data) ? renewalRes.data : []).filter(
+				(renewal: any) => String(renewal.status).toLowerCase() === 'approved',
+			);
 			const records = allRecords.filter((r: any) => r.status === 'borrowed' || r.status === 'pending');
 			const detailResults = await Promise.allSettled(records.map((record: any) => MuonSach.getBorrowDetail(record.id)));
 			const activeItems = detailResults.flatMap((result: any) => {
@@ -63,11 +65,18 @@ export default function BorrowCartPage() {
 				const recordItems = Array.isArray(record.items) ? record.items : [];
 				return recordItems
 					.filter((item: any) => item.status !== 'returned' && !item.return_date)
-					.map((item: any) => ({
-						...item,
-						record_id: record.id,
-						record_due_date: record.due_date,
-					}));
+					.map((item: any) => {
+						const approved = approvedRenewals.find(
+							(renewal: any) => renewal.borrow_record_item_id === String(item.id),
+						);
+						return {
+							...item,
+							record_id: record.id,
+							record_due_date: record.due_date,
+							original_due_date: approved?.old_due_date || undefined,
+							renewed_due_date: approved?.new_due_date || undefined,
+						};
+					});
 			});
 			if (mountedRef.current) setBorrowedItems(activeItems);
 		} catch (e) {
@@ -194,7 +203,7 @@ export default function BorrowCartPage() {
 					>
 						<ShoppingCartOutlined />
 						<div>
-							<span>Trong giỏ checkout</span>
+							<span>Tạo phiếu mượn</span>
 							<strong>{items.length}</strong>
 						</div>
 					</div>
@@ -253,8 +262,8 @@ export default function BorrowCartPage() {
 											<DocumentCard
 												item={it}
 												onDetail={(id) => history.push(`/ban-doc/tai-lieu/${id}`)}
-												onWishlist={() => {}}
-												onCart={() => {}}
+												onWishlist={() => { }}
+												onCart={() => { }}
 												accent={true}
 												actions={[
 													<Button

@@ -79,7 +79,13 @@ async def get_my_renewals(
     Get all renewal requests sent by the current user.
     """
     requests = await borrow_crud.get_my_renewals(engine, str(current_user.id))
-    response = [await _build_renewal_response(req) for req in requests]
+    response = []
+    for req in requests:
+        item_id = _resolve_reference_id(req.borrow_record_item)
+        item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == item_id)
+        if not item or item.return_date is not None:
+            continue
+        response.append(await _build_renewal_response(req))
     return response
 
 @router.put("/{id}", response_model=borrow_schema.RenewalRequestResponse)
@@ -124,6 +130,8 @@ async def list_pending_renewals(
     for req in requests:
         item_id = _resolve_reference_id(req.borrow_record_item)
         item = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == item_id)
+        if not item or item.return_date is not None:
+            continue
         record_id = _resolve_reference_id(item.borrow_record)
         record = await engine.find_one(BorrowRecord, BorrowRecord.id == record_id)
         copy_id = _resolve_reference_id(item.document_copy)
@@ -159,7 +167,7 @@ async def list_pending_renewals(
         ))
     return borrow_schema.RenewalRequestListResponse(
         items=response,
-        total=total,
+        total=len(response),
         page=page,
         page_size=page_size
     )
