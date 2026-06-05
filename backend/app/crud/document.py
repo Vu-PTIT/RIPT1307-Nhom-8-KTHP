@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Optional, Tuple
 from odmantic import AIOEngine, ObjectId
 from app.models.document import Document, Category, DocumentCopy
+import uuid
 from app.schemas.document import DocumentSearchResponse, DocumentSummary
 
 async def search_documents(
@@ -139,6 +140,28 @@ async def create_document_copy(engine: AIOEngine, doc_id: str, copy_code: str, c
     doc.available_copies += 1
     await engine.save(doc)
     return copy
+
+async def create_document_copies_bulk(engine: AIOEngine, doc_id: str, quantity: int, condition: str = "good") -> List[DocumentCopy]:
+    """Add multiple copies to a document with auto-generated barcodes."""
+    from app.models.document import DocumentCopy
+    doc = await engine.find_one(Document, Document.id == ObjectId(doc_id))
+    if not doc: raise ValueError("Document not found")
+    
+    copies = []
+    for _ in range(quantity):
+        copy_code = f"{str(doc.id)[-6:]}-{uuid.uuid4().hex[:6]}".upper()
+        while await engine.find_one(DocumentCopy, DocumentCopy.copy_code == copy_code):
+            copy_code = f"{str(doc.id)[-6:]}-{uuid.uuid4().hex[:6]}".upper()
+            
+        copy = DocumentCopy(document=doc, copy_code=copy_code, condition=condition, status="available")
+        copies.append(copy)
+    
+    await engine.save_all(copies)
+    doc.total_copies += quantity
+    doc.available_copies += quantity
+    await engine.save(doc)
+    
+    return copies
 
 
 async def update_document_copy(engine: AIOEngine, copy_id: str, update_data: dict) -> DocumentCopy:

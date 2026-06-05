@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
 	Button, Tooltip, Modal, Form,
-	Input, Select, message, Popconfirm,
+	Input, InputNumber, Select, message, Popconfirm,
 } from 'antd';
 import {
 	InfoCircleOutlined, PlusOutlined, DeleteOutlined, CopyOutlined,
@@ -41,10 +41,10 @@ const BookCard: React.FC<BookCardProps> = ({ book, categories = [], onDetail, on
 		setAddCopyLoading(true);
 		try {
 			await ThuThuService.addDocumentCopy(book.id, {
-				copy_code: values.copy_code,
+				quantity: values.quantity || 1,
 				condition: values.condition || 'good',
 			});
-			message.success(`Đã thêm bản sao "${values.copy_code}" vào "${book.title}"`);
+			message.success(`Đã thêm ${values.quantity} bản sao vào "${book.title}"`);
 			setAddCopyVisible(false);
 			addCopyForm.resetFields();
 			onRefresh?.();
@@ -121,11 +121,12 @@ const BookCard: React.FC<BookCardProps> = ({ book, categories = [], onDetail, on
 
 				<Form form={addCopyForm} layout='vertical' onFinish={handleAddCopy} style={{ marginTop: 16 }}>
 					<Form.Item
-						name='copy_code'
-						label='Mã bản sao (barcode)'
-						rules={[{ required: true, message: 'Vui lòng nhập mã bản sao!' }]}
+						name='quantity'
+						label='Số lượng bản sao'
+						rules={[{ required: true, message: 'Vui lòng nhập số lượng!' }]}
+                        initialValue={1}
 					>
-						<Input placeholder='Ví dụ: TL001-001' size='large' />
+						<InputNumber min={1} max={100} style={{ width: '100%' }} size='large' />
 					</Form.Item>
 					<Form.Item name='condition' label='Tình trạng' initialValue='good'>
 						<Select size='large'>

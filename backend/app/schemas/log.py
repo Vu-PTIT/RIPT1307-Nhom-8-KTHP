@@ -16,6 +16,7 @@ class CheckinLog(CheckinLogBase):
     user: User
     handled_by: Optional[User] = None
     check_time: datetime
+    checkout_time: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -23,6 +24,7 @@ class CheckinLog(CheckinLogBase):
 class CheckinLogResponse(CheckinLogBase):
     id: PyObjectId
     check_time: datetime
+    checkout_time: Optional[datetime] = None
     handled_by_name: Optional[str] = None
 
 class CheckinLogListItem(BaseModel):
@@ -33,6 +35,7 @@ class CheckinLogListItem(BaseModel):
     check_type: str
     method: str
     check_time: datetime
+    checkout_time: Optional[datetime] = None
     handled_by_name: Optional[str] = None
 
 class CheckinLogHistoryResponse(BaseModel):

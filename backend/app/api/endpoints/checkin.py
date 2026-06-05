@@ -52,7 +52,8 @@ async def get_checkin_history(
             id=log.id,
             check_type=log.check_type,
             method=log.method,
-            check_time=log.check_time
+            check_time=log.check_time,
+            checkout_time=log.checkout_time
         ))
     return log_schema.CheckinLogHistoryResponse(
         items=response,
@@ -102,6 +103,7 @@ async def list_checkin_logs(
             id=log.id, username=user.username if user else "Unknown",
             email=user.email if user else "", check_type=log.check_type,
             method=log.method, check_time=log.check_time,
+            checkout_time=log.checkout_time,
             handled_by_name=handled_by_name
         ))
     return log_schema.CheckinLogListResponse(
@@ -125,13 +127,10 @@ async def get_checkin_stats(
     from datetime import datetime
     today_start = datetime.combine(today, datetime.min.time())
     today_end = datetime.combine(today, datetime.max.time())
-    today_in = await col.count_documents({"check_type": "in", "check_time": {"$gte": today_start, "$lte": today_end}})
-    # currently inside = users whose last log today is "in" (approximate: count IN without matching OUT)
+    today_in = await col.count_documents({"check_type": {"$in": ["in", "check_in"]}, "check_time": {"$gte": today_start, "$lte": today_end}})
+    # currently inside = check_type is 'in' and checkout_time is null and checked in today
     total_logs = await col.count_documents({})
-    # people currently inside = logged IN today and haven't logged OUT yet
-    in_ids = await col.distinct("user", {"check_type": "in", "check_time": {"$gte": today_start, "$lte": today_end}})
-    out_ids = await col.distinct("user", {"check_type": "out", "check_time": {"$gte": today_start, "$lte": today_end}})
-    currently_in = len([u for u in in_ids if u not in out_ids])
+    currently_in = await col.count_documents({"check_type": {"$in": ["in", "check_in"]}, "checkout_time": None, "check_time": {"$gte": today_start}})
     return {
         "currently_in_library": currently_in,
         "today_checkin": today_in,
@@ -165,6 +164,7 @@ async def manual_checkin(
             id=log.id, username=user.username if user else "Unknown",
             email=user.email if user else "", check_type=log.check_type,
             method=log.method, check_time=log.check_time,
+            checkout_time=log.checkout_time,
             handled_by_name=current_user.username
         )
     except ValueError as e:

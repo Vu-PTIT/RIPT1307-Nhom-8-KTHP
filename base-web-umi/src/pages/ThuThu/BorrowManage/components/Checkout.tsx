@@ -221,74 +221,84 @@ const CheckoutTab: React.FC = () => {
 	return (
 		<div>
 			<Row gutter={24}>
-				{/* Cột Trái: Chọn Độc giả */}
+				{/* Cột Trái: Chọn Độc giả và Nhập sách */}
 				<Col xs={24} md={9} lg={8}>
 					<ReaderSelector selectedReader={selectedReader} onSelectReader={setSelectedReader} />
-				</Col>
-
-				{/* Cột Phải: Chọn sách */}
-				<Col xs={24} md={15} lg={16}>
-					<div style={{ marginBottom: 20 }}>
-						<div style={{ fontWeight: 600, marginBottom: 8, fontSize: 15, display: 'flex', alignItems: 'center' }}>
-							<SearchOutlined style={{ marginRight: 6 }} /> Chọn sách cho mượn
-						</div>
-						<div className='tt-checkin-input-row'>
-							<Select
-								showSearch
-								size='large'
-								className='w-100'
-								placeholder='Tìm kiếm sách theo tên...'
-								filterOption={false}
-								onSearch={setBookKeyword}
-								loading={searchingBook || searchingCopy}
-								value={null}
-								notFoundContent={
-									bookKeyword.length < 2 ? (
-										<Text type='secondary'>Nhập ít nhất 2 ký tự...</Text>
-									) : searchingBook ? (
-										<Spin size='small' />
-									) : (
-										<Empty description='Không tìm thấy sách' />
-									)
-								}
-								onSelect={handleSelectBook}
-							>
-								{(booksData || []).map((b: any) => (
-									<Option key={String(b.id)} value={String(b.id)} title={b.title} author={b.author}>
-										<div style={{ display: 'flex', justifyContent: 'space-between' }}>
-											<div>
-												<span style={{ fontWeight: 500 }}>{b.title}</span>
-												<Text type='secondary' style={{ marginLeft: 8, fontSize: 12 }}>
-													{b.author}
+					
+					{selectedReader && (
+						<div style={{ marginTop: 24 }}>
+							<div style={{ fontWeight: 600, marginBottom: 8, fontSize: 15, display: 'flex', alignItems: 'center' }}>
+								<SearchOutlined style={{ marginRight: 6 }} /> Chọn sách cho mượn
+							</div>
+							<div className='tt-checkin-input-row'>
+								<Select
+									showSearch
+									size='large'
+									className='w-100'
+									style={{ width: '100%' }}
+									placeholder='Tìm kiếm sách theo tên...'
+									filterOption={false}
+									onSearch={setBookKeyword}
+									loading={searchingBook || searchingCopy}
+									value={null}
+									notFoundContent={
+										bookKeyword.length < 2 ? (
+											<Text type='secondary'>Nhập ít nhất 2 ký tự...</Text>
+										) : searchingBook ? (
+											<Spin size='small' />
+										) : (
+											<Empty description='Không tìm thấy sách' />
+										)
+									}
+									onSelect={handleSelectBook}
+								>
+									{(booksData || []).map((b: any) => (
+										<Option key={String(b.id)} value={String(b.id)} title={b.title} author={b.author}>
+											<div style={{ display: 'flex', justifyContent: 'space-between' }}>
+												<div>
+													<span style={{ fontWeight: 500 }}>{b.title}</span>
+													<Text type='secondary' style={{ marginLeft: 8, fontSize: 12 }}>
+														{b.author}
+													</Text>
+												</div>
+												<Text type={b.available_copies > 0 ? 'success' : 'danger'} style={{ fontSize: 12 }}>
+													Khả dụng: {b.available_copies}
 												</Text>
 											</div>
-											<Text type={b.available_copies > 0 ? 'success' : 'danger'} style={{ fontSize: 12 }}>
-												Khả dụng: {b.available_copies}
-											</Text>
-										</div>
-									</Option>
-								))}
-							</Select>
+										</Option>
+									))}
+								</Select>
+							</div>
 						</div>
+					)}
+				</Col>
+
+				{/* Cột Phải: Sách được chọn */}
+				<Col xs={24} md={15} lg={16}>
+					<div style={{ marginBottom: 20 }}>
+						{!selectedReader ? (
+							<div style={{ padding: '40px 0', textAlign: 'center', background: '#fafafa', borderRadius: 8, border: '1px dashed #d9d9d9' }}>
+								<Empty description="Vui lòng chọn độc giả trước" />
+							</div>
+						) : (
+							<div>
+								<div style={{ fontWeight: 600, marginBottom: 16, fontSize: 15 }}>
+									Sách được chọn ({selectedCopies.length})
+								</div>
+								<Table
+									dataSource={selectedCopies}
+									columns={copiesColumns}
+									rowKey='copy_code'
+									pagination={false}
+									locale={{ emptyText: <Empty description='Chưa có sách nào' /> }}
+									style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #f0f0f0' }}
+									size='middle'
+								/>
+							</div>
+						)}
 					</div>
 				</Col>
 			</Row>
-
-			{/* Danh sách sách đã chọn */}
-			<div style={{ marginTop: 12 }}>
-				<div style={{ fontWeight: 600, marginBottom: 8, fontSize: 15 }}>
-					Sách được chọn ({selectedCopies.length})
-				</div>
-				<Table
-					dataSource={selectedCopies}
-					columns={copiesColumns}
-					rowKey='copy_code'
-					pagination={false}
-					locale={{ emptyText: <Empty description='Chưa có sách nào' /> }}
-					style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #f0f0f0' }}
-					size='middle'
-				/>
-			</div>
 
 			{/* Nút xác nhận */}
 			<div style={{

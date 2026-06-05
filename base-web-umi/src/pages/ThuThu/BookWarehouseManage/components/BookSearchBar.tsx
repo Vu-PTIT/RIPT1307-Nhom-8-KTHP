@@ -16,7 +16,7 @@ interface BookSearchBarProps {
   onSearch: (value: string) => void;
   onSearchChange: (value: string) => void;
   onCategoryChange: (value: string | undefined) => void;
-  onAddBook: () => void;
+  onAddBook?: () => void;
   onManageCategory?: () => void;
 }
 
@@ -64,15 +64,17 @@ const BookSearchBar: React.FC<BookSearchBarProps> = ({
           Quản lý danh mục
         </Button>
       )}
-      <Button
-        type='primary'
-        icon={<PlusOutlined />}
-        size='large'
-        className='btn-primary-danger'
-        onClick={onAddBook}
-      >
-        Thêm đầu sách
-      </Button>
+      {onAddBook && (
+        <Button
+          type='primary'
+          icon={<PlusOutlined />}
+          size='large'
+          className='btn-primary-danger'
+          onClick={onAddBook}
+        >
+          Thêm đầu sách
+        </Button>
+      )}
     </div>
   </div>
 );

@@ -8,9 +8,11 @@ export interface PendingRenewalItem {
 	id: string;
 	bookTitle: string;
 	bookImage?: string;
+	copyCode?: string;
 	readerName: string;
 	borrowDate: string;
 	currentDueDate: string;
+	newDueDate?: string;
 	renewalCount: string;
 	requestTime: string;
 	isOverdue: boolean;
@@ -72,8 +74,11 @@ const PendingList: React.FC<PendingListProps> = ({ data, onAccept, onReject }) =
 									<Title level={5} style={{ margin: '0 0 4px 0', fontSize: 16 }}>
 										{item.bookTitle}
 									</Title>
+									<Text type='secondary' style={{ display: 'block', marginBottom: 2 }}>
+										Mã bản sao: <Text strong>{item.copyCode || '—'}</Text>
+									</Text>
 									<Text type='secondary' style={{ display: 'block', marginBottom: 12 }}>
-										{item.readerName}
+										Người dùng: {item.readerName}
 									</Text>
 								</div>
 								{item.isOverdue && (
@@ -84,17 +89,23 @@ const PendingList: React.FC<PendingListProps> = ({ data, onAccept, onReject }) =
 							</div>
 
 							<Row gutter={[16, 8]}>
-								<Col xs={12} sm={8}>
+								<Col xs={12} sm={6}>
 									<div style={{ color: '#8c8c8c', fontSize: 12 }}>Ngày mượn</div>
 									<div style={{ fontWeight: 500 }}>{item.borrowDate}</div>
 								</Col>
-								<Col xs={12} sm={8}>
-									<div style={{ color: '#8c8c8c', fontSize: 12 }}>Hạn trả hiện tại</div>
-									<div style={{ fontWeight: 500, color: item.isOverdue ? '#ff4d4f' : 'inherit' }}>
+								<Col xs={12} sm={6}>
+									<div style={{ color: '#8c8c8c', fontSize: 12 }}>Hạn trả cũ</div>
+									<div style={{ fontWeight: 500, color: item.isOverdue ? '#ff4d4f' : 'inherit', textDecoration: 'line-through' }}>
 										{item.currentDueDate}
 									</div>
 								</Col>
-								<Col xs={24} sm={8}>
+								<Col xs={12} sm={6}>
+									<div style={{ color: '#8c8c8c', fontSize: 12 }}>Xin gia hạn đến</div>
+									<div style={{ fontWeight: 500, color: '#1677ff' }}>
+										{item.newDueDate}
+									</div>
+								</Col>
+								<Col xs={12} sm={6}>
 									<div style={{ color: '#8c8c8c', fontSize: 12 }}>Số lần gia hạn</div>
 									<div style={{ fontWeight: 500 }}>{item.renewalCount}</div>
 								</Col>

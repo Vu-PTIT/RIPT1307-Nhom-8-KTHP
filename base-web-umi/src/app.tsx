@@ -123,7 +123,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
 					if (roleName === 'admin') {
 						history.replace('/quan-tri/thong-ke');
 					} else if (roleName === 'librarian') {
-						history.replace('/thu-thu/muon-tra');
+						history.replace('/thu-thu/kho-sach');
 					} else {
 						history.replace('/ban-doc/tai-lieu');
 					}

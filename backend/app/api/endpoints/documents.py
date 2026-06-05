@@ -232,20 +232,22 @@ async def delete_document(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/{doc_id}/copies", response_model=document_schema.DocumentCopySummary)
+@router.post("/{doc_id}/copies", response_model=List[document_schema.DocumentCopySummary])
 async def create_copy(
-    doc_id: str, copy_in: document_schema.DocumentCopyCreate,
+    doc_id: str, copy_in: document_schema.DocumentCopyBulkCreate,
     current_user: User = Depends(deps.get_current_librarian),
 ) -> Any:
-    """Add a new copy to a document (Librarian/Admin only)."""
+    """Add new copies to a document in bulk (Librarian/Admin only)."""
     try:
-        copy = await document_crud.create_document_copy(
-            engine, doc_id=doc_id, copy_code=copy_in.copy_code, condition=copy_in.condition
+        copies = await document_crud.create_document_copies_bulk(
+            engine, doc_id=doc_id, quantity=copy_in.quantity, condition=copy_in.condition
         )
-        return document_schema.DocumentCopySummary(
-            id=copy.id, copy_code=copy.copy_code, condition=copy.condition,
-            status=copy.status, created_at=copy.created_at
-        )
+        return [
+            document_schema.DocumentCopySummary(
+                id=copy.id, copy_code=copy.copy_code, condition=copy.condition,
+                status=copy.status, created_at=copy.created_at
+            ) for copy in copies
+        ]
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

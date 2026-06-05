@@ -31,7 +31,7 @@ const Login: React.FC = () => {
 			if (roleName === 'Admin') {
 				history.push('/quan-tri/thong-ke');
 			} else if (roleName === 'Librarian') {
-				history.push('/thu-thu/muon-tra');
+				history.push('/thu-thu/kho-sach');
 			} else {
 				history.push('/ban-doc/tai-lieu');
 			}

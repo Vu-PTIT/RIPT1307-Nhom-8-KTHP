@@ -121,7 +121,7 @@ export default [
 	},
 	{
 		path: '/thu-thu/diem-danh',
-		name: 'Log Check-in',
+		name: 'Vào ra thư viện',
 		icon: 'FileDoneOutlined',
 		component: './ThuThu/CheckinLogs',
 		access: 'isLibrarian',

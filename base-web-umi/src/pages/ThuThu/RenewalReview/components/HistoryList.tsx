@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Typography, Tag, List } from 'antd';
+import { Card, Typography, Tag, List, Pagination } from 'antd';
 
 const { Title, Text } = Typography;
 
@@ -10,13 +10,20 @@ export interface HistoryRenewalItem {
 	requestTime: string;
 	handleTime: string;
 	status: 'APPROVED' | 'REJECTED';
+	copyCode?: string;
+	bookImage?: string;
+	newDueDate?: string;
 }
 
 interface HistoryListProps {
 	data: HistoryRenewalItem[];
+	total: number;
+	page: number;
+	pageSize: number;
+	onPageChange: (page: number, pageSize: number) => void;
 }
 
-const HistoryList: React.FC<HistoryListProps> = ({ data }) => {
+const HistoryList: React.FC<HistoryListProps> = ({ data, total, page, pageSize, onPageChange }) => {
 	return (
 		<div>
 			<Title level={5} style={{ marginBottom: 16, fontWeight: 600 }}>
@@ -32,25 +39,56 @@ const HistoryList: React.FC<HistoryListProps> = ({ data }) => {
 						bodyStyle={{ padding: '16px 20px' }}
 					>
 						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-							<div>
-								<Title level={5} style={{ margin: '0 0 4px 0', fontSize: 15 }}>
-									{item.bookTitle}
-								</Title>
-								<Text type='secondary' style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>
-									{item.readerName}
-								</Text>
-								<Text type='secondary' style={{ fontSize: 12, color: '#bfbfbf' }}>
-									Yêu cầu: {item.requestTime} | Xử lý: {item.handleTime}
-								</Text>
+							<div style={{ display: 'flex', gap: 16, alignItems: 'center', flex: 1 }}>
+								<img
+									src={item.bookImage || 'https://via.placeholder.com/60x85?text=Book'}
+									alt={item.bookTitle}
+									style={{
+										width: 50,
+										height: 70,
+										objectFit: 'cover',
+										borderRadius: 6,
+										boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+									}}
+								/>
+								<div style={{ flex: 1 }}>
+									<Title level={5} style={{ margin: '0 0 4px 0', fontSize: 15 }}>
+										{item.bookTitle}
+									</Title>
+									<Text type='secondary' style={{ fontSize: 13, display: 'block', marginBottom: 2 }}>
+										Mã bản sao: <Text strong>{item.copyCode || '—'}</Text>
+									</Text>
+									<Text type='secondary' style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>
+										Người dùng: {item.readerName}
+									</Text>
+									<Text type='secondary' style={{ fontSize: 12, color: '#bfbfbf' }}>
+										Yêu cầu: {item.requestTime} | Xử lý: {item.handleTime}
+									</Text>
+								</div>
+								
+								<div style={{ padding: '0 24px', textAlign: 'center', minWidth: 150 }}>
+									{item.newDueDate && (
+										<>
+											<div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Gia hạn đến</div>
+											<div style={{ 
+												fontWeight: 500, 
+												color: item.status === 'APPROVED' ? '#52c41a' : '#ff4d4f',
+												textDecoration: item.status === 'REJECTED' ? 'line-through' : 'none'
+											}}>
+												{item.newDueDate}
+											</div>
+										</>
+									)}
+								</div>
 							</div>
 
-							<div>
+							<div style={{ minWidth: 100, textAlign: 'right' }}>
 								{item.status === 'APPROVED' ? (
-									<Tag color='success' style={{ borderRadius: 10, padding: '2px 12px', fontWeight: 500 }}>
+									<Tag color='success' style={{ borderRadius: 10, padding: '2px 12px', fontWeight: 500, margin: 0 }}>
 										Đã duyệt
 									</Tag>
 								) : (
-									<Tag color='error' style={{ borderRadius: 10, padding: '2px 12px', fontWeight: 500 }}>
+									<Tag color='error' style={{ borderRadius: 10, padding: '2px 12px', fontWeight: 500, margin: 0 }}>
 										Từ chối
 									</Tag>
 								)}
@@ -59,6 +97,19 @@ const HistoryList: React.FC<HistoryListProps> = ({ data }) => {
 					</Card>
 				)}
 			/>
+
+			{total > 0 && (
+				<div style={{ textAlign: 'right', marginTop: 16 }}>
+					<Pagination
+						current={page}
+						pageSize={pageSize}
+						total={total}
+						onChange={onPageChange}
+						showSizeChanger={false}
+						showTotal={(t) => `Tổng ${t} lịch sử`}
+					/>
+				</div>
+			)}
 		</div>
 	);
 };

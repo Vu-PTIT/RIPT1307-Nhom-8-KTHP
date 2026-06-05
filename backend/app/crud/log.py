@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Tuple, Optional
 from datetime import datetime
 from odmantic import AIOEngine, ObjectId
-from app.models.log import CheckinLog
+from app.models.log import CheckinLog, get_local_now
 from app.models.user import User
 
 async def create_checkin_log(
@@ -20,11 +20,27 @@ async def create_checkin_log(
     if handled_by_id:
         handled_by = await engine.find_one(User, User.id == ObjectId(handled_by_id))
     
+    if check_type == "out":
+        collection = engine.get_collection(CheckinLog)
+        latest_raw = await collection.find_one(
+            {"user": ObjectId(user_id)},
+            sort=[("updated_at", -1), ("check_time", -1)]
+        )
+        if latest_raw and latest_raw.get("check_type") == "in" and latest_raw.get("checkout_time") is None:
+            log = await engine.find_one(CheckinLog, CheckinLog.id == latest_raw["_id"])
+            if log:
+                log.checkout_time = get_local_now()
+                log.updated_at = get_local_now()
+                # Optional: update method or handled_by for the checkout? 
+                await engine.save(log)
+                return log
+
     db_obj = CheckinLog(
         user=user,
         check_type=check_type,
         method=method,
-        handled_by=handled_by if handled_by else user # Default to self if no librarian
+        handled_by=handled_by if handled_by else user,
+        updated_at=get_local_now()
     )
     await engine.save(db_obj)
     return db_obj
@@ -36,14 +52,13 @@ async def get_my_checkin_logs(
     page_size: int = 20
 ) -> Tuple[List[CheckinLog], int]:
     skip = (page - 1) * page_size
-    # Dùng odmantic engine.find thay vì raw Motor query để khớp cách lưu Reference
     total = await engine.count(CheckinLog, CheckinLog.user == ObjectId(user_id))
     logs = await engine.find(
         CheckinLog,
         CheckinLog.user == ObjectId(user_id),
         skip=skip,
         limit=page_size,
-        sort=CheckinLog.check_time.desc()
+        sort=CheckinLog.updated_at.desc()
     )
     return list(logs), total
 
@@ -64,8 +79,23 @@ async def get_all_checkin_logs(
     conditions = []
     if user_id:
         conditions.append({"user": ObjectId(user_id)})
+        
     if check_type:
-        conditions.append({"check_type": check_type})
+        if check_type == 'in':
+            # "Trong thư viện": active sessions from today only
+            from datetime import datetime, date
+            today_start = datetime.combine(date.today(), datetime.min.time())
+            conditions.append({"check_type": {"$in": ["in", "check_in"]}, "checkout_time": None, "check_time": {"$gte": today_start}})
+        elif check_type == 'out':
+            # "Đã ra về": completed sessions OR standalone 'out' logs OR forgot to checkout from previous days
+            from datetime import datetime, date
+            today_start = datetime.combine(date.today(), datetime.min.time())
+            conditions.append({"$or": [
+                {"checkout_time": {"$ne": None}}, 
+                {"check_type": {"$in": ["out", "check_out"]}},
+                {"check_type": {"$in": ["in", "check_in"]}, "checkout_time": None, "check_time": {"$lt": today_start}}
+            ]})
+            
     if username:
         users_col = engine.get_collection(User)
         user_ids = await users_col.distinct("_id", {
@@ -86,7 +116,9 @@ async def get_all_checkin_logs(
             time_cond["$gte"] = start_date
         if end_date:
             time_cond["$lte"] = end_date
-        conditions.append({"check_time": time_cond})
+        # Check either check_time or checkout_time depending on the condition, 
+        # but for simplicity we can check updated_at or check_time
+        conditions.append({"$or": [{"check_time": time_cond}, {"updated_at": time_cond}]})
 
     skip = (page - 1) * page_size
     collection = engine.get_collection(CheckinLog)
@@ -95,7 +127,7 @@ async def get_all_checkin_logs(
     else:
         filter_expr = {}
 
-    raw_logs = await collection.find(filter_expr).sort("check_time", -1).skip(skip).limit(page_size).to_list(length=None)
+    raw_logs = await collection.find(filter_expr).sort("updated_at", -1).skip(skip).limit(page_size).to_list(length=None)
     total = await collection.count_documents(filter_expr)
     logs: List[CheckinLog] = []
     for raw in raw_logs:
@@ -116,7 +148,21 @@ async def manual_checkin(
     if not user: raise ValueError("User not found")
     
     librarian = await engine.find_one(User, User.id == ObjectId(handled_by_id))
-    log = CheckinLog(user=user, check_type=check_type, method="manual", handled_by=librarian)
+    
+    if check_type == "out":
+        collection = engine.get_collection(CheckinLog)
+        latest_raw = await collection.find_one(
+            {"user": ObjectId(user_id)},
+            sort=[("updated_at", -1), ("check_time", -1)]
+        )
+        if latest_raw and latest_raw.get("check_type") == "in" and latest_raw.get("checkout_time") is None:
+            log = await engine.find_one(CheckinLog, CheckinLog.id == latest_raw["_id"])
+            if log:
+                log.checkout_time = get_local_now()
+                log.updated_at = get_local_now()
+                await engine.save(log)
+                return log
+                
+    log = CheckinLog(user=user, check_type=check_type, method="manual", handled_by=librarian, updated_at=get_local_now())
     await engine.save(log)
     return log
-

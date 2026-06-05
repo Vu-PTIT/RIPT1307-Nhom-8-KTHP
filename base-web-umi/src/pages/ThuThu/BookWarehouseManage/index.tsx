@@ -3,7 +3,6 @@ import { Row, Col, Empty, Spin, Pagination, message } from 'antd';
 import { useRequest, history } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
 import BookCard, { BookData } from './components/BookCard';
-import AddBookModal from './components/AddBookModal';
 import BookSearchBar from './components/BookSearchBar';
 import * as TaiLieuService from '@/services/TaiLieu';
 import * as ThuThuService from '@/services/ThuThu';
@@ -28,8 +27,6 @@ const BookWarehouseManage: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
   const [page, setPage] = useState(1);
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [addLoading, setAddLoading] = useState(false);
 
   const { data: categoriesRes } = useRequest(TaiLieuService.getCategories, {
     formatResult: (res) => res.data || [],
@@ -71,30 +68,10 @@ const BookWarehouseManage: React.FC = () => {
     refresh();
   };
 
-  const handleAddBook = async (values: any, coverFile?: File) => {
-    setAddLoading(true);
-    try {
-      const res = await ThuThuService.createDocument(values);
-      const createdDoc = res?.data?.data || res?.data || res;
-      const docId = createdDoc?.id || createdDoc?._id;
-      if (coverFile && docId) {
-        await ThuThuService.uploadCover(docId, coverFile);
-      }
-      message.success(`Đã thêm đầu sách "${values.title}" thành công!`);
-      setAddModalOpen(false);
-      setPage(1);
-      refresh();
-    } catch (err: any) {
-      message.error(getApiError(err, 'Thêm đầu sách thất bại!'));
-    } finally {
-      setAddLoading(false);
-    }
-  };
-
   return (
     <PageSkeleton
       title='Quản lý kho sách'
-      subtitle={`${total} đầu sách · Thủ thư có thể thêm, sửa, xóa và quản lý bản sao`}
+      subtitle={`${total} đầu sách · Thủ thư có thể sửa thông tin và quản lý bản sao`}
     >
       <div className='library-panel'>
         <BookSearchBar
@@ -104,7 +81,6 @@ const BookWarehouseManage: React.FC = () => {
           onSearch={handleSearch}
           onSearchChange={setSearchText}
           onCategoryChange={(v) => { setSelectedCategory(v); setPage(1); }}
-          onAddBook={() => setAddModalOpen(true)}
         />
 
         <Spin spinning={loading}>
@@ -138,14 +114,6 @@ const BookWarehouseManage: React.FC = () => {
             />
           </div>
         )}
-
-        <AddBookModal
-          open={addModalOpen}
-          loading={addLoading}
-          categories={categories.map((c: any) => ({ id: c.id, name: c.name }))}
-          onOk={handleAddBook}
-          onCancel={() => setAddModalOpen(false)}
-        />
       </div>
     </PageSkeleton>
   );

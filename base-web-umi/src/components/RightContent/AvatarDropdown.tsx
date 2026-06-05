@@ -1,7 +1,7 @@
 import React from 'react';
 import { Avatar, Dropdown, Menu } from 'antd';
 import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
-import { history, useModel } from 'umi';
+import { history, useModel, useAccess } from 'umi';
 import { ipLibrary } from '@/utils/ip';
 
 type Props = {
@@ -26,13 +26,16 @@ const AvatarDropdown: React.FC<Props> = ({ menu = false }) => {
 		window.location.reload();
 	};
 
+	const access = useAccess();
 	const menuOverlay = (
 		<Menu style={{ minWidth: 160 }}>
-			<Menu.Item key='profile' onClick={() => history.push('/ban-doc/tai-khoan')}>
-				<UserOutlined />
-				&nbsp;Thông tin
-			</Menu.Item>
-			<Menu.Divider />
+			{access.isMember && (
+				<Menu.Item key='profile' onClick={() => history.push('/ban-doc/tai-khoan')}>
+					<UserOutlined />
+					&nbsp;Thông tin
+				</Menu.Item>
+			)}
+			{access.isMember && <Menu.Divider />}
 			<Menu.Item key='logout' onClick={handleLogout}>
 				<LogoutOutlined />
 				&nbsp;Đăng xuất

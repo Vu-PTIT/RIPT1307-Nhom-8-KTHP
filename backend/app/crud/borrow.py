@@ -627,10 +627,15 @@ async def get_pending_renewals(
     page_size: int = 20,
 ) -> Tuple[List[RenewalRequest], int]:
     """Get renewal requests for review."""
-    total = await engine.count(RenewalRequest, RenewalRequest.status == status_filter)
+    if status_filter == "all_history":
+        query = RenewalRequest.status != "pending"
+    else:
+        query = RenewalRequest.status == status_filter
+        
+    total = await engine.count(RenewalRequest, query)
     records = await engine.find(
         RenewalRequest, 
-        RenewalRequest.status == status_filter, 
+        query, 
         skip=(page - 1) * page_size, limit=page_size,
         sort=RenewalRequest.request_date.desc()
     )

@@ -199,11 +199,13 @@ class BorrowRecordListItem(BaseModel):
     id: PyObjectId
     reader_username: str
     reader_email: str
+    reader_avatar: Optional[str] = None
     borrow_date: date
     due_date: date
     status: str
     item_count: int
     copy_codes: List[str] = []
+    items: List[dict] = []
     created_at: datetime
 
 class ReturnHistoryItem(BaseModel):

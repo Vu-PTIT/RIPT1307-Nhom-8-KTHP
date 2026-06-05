@@ -132,7 +132,7 @@ async def list_borrow_records_librarian(
     response.headers["Access-Control-Expose-Headers"] = "x-total-count"
     response = []
     from app.crud.borrow import get_record_items_dict
-    from app.models.document import DocumentCopy
+    from app.models.document import DocumentCopy, Document
     for rec in records:
         rec_id = rec["_id"]
         reader_ref = rec.get("reader")
@@ -143,17 +143,35 @@ async def list_borrow_records_librarian(
         items = await get_record_items_dict(engine, str(rec_id))
         
         copy_codes = []
+        item_details = []
         for item in items:
             copy_ref = item.get("document_copy")
             copy = await engine.find_one(DocumentCopy, DocumentCopy.id == copy_ref) if copy_ref else None
             if copy:
                 copy_codes.append(copy.copy_code)
+                doc = await engine.find_one(Document, Document.id == copy.document.id) if copy.document else None
+                cat_name = "Unknown"
+                if doc and getattr(doc, 'category', None):
+                    from app.models.document import Category
+                    cat = await engine.find_one(Category, Category.id == doc.category.id)
+                    if cat:
+                        cat_name = cat.name
+                item_details.append({
+                    "copy_code": copy.copy_code,
+                    "document_title": doc.title if doc else "Unknown",
+                    "cover_image": doc.cover_image if doc else None,
+                    "author": doc.author if doc else "",
+                    "category_name": cat_name
+                })
 
         response.append(borrow_schema.BorrowRecordListItem(
             id=rec_id, reader_username=reader.username if reader else "Unknown",
             reader_email=reader.email if reader else "",
+            reader_avatar=reader.avatar if reader and hasattr(reader, 'avatar') else None,
             borrow_date=_as_date(rec.get("borrow_date")), due_date=_as_date(rec.get("due_date")),
-            status=rec.get("status", "borrowed"), item_count=len(items), copy_codes=copy_codes, created_at=rec.get("created_at")
+            status=rec.get("status", "borrowed"), item_count=len(items), copy_codes=copy_codes,
+            items=item_details,
+            created_at=rec.get("created_at")
         ))
     return response
 

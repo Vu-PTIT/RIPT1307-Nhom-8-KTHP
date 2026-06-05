@@ -64,6 +64,10 @@ class DocumentCopyBase(BaseModel):
 class DocumentCopyCreate(DocumentCopyBase):
     document_id: str
 
+class DocumentCopyBulkCreate(BaseModel):
+    quantity: int = Field(1, ge=1, le=100)
+    condition: str = "good"
+
 class DocumentCopyUpdate(BaseModel):
     copy_code: Optional[str] = None
     condition: Optional[str] = None

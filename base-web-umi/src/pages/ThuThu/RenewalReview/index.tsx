@@ -18,9 +18,11 @@ function mapToPending(item: any): PendingRenewalItem {
     id: String(item.id),
     bookTitle: item.document_title || 'Không rõ tên sách',
     bookImage: item.cover_image,
+    copyCode: item.copy_code,
     readerName: item.reader_name || item.reader_username || 'Độc giả',
     borrowDate: item.borrow_date ? dayjs(item.borrow_date).format('DD/MM/YYYY') : '—',
     currentDueDate: dueDate.format('DD/MM/YYYY'),
+    newDueDate: item.new_due_date ? dayjs(item.new_due_date).format('DD/MM/YYYY') : '—',
     renewalCount: item.renewal_count != null ? `${item.renewal_count}/2` : '0/2',
     requestTime: dayjs(item.request_date).format('DD/MM/YYYY HH:mm'),
     isOverdue,
@@ -32,8 +34,11 @@ function mapToHistory(item: any, status: 'APPROVED' | 'REJECTED'): HistoryRenewa
   return {
     id: String(item.id),
     bookTitle: item.document_title || 'Không rõ tên sách',
+    bookImage: item.cover_image,
+    copyCode: item.copy_code,
     readerName: item.reader_name || item.reader_username || 'Độc giả',
     requestTime: dayjs(item.request_date).format('DD/MM/YYYY HH:mm'),
+    newDueDate: item.new_due_date ? dayjs(item.new_due_date).format('DD/MM/YYYY') : undefined,
     handleTime: item.reviewed_at
       ? dayjs(item.reviewed_at).format('DD/MM/YYYY HH:mm')
       : dayjs().format('DD/MM/YYYY HH:mm'),
@@ -42,10 +47,11 @@ function mapToHistory(item: any, status: 'APPROVED' | 'REJECTED'): HistoryRenewa
 }
 
 const RenewalReview: React.FC = () => {
-  const [historyData, setHistoryData] = useState<HistoryRenewalItem[]>([]);
-
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(10);
 
   const { data: pendingApiData, loading, mutate: mutatePending } = useRequest(
     () => getPendingRenewals({ status: 'pending', page, page_size: pageSize }),
@@ -55,16 +61,13 @@ const RenewalReview: React.FC = () => {
     },
   );
 
-  useRequest(() => getPendingRenewals({ status: 'approved', page: 1, page_size: 100 }), {
-    formatResult: (res) => res.data?.items || res.data || [],
-    onSuccess: (data) => {
-      const approved = (data || []).map((item: any) => mapToHistory(item, 'APPROVED'));
-      setHistoryData((prev) => {
-        const existingIds = new Set(prev.map((h) => h.id));
-        return [...prev, ...approved.filter((h: HistoryRenewalItem) => !existingIds.has(h.id))];
-      });
+  const { data: historyApiData, loading: historyLoading, refresh: refreshHistory } = useRequest(
+    () => getPendingRenewals({ status: 'all_history', page: historyPage, page_size: historyPageSize }),
+    { 
+      refreshDeps: [historyPage, historyPageSize],
+      formatResult: (res) => res.data 
     },
-  });
+  );
 
   const pendingItems = pendingApiData?.items || pendingApiData || [];
   const pendingTotal = pendingApiData?.total || 0;
@@ -87,12 +90,7 @@ const RenewalReview: React.FC = () => {
         }
         return newItems;
       });
-      if (target) {
-        setHistoryData((prev) => [
-          mapToHistory({ ...target, reviewed_at: new Date().toISOString() }, status === 'approved' ? 'APPROVED' : 'REJECTED'),
-          ...prev,
-        ]);
-      }
+      refreshHistory();
     } catch (err: any) {
       message.error(`❌ ${getApiError(err, 'Có lỗi xảy ra!')}`);
     }
@@ -133,7 +131,19 @@ const RenewalReview: React.FC = () => {
               )}
             </>
           )}
-          <HistoryList data={historyData} />
+          
+          <Spin spinning={historyLoading}>
+            <HistoryList 
+              data={(historyApiData?.items || []).map((item: any) => mapToHistory(item, item.status === 'approved' ? 'APPROVED' : 'REJECTED'))}
+              total={historyApiData?.total || 0}
+              page={historyPage}
+              pageSize={historyPageSize}
+              onPageChange={(p, s) => {
+                setHistoryPage(p);
+                setHistoryPageSize(s || 10);
+              }}
+            />
+          </Spin>
         </Spin>
       </div>
     </PageSkeleton>

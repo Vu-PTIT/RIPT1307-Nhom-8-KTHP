@@ -12,7 +12,6 @@ import { getApiError } from '@/utils/getApiError';
 type FilterType = 'all' | 'in' | 'out';
 
 const CheckinLogs: React.FC = () => {
-  const [filter, setFilter] = useState<FilterType>('all');
   const [checkinCode, setCheckinCode] = useState('');
   const [checkoutCode, setCheckoutCode] = useState('');
   const [actionType, setActionType] = useState<'in' | 'out' | null>(null);
@@ -25,9 +24,9 @@ const CheckinLogs: React.FC = () => {
   });
 
   const { data: logsApiData, loading: logsLoading, refresh: refreshLogs } = useRequest(
-    () => getAllCheckinLogs({ check_type: filter === 'all' ? undefined : filter, page, page_size: pageSize }),
+    () => getAllCheckinLogs({ page, page_size: pageSize }),
     {
-      refreshDeps: [filter, page, pageSize],
+      refreshDeps: [page, pageSize],
       formatResult: (res) => res.data,
     },
   );
@@ -109,20 +108,7 @@ const CheckinLogs: React.FC = () => {
           </Col>
         </Row>
 
-        <div style={{ marginBottom: 16 }}>
-          <Radio.Group
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            buttonStyle='solid'
-            size='middle'
-          >
-            <Radio.Button value='all' style={{ borderRadius: '6px 0 0 6px' }}>
-              Tất cả
-            </Radio.Button>
-            <Radio.Button value='in'>Trong thư viện ({stats.currently_in_library})</Radio.Button>
-            <Radio.Button value='out' style={{ borderRadius: '0 6px 6px 0' }}>Đã ra về</Radio.Button>
-          </Radio.Group>
-        </div>
+
 
         <LogList 
           data={logs} 
