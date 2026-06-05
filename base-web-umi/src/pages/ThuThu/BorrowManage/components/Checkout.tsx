@@ -88,6 +88,17 @@ const CheckoutTab: React.FC = () => {
 				return;
 			}
 
+			// Limit check
+			if (selectedReader) {
+				const maxBooks = selectedReader.max_books_allowed ?? 5;
+				const currentBorrowed = selectedReader.active_borrows_count ?? 0;
+				if (currentBorrowed + selectedCopies.length >= maxBooks) {
+					message.error(`Giới hạn mượn của độc giả là ${maxBooks} cuốn (Đang mượn: ${currentBorrowed}, Trong phiếu: ${selectedCopies.length}). Không thể thêm.`);
+					setSearchingCopy(false);
+					return;
+				}
+			}
+
 			// Add the first available copy
 			setSelectedCopies((prev) => [...prev, {
 				id: availableCopy.id,

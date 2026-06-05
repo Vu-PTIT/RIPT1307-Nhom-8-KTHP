@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Empty, Alert, Button, message, Row, Col } from 'antd';
+import { Empty, Alert, Button, message, Row, Col, Pagination } from 'antd';
 import { HeartOutlined, SearchOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { history } from 'umi';
 import PageSkeleton from '@/components/PageSkeleton';
@@ -11,6 +11,9 @@ export default function WishlistPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [busyId, setBusyId] = useState<string | null>(null);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [pageSize, setPageSize] = useState(12);
+
 
 	const load = async () => {
 		setLoading(true);
@@ -53,6 +56,9 @@ export default function WishlistPage() {
 			setBusyId(null);
 		}
 	};
+	const totalPages = Math.ceil(items.length / pageSize);
+	const safePage = Math.min(currentPage, Math.max(1, totalPages));
+	const displayedItems = items.slice((safePage - 1) * pageSize, safePage * pageSize);
 
 	return (
 		<PageSkeleton title='Danh sách yêu thích'>
@@ -79,33 +85,47 @@ export default function WishlistPage() {
 						<Empty description='Chưa có sách yêu thích' />
 					</div>
 				) : (
-					<Row gutter={[24, 24]}>
-						{items.map((it: any) => (
-							<Col xs={24} sm={12} md={12} lg={8} xl={6} key={it.id}>
-								<DocumentCard
-									item={it}
-									onDetail={() => history.push(`/ban-doc/tai-lieu/${it.document_id}`)}
-									onWishlist={() => { }}
-									onCart={() => handleMoveToCart(it)}
-									accent={true}
-									actions={[
-										<Button
-											key='add'
-											type='primary'
-											icon={<ShoppingCartOutlined />}
-											loading={busyId === it.id}
-											onClick={() => handleMoveToCart(it)}
-										>
-											Đưa vào giỏ
-										</Button>,
-										<Button key='del' danger loading={busyId === it.id} onClick={() => handleRemove(it.id)}>
-											Xóa
-										</Button>,
-									]}
-								/>
-							</Col>
-						))}
-					</Row>
+					<>
+						<Row gutter={[24, 24]}>
+							{displayedItems.map((it: any) => (
+								<Col xs={24} sm={12} md={12} lg={8} xl={6} key={it.id}>
+									<DocumentCard
+										item={it}
+										onDetail={() => history.push(`/ban-doc/tai-lieu/${it.document_id}`)}
+										onWishlist={() => { }}
+										onCart={() => handleMoveToCart(it)}
+										accent={true}
+										actions={[
+											<Button
+												key='add'
+												type='primary'
+												icon={<ShoppingCartOutlined />}
+												loading={busyId === it.id}
+												onClick={() => handleMoveToCart(it)}
+											>
+												Đưa vào giỏ
+											</Button>,
+											<Button key='del' danger loading={busyId === it.id} onClick={() => handleRemove(it.id)}>
+												Xóa
+											</Button>,
+										]}
+									/>
+								</Col>
+							))}
+						</Row>
+						<div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 32, paddingBottom: 24 }}>
+							<Pagination
+								current={safePage}
+								pageSize={pageSize}
+								total={items.length}
+								showSizeChanger={false}
+								onChange={(page, size) => {
+									setCurrentPage(page);
+									setPageSize(size);
+								}}
+							/>
+						</div>
+					</>
 				)}
 			</div>
 		</PageSkeleton>

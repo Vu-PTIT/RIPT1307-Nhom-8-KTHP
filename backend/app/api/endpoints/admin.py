@@ -37,7 +37,8 @@ async def search_readers(
             role_id=role.name.lower() if role else "",
             role_name=role.name if role else "Unknown",
             is_active=u.is_active, created_at=u.created_at,
-            active_borrows_count=active_count
+            active_borrows_count=active_count,
+            max_books_allowed=u.max_books_allowed
         ))
     return {"items": items, "total": total, "page": page, "page_size": page_size}
 
@@ -70,7 +71,8 @@ async def list_users(
             role_name=role.name if role else "Unknown",
             is_active=u.is_active,
             created_at=u.created_at,
-            active_borrows_count=active_count
+            active_borrows_count=active_count,
+            max_books_allowed=u.max_books_allowed
         ))
         
     return {

@@ -56,7 +56,7 @@ export async function createBorrowLibrarian(data: {
   copy_codes: string[];
   notes?: string;
 }) {
-  return axios.post(`${ipLibrary}/borrows/librarian`, data);
+  return axios.post(`${ipLibrary}/borrows/librarian`, data, { silent: true } as any);
 }
 export async function getAllBorrowsLibrarian(params: {
   status?: string;

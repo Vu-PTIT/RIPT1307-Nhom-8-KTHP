@@ -92,6 +92,7 @@ class UserListItem(BaseModel):
     is_active: bool
     created_at: datetime
     active_borrows_count: int = 0
+    max_books_allowed: Optional[int] = None
 
 class UserListResponse(BaseModel):
     items: list[UserListItem]

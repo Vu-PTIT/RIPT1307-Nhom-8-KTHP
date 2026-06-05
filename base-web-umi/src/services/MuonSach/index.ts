@@ -20,7 +20,7 @@ export async function getMyCart() {
 }
 
 export async function addToCart(document_id: string) {
-	return axios.post(`${ipLibrary}/cart`, { document_id });
+	return axios.post(`${ipLibrary}/cart`, { document_id }, { silent: true } as any);
 }
 
 export async function removeFromCart(id: string) {
@@ -64,7 +64,7 @@ export async function getCurrentBorrowCount() {
 
 // Checkout cart (create borrow record from current user's cart)
 export async function checkoutCart() {
-	return axios.post(`${ipLibrary}/borrows/checkout`);
+	return axios.post(`${ipLibrary}/borrows/checkout`, {}, { silent: true } as any);
 }
 
 export async function updateBorrowRecord(id: string, data: { notes?: string }) {

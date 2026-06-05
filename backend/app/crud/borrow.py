@@ -56,6 +56,19 @@ async def add_to_cart(engine: AIOEngine, user_id: str, doc_id: str) -> dict[str,
     if existing_raw:
         return existing_raw
         
+    # Check max limit
+    from app.crud.setting import get_setting
+    max_books_setting = await get_setting(engine, "default_max_books")
+    max_books = int(max_books_setting.setting_value) if max_books_setting else 5
+    if user.max_books_allowed is not None:
+        max_books = user.max_books_allowed
+
+    current_borrowed = await count_current_borrowed(engine, user_id)
+    current_in_cart = await collection.count_documents({"user": ObjectId(user_id)})
+
+    if current_borrowed + current_in_cart >= max_books:
+        raise ValueError(f"Giới hạn mượn của bạn là {max_books} cuốn (Đang mượn: {current_borrowed}, Trong giỏ: {current_in_cart}). Không thể thêm.")
+
     db_obj = BorrowCartItem(user=user, document=doc)
     await engine.save(db_obj)
     return {

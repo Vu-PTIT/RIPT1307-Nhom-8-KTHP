@@ -11,6 +11,8 @@ export interface ReaderInfo {
   id: string;
   username: string;
   email: string;
+  max_books_allowed?: number;
+  active_borrows_count?: number;
 }
 
 interface ReaderSelectorProps {
@@ -68,12 +70,25 @@ const ReaderSelector: React.FC<ReaderSelectorProps> = ({ selectedReader, onSelec
             )
           }
           onSelect={(_: string, opt: any) => {
-            onSelectReader({ id: opt.value, username: opt.username, email: opt.email });
+            onSelectReader({ 
+                id: opt.value, 
+                username: opt.username, 
+                email: opt.email,
+                max_books_allowed: opt.max_books_allowed,
+                active_borrows_count: opt.active_borrows_count
+            });
             setReaderKeyword('');
           }}
         >
           {(readersData || []).map((r: any) => (
-            <Option key={String(r.id)} value={String(r.id)} username={r.username} email={r.email}>
+            <Option 
+                key={String(r.id)} 
+                value={String(r.id)} 
+                username={r.username} 
+                email={r.email}
+                max_books_allowed={r.max_books_allowed}
+                active_borrows_count={r.active_borrows_count}
+            >
               <div>
                 <span style={{ fontWeight: 500 }}>{r.username}</span>
                 <Text type='secondary' style={{ marginLeft: 8, fontSize: 12 }}>
