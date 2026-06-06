@@ -1,4 +1,4 @@
-import ViewThongBao from '@/pages/ThongBao/components/ViewThongBao';
+import NotificationDetail from './NotificationDetail';
 import { Modal } from 'antd';
 import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
@@ -65,22 +65,15 @@ const NoticeIconView = () => {
 			</NoticeIcon>
 
 			<Modal
-				width={800}
-				bodyStyle={{ padding: 0 }}
-				destroyOnClose
-				onCancel={() => setVisibleDetail(false)}
-				visible={visibleDetail}
-				okButtonProps={{ hidden: true }}
-				cancelText='Đóng'
-			>
-				<ViewThongBao
-					record={record}
-					afterViewDetail={() => {
-						setVisibleDetail(false);
-						setVisiblePopup(false);
-					}}
-				/>
-			</Modal>
+			width={520}
+			bodyStyle={{ padding: 0 }}
+			destroyOnClose
+			onCancel={() => setVisibleDetail(false)}
+			visible={visibleDetail}
+			footer={null}
+		>
+			<NotificationDetail record={record} />
+		</Modal>
 		</>
 	);
 };

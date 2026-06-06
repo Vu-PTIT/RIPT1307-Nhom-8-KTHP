@@ -29,28 +29,42 @@ async def notify_librarians(
     message: str,
     notif_type: str
 ):
-    """Send notification to all active librarians and admins."""
-    # Find roles
-    roles = await engine.find(Role, Role.name.in_(["librarian", "admin"]))
-    role_ids = [r.id for r in roles]
-    
+    """Send notification to all active librarians and admins using raw Motor queries."""
+    import re
+    role_col = engine.get_collection(Role)
+    user_col = engine.get_collection(User)
+
+    # Find role IDs where name is 'librarian' or 'admin' (case-insensitive)
+    role_docs = await role_col.find({
+        "name": {"$regex": re.compile(r"^(librarian|admin)$", re.IGNORECASE)}
+    }).to_list(length=None)
+    role_ids = [r["_id"] for r in role_docs]
+
     if not role_ids:
         return
-        
-    # Find all users with these roles
-    librarians = await engine.find(User, User.role.in_(role_ids), User.is_active == True)
-    
+
+    # Find all active users with those roles
+    user_docs = await user_col.find({
+        "role": {"$in": role_ids},
+        "is_active": True
+    }).to_list(length=None)
+
+    if not user_docs:
+        return
+
     notifications = []
-    for lib in librarians:
-        notifications.append(
-            Notification(
-                user=lib,
-                title=title,
-                message=message,
-                type=notif_type
+    for u in user_docs:
+        user_obj = await engine.find_one(User, User.id == u["_id"])
+        if user_obj:
+            notifications.append(
+                Notification(
+                    user=user_obj,
+                    title=title,
+                    message=message,
+                    type=notif_type
+                )
             )
-        )
-        
+
     if notifications:
         await engine.save_all(notifications)
 

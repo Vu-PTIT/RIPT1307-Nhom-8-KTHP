@@ -8,9 +8,8 @@ from app.crud import notification as notification_crud
 
 router = APIRouter()
 
-@router.get("", response_model=List[notification_schema.NotificationResponse])
+@router.get("")
 async def get_my_notifications(
-    response: Response,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(deps.get_current_active_user)
@@ -21,10 +20,11 @@ async def get_my_notifications(
         engine, str(current_user.id), skip=skip, limit=page_size
     )
     
-    response.headers["x-total-count"] = str(total)
-    response.headers["Access-Control-Expose-Headers"] = "x-total-count"
+    from app.models.notification import Notification
+    from odmantic import ObjectId
+    unread_count = await engine.count(Notification, (Notification.user == ObjectId(str(current_user.id))) & (Notification.is_read == False))
     
-    return [
+    result = [
         notification_schema.NotificationResponse(
             id=str(notif.id),
             title=notif.title,
@@ -32,9 +32,17 @@ async def get_my_notifications(
             type=notif.type,
             is_read=notif.is_read,
             created_at=notif.created_at
-        )
+        ).model_dump()
         for notif in notifications
     ]
+    
+    return {
+        "data": {
+            "result": result,
+            "unread": unread_count,
+            "total": total
+        }
+    }
 
 @router.put("/{id}/read")
 async def mark_notification_as_read(

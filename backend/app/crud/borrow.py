@@ -182,10 +182,11 @@ async def create_borrow_from_cart(
     await cart_collection.delete_many({"user": ObjectId(user_id)})
 
     # Notify librarians
+    short_id = str(record.id)[:8].upper()
     await notify_librarians(
         engine,
         title="Yêu cầu mượn sách mới",
-        message=f"Độc giả {reader.username} vừa tạo yêu cầu mượn sách mới (mã phiếu: {record.id}).",
+        message=f"Độc giả {reader.username} vừa tạo yêu cầu mượn sách mới (phiếu #{ short_id }).",
         notif_type="new_borrow_request"
     )
 
@@ -227,11 +228,12 @@ async def confirm_borrow_handover(engine: AIOEngine, record_id: str, librarian_i
                 await engine.save(copy)
                 
     # Notify user
+    short_id = str(record.id)[:8].upper()
     await create_notification(
         engine,
         user_id=str(record.reader.id),
         title="Đã nhận sách",
-        message=f"Phiếu mượn {record.id} của bạn đã được xác nhận giao sách.",
+        message=f"Phiếu mượn #{short_id} của bạn đã được thủ thư xác nhận giao sách. Hạn trả: {record.due_date.strftime('%d/%m/%Y')}.",
         notif_type="checkout"
     )
                 
@@ -342,10 +344,17 @@ async def create_renewal_request(engine: AIOEngine, item_id: str, user_id: str, 
     await engine.save(db_obj)
     
     # Notify librarians
+    item_obj = await engine.find_one(BorrowRecordItem, BorrowRecordItem.id == db_obj.borrow_record_item.id)
+    copy_code_info = ""
+    if item_obj:
+        copy_obj = await engine.find_one(DocumentCopy, DocumentCopy.id == item_obj.document_copy.id)
+        if copy_obj:
+            doc_obj = await engine.find_one(Document, Document.id == copy_obj.document.id)
+            copy_code_info = f" cho sách \"{doc_obj.title}\"" if doc_obj else f" (mã bản sao: {copy_obj.copy_code})"
     await notify_librarians(
         engine,
         title="Yêu cầu gia hạn mới",
-        message=f"Độc giả {user.username} vừa yêu cầu gia hạn cho một mục mượn.",
+        message=f"Độc giả {user.username} vừa yêu cầu gia hạn{copy_code_info}. Hạn mới: {new_due_date.strftime('%d/%m/%Y')}.",
         notif_type="new_renewal_request"
     )
     

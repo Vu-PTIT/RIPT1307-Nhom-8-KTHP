@@ -1,5 +1,5 @@
 import axios from '@/utils/axios';
-import { ipNotif } from '@/utils/ip';
+import { ipNotif, ipLibrary } from '@/utils/ip';
 import { buildFormData } from '@/utils/utils';
 
 export async function postReceiver(payload: any, params: { page: number; limit: number }) {
@@ -7,7 +7,11 @@ export async function postReceiver(payload: any, params: { page: number; limit: 
 }
 
 export async function readNotification(payload: { type: 'ONE' | 'ALL'; notificationId?: any }) {
-	return axios.post(`${ipNotif}/notification/read`, payload);
+	if (payload.type === 'ALL') {
+		return axios.put(`${ipLibrary}/notifications/read-all`);
+	} else {
+		return axios.put(`${ipLibrary}/notifications/${payload.notificationId}/read`);
+	}
 }
 export async function thongKeNotification() {
 	return axios.get(`${ipNotif}/notification/thong-ke`);
@@ -50,10 +54,10 @@ export async function guiThongBaoDanhSach(payload: {
 export async function getThongBao(payload: {
 	page: number;
 	limit: number;
-	condition: any;
-	sort: { createdAt: 1 | -1 };
+	condition?: any;
+	sort?: { createdAt: 1 | -1 };
 }) {
-	return axios.get(`${ipNotif}/notification/me/page`, { params: payload });
+	return axios.get(`${ipLibrary}/notifications`, { params: { page: payload.page, page_size: payload.limit } });
 }
 
 export async function getReceiver(

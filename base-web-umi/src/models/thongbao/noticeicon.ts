@@ -21,11 +21,20 @@ export default () => {
 				condition: undefined,
 				sort: { createdAt: -1 },
 			});
-			setDanhSach(response?.data?.data?.result ?? []);
+			// Map backend field names to match ThongBao.IRecord shape expected by NoticeList
+			const raw: any[] = response?.data?.data?.result ?? [];
+			const mapped: ThongBao.IRecord[] = raw.map((item: any) => ({
+				...item,
+				_id: item._id ?? item.id,          // backend returns 'id'
+				read: item.read ?? item.is_read,    // backend returns 'is_read'
+				description: item.description ?? item.message, // backend returns 'message'
+				createdAt: item.createdAt ?? item.created_at,  // backend returns 'created_at'
+			}));
+			setDanhSach(mapped);
 			setUnread(response?.data?.data?.unread ?? 0);
 			setTotal(response?.data?.data?.total ?? 0);
 
-			return response?.data?.data?.result;
+			return mapped;
 		} catch (er) {
 			return Promise.reject(er);
 		} finally {

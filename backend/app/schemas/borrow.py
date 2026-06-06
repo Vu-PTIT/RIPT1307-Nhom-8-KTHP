@@ -163,9 +163,9 @@ class RenewalRequestResponse(BaseModel):
     document_title: str
     author: Optional[str] = None
     cover_image: Optional[str] = None
-    borrow_date: Optional[date] = None
-    old_due_date: date
-    new_due_date: date
+    borrow_date: Optional[datetime] = None
+    old_due_date: datetime
+    new_due_date: datetime
     status: str
     request_date: datetime
     reviewed_at: Optional[datetime] = None
@@ -174,7 +174,6 @@ class RenewalRequestResponse(BaseModel):
     reader_name: Optional[str] = None
     reader_username: Optional[str] = None
     renewal_count: Optional[int] = None
-    borrow_date: Optional[date] = None
     copy_code: Optional[str] = None
 
 # ====== Librarian Schemas ======

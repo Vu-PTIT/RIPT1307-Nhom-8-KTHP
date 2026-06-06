@@ -196,6 +196,7 @@ export default function RenewalsPage() {
 								className='borrowed-book-list'
 								loading={loading}
 								dataSource={items}
+								pagination={false}
 								renderItem={(it: any) => {
 									let cover = it.cover_image || getCoverForTitle(it.document_title) || '/default-cover.png';
 									if (typeof cover === 'string' && /^[a-fA-F0-9]{24}$/.test(cover)) {
