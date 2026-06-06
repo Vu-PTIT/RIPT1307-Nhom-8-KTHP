@@ -178,7 +178,7 @@ export default function BorrowCartPage() {
 				{/* persistent stats row to switch between tabs */}
 				<div
 					className='library-stats-switch'
-					style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}
+					style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}
 				>
 					<div
 						className={`library-stat clickable ${activeTab === 'borrowed' ? 'active' : ''}`}

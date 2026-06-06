@@ -28,7 +28,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
   <Form layout='vertical' form={form} onFinish={onFinish}>
     <div className='library-detail' style={{ alignItems: 'flex-start', gap: 32 }}>
       {/* Cột 1: Avatar */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 200 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 200, margin: '0 auto' }}>
         <Form.Item name='avatar' style={{ marginBottom: 0 }}>
           <UploadFile isAvatar accept='image/*' buttonDescription='Đổi ảnh' maxFileSize={5} />
         </Form.Item>
@@ -37,11 +37,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
       {/* Cột 2: Thông tin */}
       <div className='library-detail-main'>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid #f0f0f0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid #f0f0f0' }}>
           <div>
-            <h2 style={{ fontSize: 28, marginBottom: 4 }}>{displayName}</h2>
-            <div className='library-detail-author' style={{ fontSize: 16, color: '#666', marginBottom: 12 }}>{email}</div>
-            <div style={{ display: 'flex', gap: 12 }}>
+            <h2 style={{ fontSize: 28, marginBottom: 4, wordBreak: 'break-word' }}>{displayName}</h2>
+            <div className='library-detail-author' style={{ fontSize: 16, color: '#666', marginBottom: 12, wordBreak: 'break-all' }}>{email}</div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <Tag className='library-status-tag neutral' style={{ fontSize: 13, padding: '4px 10px' }}>{roleName}</Tag>
               <Tag className='library-status-tag success' style={{ fontSize: 13, padding: '4px 10px' }}>Tài khoản cá nhân</Tag>
             </div>
@@ -51,12 +51,12 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
 
         {/* Form fields */}
         <Row gutter={24}>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item label='Họ và Tên' name='full_name' rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}>
               <Input size='large' placeholder='Nhập họ và tên' />
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col xs={24} md={6}>
             <Form.Item label='Giới tính' name='gender'>
               <Select size='large' placeholder='Chọn giới tính'>
                 <Select.Option value='Nam'>Nam</Select.Option>
@@ -65,19 +65,19 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
               </Select>
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col xs={24} md={6}>
             <Form.Item label='Ngày sinh' name='date_of_birth'>
               <MyDatePicker style={{ width: '100%', height: 40 }} placeholder='Chọn ngày sinh' format='DD/MM/YYYY' />
             </Form.Item>
           </Col>
         </Row>
         <Row gutter={24}>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item label='Số điện thoại' name='phone'>
               <Input size='large' placeholder='Nhập số điện thoại' />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item label='Mã thẻ số' name='member_code'>
               <Input size='large' placeholder='LIB-2026-XXXX' disabled />
             </Form.Item>
