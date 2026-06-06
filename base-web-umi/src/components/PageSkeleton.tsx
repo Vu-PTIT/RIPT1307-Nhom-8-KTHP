@@ -21,7 +21,7 @@ const PageSkeleton: React.FC<{ title: string; children?: React.ReactNode; subtit
 	return (
 		<PageContainer title={false} className='library-page-container' style={{ background: 'transparent' }}>
 			<div className='library-page-shell'>
-				<div className='library-page-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+				<div className='library-page-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
 					<div>
 						<h1>{title}</h1>
 						<p>{subtitle || pageCopy[title] || 'Khu vực nghiệp vụ thư viện mượn trả sách.'}</p>

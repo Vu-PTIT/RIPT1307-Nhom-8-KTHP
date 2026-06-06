@@ -534,6 +534,9 @@ body {
 @media (max-width: 767px) {
 	.library-page-header {
 		padding-bottom: 14px;
+		flex-wrap: wrap;
+		gap: 10px;
+		align-items: flex-start;
 
 		h1 {
 			font-size: 27px;
@@ -542,6 +545,12 @@ body {
 
 	.library-panel {
 		padding: 14px;
+
+		// Allow tables to scroll horizontally on small screens
+		.ant-table-wrapper {
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+		}
 	}
 
 	.library-toolbar {
@@ -584,6 +593,136 @@ body {
 			flex: none;
 			width: 100%;
 			margin-bottom: 8px;
+		}
+	}
+
+	// Stats switch row in GioMuon
+	.library-stats-switch {
+		flex-wrap: wrap;
+
+		.library-stat {
+			flex: 1 1 140px;
+			min-width: 140px;
+		}
+	}
+}
+
+// ── 480px: small mobile ──────────────────────────────────────────────────────
+@media (max-width: 480px) {
+	.library-page-header {
+		h1 {
+			font-size: 22px;
+		}
+
+		p {
+			font-size: 13px;
+		}
+	}
+
+	.library-panel {
+		padding: 10px;
+	}
+
+	.library-summary-strip {
+		// 2 columns on small phones when there are exactly 3 stats
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.library-stat {
+		min-height: 60px;
+		padding: 10px;
+
+		strong {
+			font-size: 16px;
+		}
+	}
+
+	.library-detail-actions {
+		.ant-btn {
+			min-width: 0;
+		}
+	}
+
+	.checkin-actions {
+		grid-template-columns: 1fr;
+
+		.ant-btn {
+			height: 48px;
+		}
+	}
+}
+
+// ── Bảng Responsive trên Mobile ─────────────────────────────────────────────
+@media (max-width: 767px) {
+	.library-responsive-table {
+		.ant-table-thead {
+			display: none;
+		}
+
+		.ant-table-wrapper, .ant-table, .ant-table-body, .ant-table-content, table, tbody {
+			display: block !important;
+			min-width: 0 !important;
+			width: 100% !important;
+			overflow: hidden !important;
+		}
+
+		.ant-table-tbody > tr {
+			display: flex;
+			flex-direction: column;
+			margin-bottom: 16px;
+			border: 1px solid #f0f0f0;
+			border-radius: 12px;
+			padding: 16px;
+			background: #ffffff;
+			box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+
+			&:hover {
+				background: #ffffff !important;
+			}
+		}
+
+		.ant-table-tbody > tr > td {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			padding: 10px 0;
+			border-bottom: 1px dashed #f0f0f0;
+			text-align: right;
+			width: 100%;
+			box-sizing: border-box;
+
+			&::before {
+				content: attr(data-label);
+				font-weight: 600;
+				text-align: left;
+				margin-right: 16px;
+				color: #8c8c8c;
+				flex-shrink: 0;
+				max-width: 40%;
+			}
+
+			&:last-child {
+				border-bottom: none;
+			}
+
+			&.full-width-mobile-cell {
+				flex-direction: column;
+				text-align: left;
+				padding: 12px;
+				background: #fafafa;
+				border-radius: 8px;
+				margin-bottom: 8px;
+				border-bottom: none;
+
+				&::before {
+					display: none;
+				}
+
+				> div {
+					width: 100%;
+					justify-content: flex-start !important;
+				}
+			}
 		}
 	}
 }

@@ -92,7 +92,7 @@ const NoticeIcon: React.FC<NoticeIconProps> & {
 			onVisibleChange={setVisible}
 			arrow
 		>
-			<Tooltip title='Thông báo' placement='bottom'>
+			<Tooltip title={visible ? '' : 'Thông báo'} placement='bottom'>
 				<a className={styles.badge}>
 					<Badge count={count ? (count < 100 ? count : '99+') : undefined} style={{ boxShadow: 'none' }}>
 						{bell || <BellOutlined />}

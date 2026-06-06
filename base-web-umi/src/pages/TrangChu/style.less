@@ -105,3 +105,78 @@
 .fade-in-up {
   animation: fadeInUp 0.6s ease-out forwards;
 }
+
+// ── Responsive: tablet ──────────────────────────────────────────────────────
+@media (max-width: 767px) {
+  .home-container {
+    padding: 12px;
+
+    .hero-section {
+      padding: 32px 20px;
+      margin-bottom: 20px;
+      border-radius: 16px;
+
+      .hero-title {
+        font-size: 2rem;
+      }
+
+      .hero-subtitle {
+        font-size: 1rem;
+      }
+    }
+
+    .stats-grid {
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .action-section {
+      padding: 20px;
+      border-radius: 16px;
+
+      .section-title {
+        font-size: 1.2rem;
+        margin-bottom: 16px;
+      }
+    }
+  }
+}
+
+// ── Responsive: mobile ──────────────────────────────────────────────────────
+@media (max-width: 480px) {
+  .home-container {
+    padding: 8px;
+
+    .hero-section {
+      padding: 24px 16px;
+      border-radius: 12px;
+
+      .hero-title {
+        font-size: 1.6rem;
+        margin-bottom: 10px;
+      }
+
+      .hero-subtitle {
+        font-size: 0.9rem;
+      }
+    }
+
+    .stats-grid {
+      // Force single column on very small screens
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .stat-card {
+      padding: 16px;
+
+      .stat-value {
+        font-size: 1.5rem;
+      }
+    }
+
+    .action-section {
+      padding: 14px;
+    }
+  }
+}
