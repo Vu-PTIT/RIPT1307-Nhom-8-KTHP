@@ -25,6 +25,14 @@ interface CopyInfo {
 	condition: string;
 }
 
+const makeResponsiveColumns = (columns: any[]) => columns.map(col => ({
+	...col,
+	onCell: (record: any) => ({
+		'data-label': col.title,
+		...(col.onCell ? col.onCell(record) : {})
+	})
+}));
+
 const CheckoutTab: React.FC = () => {
 	const [selectedCopies, setSelectedCopies] = useState<CopyInfo[]>([]);
 	const [searchingCopy, setSearchingCopy] = useState(false);
@@ -304,8 +312,9 @@ const CheckoutTab: React.FC = () => {
 									Sách được chọn ({selectedCopies.length})
 								</div>
 								<Table
+									className="library-responsive-table"
 									dataSource={selectedCopies}
-									columns={copiesColumns}
+									columns={makeResponsiveColumns(copiesColumns)}
 									rowKey='copy_code'
 									pagination={false}
 									locale={{ emptyText: <Empty description='Chưa có sách nào' /> }}
@@ -418,10 +427,12 @@ const CheckoutTab: React.FC = () => {
 					Phiếu mượn vừa tạo
 				</div>
 				<Table
+					className="library-responsive-table"
 					dataSource={activeBorrows || []}
-					columns={borrowColumns}
+					columns={makeResponsiveColumns(borrowColumns)}
 					loading={borrowsLoading}
 					rowKey={(r: any) => String(r.id)}
+					scroll={{ x: 700 }}
 					pagination={{ pageSize: 10, showSizeChanger: false }}
 					locale={{ emptyText: <Empty description='Không có phiếu mượn nào' /> }}
 					style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #f0f0f0' }}
@@ -457,12 +468,13 @@ const CheckoutTab: React.FC = () => {
 
 						<Text strong>Danh sách sách mượn ({borrowDetail.items?.length || 0} cuốn):</Text>
 						<Table
+							className="library-responsive-table"
 							dataSource={borrowDetail.items || []}
 							rowKey="id"
 							pagination={false}
 							size="small"
 							style={{ marginTop: 8 }}
-							columns={[
+							columns={makeResponsiveColumns([
 								{ title: 'Mã vạch', dataIndex: 'copy_code', align: 'center', render: (v: string) => <Tag>{v}</Tag> },
 								{ title: 'Tên sách', dataIndex: 'document_title', align: 'center' },
 								{
@@ -484,7 +496,7 @@ const CheckoutTab: React.FC = () => {
 									align: 'center',
 									render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '—'
 								}
-							]}
+							])}
 						/>
 					</div>
 				) : (

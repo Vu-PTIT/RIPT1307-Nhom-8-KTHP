@@ -33,6 +33,7 @@ const LogList: React.FC<LogListProps> = ({ data, loading, pagination }) => {
     {
       title: 'Người dùng',
       key: 'user',
+      className: 'full-width-mobile-cell',
       render: (_, item) => {
         const displayName = item.name || item.username || '';
         const isTypeIn = item.check_type?.toLowerCase() === 'in' || item.check_type?.toLowerCase() === 'check_in';
@@ -124,9 +125,18 @@ const LogList: React.FC<LogListProps> = ({ data, loading, pagination }) => {
 
   ];
 
+  const responsiveColumns = columns.map(col => ({
+    ...col,
+    onCell: (record: LogItem) => ({
+      'data-label': col.title,
+      ...(col.onCell ? col.onCell(record) : {})
+    })
+  }));
+
   return (
     <Table
-      columns={columns}
+      className="library-responsive-table"
+      columns={responsiveColumns}
       dataSource={data}
       rowKey="id"
       loading={loading}

@@ -9,6 +9,14 @@ import { ipLibrary } from '@/utils/ip';
 
 const { Text } = Typography;
 
+const makeResponsiveColumns = (columns: any[]) => columns.map(col => ({
+	...col,
+	onCell: (record: any) => ({
+		'data-label': col.title,
+		...(col.onCell ? col.onCell(record) : {})
+	})
+}));
+
 const ReserveTab: React.FC = () => {
 	const { data: pendingBorrows, loading, mutate } = useRequest(
 		() => getAllBorrowsLibrarian({ status: 'pending', page_size: 50 }),
@@ -106,12 +114,14 @@ const ReserveTab: React.FC = () => {
 							<BookOutlined style={{ marginRight: 6 }} /> Danh sách sách mượn ({record.item_count} cuốn)
 						</div>
 						<Table
+							className="library-responsive-table"
 							dataSource={items}
 							rowKey="copy_code"
 							pagination={false}
 							size="small"
 							bordered
-							columns={[
+							scroll={{ x: 480 }}
+							columns={makeResponsiveColumns([
 								{
 									title: 'Ảnh',
 									key: 'cover_image',
@@ -159,7 +169,7 @@ const ReserveTab: React.FC = () => {
 									align: 'center',
 									render: (val: string) => val || <Text type="secondary">—</Text>,
 								}
-							]}
+							])}
 							style={{ marginBottom: 16 }}
 						/>
 						

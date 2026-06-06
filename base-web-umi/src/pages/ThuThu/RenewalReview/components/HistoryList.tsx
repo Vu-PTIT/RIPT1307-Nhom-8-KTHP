@@ -39,8 +39,8 @@ const HistoryList: React.FC<HistoryListProps> = ({ data, total, page, pageSize, 
 						style={{ borderRadius: 8, marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.01)' }}
 						bodyStyle={{ padding: '16px 20px' }}
 					>
-						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-							<div style={{ display: 'flex', gap: 16, alignItems: 'center', flex: 1 }}>
+						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+							<div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flex: 1, flexWrap: 'wrap', minWidth: 250 }}>
 								<img
 									src={item.bookImage || 'https://via.placeholder.com/60x85?text=Book'}
 									alt={item.bookTitle}
@@ -67,7 +67,7 @@ const HistoryList: React.FC<HistoryListProps> = ({ data, total, page, pageSize, 
 									</Text>
 								</div>
 								
-								<div style={{ padding: '0 24px', textAlign: 'center', minWidth: 150 }}>
+								<div style={{ padding: '0', textAlign: 'left', minWidth: 150 }}>
 									{item.newDueDate && (
 										<>
 											<div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Gia hạn đến</div>
@@ -83,7 +83,7 @@ const HistoryList: React.FC<HistoryListProps> = ({ data, total, page, pageSize, 
 								</div>
 							</div>
 
-							<div style={{ minWidth: 100, textAlign: 'right' }}>
+							<div style={{ minWidth: 100, textAlign: 'left' }}>
 								{item.status === 'APPROVED' ? (
 									<Tag color='success' style={{ borderRadius: 10, padding: '2px 12px', fontWeight: 500, margin: 0 }}>
 										Đã duyệt

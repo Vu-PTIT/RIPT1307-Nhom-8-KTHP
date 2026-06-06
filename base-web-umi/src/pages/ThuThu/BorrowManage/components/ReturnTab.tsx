@@ -11,6 +11,14 @@ import ReaderSelector, { ReaderInfo } from './ReaderSelector';
 const { Text } = Typography;
 const { Option } = Select;
 
+const makeResponsiveColumns = (columns: any[]) => columns.map(col => ({
+	...col,
+	onCell: (record: any) => ({
+		'data-label': col.title,
+		...(col.onCell ? col.onCell(record) : {})
+	})
+}));
+
 const ReturnTab: React.FC = () => {
 	const [selectedReader, setSelectedReader] = useState<ReaderInfo | null>(null);
 	const [processing, setProcessing] = useState(false);
@@ -188,11 +196,13 @@ const ReturnTab: React.FC = () => {
 							</div>
 						) : (
 							<Table
+								className="library-responsive-table"
 								dataSource={borrowedItems}
-								columns={itemsColumns}
+								columns={makeResponsiveColumns(itemsColumns)}
 								rowKey="copy_code"
 								loading={loadingItems}
 								pagination={false}
+								scroll={{ x: 580 }}
 								rowSelection={{
 									selectedRowKeys,
 									onChange: setSelectedRowKeys,
@@ -244,10 +254,12 @@ const ReturnTab: React.FC = () => {
 			<div style={{ marginTop: 32 }}>
 				<div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>Lịch sử trả sách</div>
 				<Table
+					className="library-responsive-table"
 					dataSource={returnHistoryData?.items || returnHistoryData || []}
-					columns={returnColumns}
+					columns={makeResponsiveColumns(returnColumns)}
 					rowKey='id'
 					loading={loadingHistory}
+					scroll={{ x: 580 }}
 					pagination={{
 						current: page,
 						pageSize: pageSize,
