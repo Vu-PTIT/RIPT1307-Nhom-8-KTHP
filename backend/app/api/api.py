@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import health, auth, settings, documents, categories, wishlist, borrow_cart, borrows, renewals, checkin, admin
+from app.api.endpoints import health, auth, settings, documents, categories, wishlist, borrow_cart, borrows, renewals, checkin, admin, notifications
 
 api_router = APIRouter()
 api_router.include_router(health.router)
@@ -13,5 +13,6 @@ api_router.include_router(borrows.router, prefix="/borrows", tags=["borrows"])
 api_router.include_router(renewals.router, prefix="/renewals", tags=["renewals"])
 api_router.include_router(checkin.router, prefix="/checkin", tags=["checkin"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 
 

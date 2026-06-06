@@ -3,6 +3,7 @@ from .document import Category, Document, DocumentCopy
 from .borrow import Wishlist, BorrowCartItem, BorrowRecord, BorrowRecordItem, RenewalRequest
 from .log import CheckinLog
 from .setting import LibrarySetting
+from .notification import Notification
 
 __all__ = [
     "Role",
@@ -17,4 +18,5 @@ __all__ = [
     "RenewalRequest",
     "CheckinLog",
     "LibrarySetting",
+    "Notification",
 ]

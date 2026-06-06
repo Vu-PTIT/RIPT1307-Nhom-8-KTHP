@@ -5,6 +5,7 @@ from odmantic import AIOEngine, ObjectId
 from app.models.borrow import Wishlist, BorrowCartItem, BorrowRecord, BorrowRecordItem, RenewalRequest
 from app.models.document import Document, DocumentCopy
 from app.models.user import User
+from app.crud.notification import create_notification, notify_librarians
 
 # Wishlist
 async def get_wishlists(engine: AIOEngine, user_id: str) -> List[dict[str, Any]]:
@@ -180,6 +181,14 @@ async def create_borrow_from_cart(
     # Clear cart
     await cart_collection.delete_many({"user": ObjectId(user_id)})
 
+    # Notify librarians
+    await notify_librarians(
+        engine,
+        title="Yêu cầu mượn sách mới",
+        message=f"Độc giả {reader.username} vừa tạo yêu cầu mượn sách mới (mã phiếu: {record.id}).",
+        notif_type="new_borrow_request"
+    )
+
     return record
 
 async def confirm_borrow_handover(engine: AIOEngine, record_id: str, librarian_id: str) -> BorrowRecord:
@@ -216,6 +225,15 @@ async def confirm_borrow_handover(engine: AIOEngine, record_id: str, librarian_i
             if copy:
                 copy.status = "borrowed"
                 await engine.save(copy)
+                
+    # Notify user
+    await create_notification(
+        engine,
+        user_id=str(record.reader.id),
+        title="Đã nhận sách",
+        message=f"Phiếu mượn {record.id} của bạn đã được xác nhận giao sách.",
+        notif_type="checkout"
+    )
                 
     return record
 
@@ -322,6 +340,15 @@ async def create_renewal_request(engine: AIOEngine, item_id: str, user_id: str, 
         status="pending"
     )
     await engine.save(db_obj)
+    
+    # Notify librarians
+    await notify_librarians(
+        engine,
+        title="Yêu cầu gia hạn mới",
+        message=f"Độc giả {user.username} vừa yêu cầu gia hạn cho một mục mượn.",
+        notif_type="new_renewal_request"
+    )
+    
     return db_obj
 
 async def get_my_renewals(engine: AIOEngine, user_id: str) -> List[RenewalRequest]:
@@ -469,6 +496,15 @@ async def process_return(
         if all(i.return_date is not None for i in all_items):
             record.status = "returned"
             await engine.save(record)
+            
+        # Notify user
+        await create_notification(
+            engine,
+            user_id=str(record.reader.id),
+            title="Đã trả sách",
+            message=f"Cuốn sách có mã {copy_code} của bạn đã được ghi nhận trả thành công.",
+            notif_type="checkin"
+        )
 
     return item
 
@@ -638,6 +674,17 @@ async def review_renewal(
         if item:
             item.due_date = renewal.new_due_date
             await engine.save(item)
+            
+            # Notify user
+            record = await engine.find_one(BorrowRecord, BorrowRecord.id == item.borrow_record.id)
+            if record:
+                await create_notification(
+                    engine,
+                    user_id=str(record.reader.id),
+                    title="Gia hạn sách thành công",
+                    message="Yêu cầu gia hạn sách của bạn đã được thủ thư phê duyệt.",
+                    notif_type="renewal_approved"
+                )
 
     await engine.save(renewal)
     return renewal
