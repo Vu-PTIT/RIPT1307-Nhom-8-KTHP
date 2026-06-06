@@ -42,7 +42,16 @@ interface TopBooksTableProps {
 	loading: boolean;
 }
 
-const TopBooksTable: React.FC<TopBooksTableProps> = ({ topBooks, loading }) => (
+const TopBooksTable: React.FC<TopBooksTableProps> = ({ topBooks, loading }) => {
+	const responsiveColumns = columns.map(col => ({
+		...col,
+		onCell: (record: any) => ({
+			'data-label': col.title,
+			...(col.onCell ? col.onCell(record) : {})
+		})
+	}));
+
+	return (
 	<Card
 		title={
 			<span>
@@ -59,8 +68,9 @@ const TopBooksTable: React.FC<TopBooksTableProps> = ({ topBooks, loading }) => (
 		style={{ borderRadius: 10, border: '1px solid var(--library-line)' }}
 	>
 		<Table
+			className="library-responsive-table"
 			dataSource={topBooks}
-			columns={columns}
+			columns={responsiveColumns}
 			rowKey={(r: any) => String(r.document_id || r.id || Math.random())}
 			loading={loading}
 			pagination={false}
@@ -69,5 +79,6 @@ const TopBooksTable: React.FC<TopBooksTableProps> = ({ topBooks, loading }) => (
 		/>
 	</Card>
 );
+};
 
 export default TopBooksTable;

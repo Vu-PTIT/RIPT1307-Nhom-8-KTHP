@@ -109,6 +109,14 @@ const CheckInDetail: React.FC = () => {
 		},
 	];
 
+	const responsiveColumns = columns.map(col => ({
+		...col,
+		onCell: (record: any) => ({
+			'data-label': col.title,
+			...(col.onCell ? col.onCell(record) : {})
+		})
+	}));
+
 	return (
 		<PageSkeleton
 			title='Chi tiết lưu lượng check-in'
@@ -124,12 +132,12 @@ const CheckInDetail: React.FC = () => {
 					<Col span={24}>
 						<Card
 							title={
-								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-									<span>
+								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+									<span style={{ minWidth: 0 }}>
 										<RiseOutlined style={{ marginRight: 8, color: '#c90000' }} />
 										Biểu đồ lưu lượng check-in
 									</span>
-									<Select value={period} onChange={setPeriod} style={{ width: 140 }} size='middle'>
+									<Select value={period} onChange={setPeriod} style={{ width: 140, flexShrink: 0 }} size='middle'>
 										<Option value='daily'>Theo ngày</Option>
 										<Option value='weekly'>Theo tuần</Option>
 										<Option value='monthly'>Theo tháng</Option>
@@ -164,24 +172,24 @@ const CheckInDetail: React.FC = () => {
 					bordered={false}
 					style={{ borderRadius: 10, border: '1px solid var(--library-line)' }}
 				>
-					<Form layout='inline' style={{ marginBottom: 24, gap: 16 }}>
-						<Form.Item label='Mã/Tên độc giả'>
+					<Form layout='inline' style={{ marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
+						<Form.Item label='Mã/Tên độc giả' style={{ marginBottom: 8 }}>
 							<Input
 								placeholder='Nhập để tìm kiếm...'
 								value={username}
 								onChange={(e) => handleFilterChange('user', e.target.value)}
-								style={{ width: 200 }}
+								style={{ width: 180 }}
 								allowClear
 							/>
 						</Form.Item>
-						<Form.Item label='Hình thức'>
-							<Select value={checkType} onChange={(v) => handleFilterChange('type', v)} style={{ width: 150 }}>
+						<Form.Item label='Hình thức' style={{ marginBottom: 8 }}>
+							<Select value={checkType} onChange={(v) => handleFilterChange('type', v)} style={{ width: 140 }}>
 								<Option value='all'>Tất cả</Option>
 								<Option value='in'>Vào thư viện</Option>
 								<Option value='out'>Ra về</Option>
 							</Select>
 						</Form.Item>
-						<Form.Item label='Khoảng thời gian'>
+						<Form.Item label='Khoảng thời gian' style={{ marginBottom: 8 }}>
 							<RangePicker
 								value={dateRange}
 								onChange={(v) => handleFilterChange('date', v)}
@@ -189,14 +197,15 @@ const CheckInDetail: React.FC = () => {
 								format='DD/MM/YYYY'
 							/>
 						</Form.Item>
-						<Form.Item>
+						<Form.Item style={{ marginBottom: 8 }}>
 							<Button type='primary' onClick={refreshLogs}>Làm mới</Button>
 						</Form.Item>
 					</Form>
 
 					<Table
+						className='library-responsive-table'
 						dataSource={logs}
-						columns={columns}
+						columns={responsiveColumns}
 						rowKey='id'
 						loading={logsLoading}
 						pagination={{

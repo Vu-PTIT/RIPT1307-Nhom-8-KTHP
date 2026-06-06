@@ -143,6 +143,14 @@ const CategoryManageModal: React.FC<CategoryManageModalProps> = ({
     }
   ];
 
+  const responsiveColumns = columns.map(col => ({
+    ...col,
+    onCell: (record: any) => ({
+      'data-label': col.title,
+      ...(col.onCell ? col.onCell(record) : {})
+    })
+  }));
+
   return (
     <Modal
       title="Quản lý danh mục"
@@ -170,11 +178,11 @@ const CategoryManageModal: React.FC<CategoryManageModalProps> = ({
         )}
       </div>
       <Table 
+        className="library-responsive-table"
         dataSource={categories} 
-        columns={columns} 
+        columns={responsiveColumns} 
         rowKey="id" 
         pagination={false} 
-        scroll={{ y: 400 }}
       />
     </Modal>
   );

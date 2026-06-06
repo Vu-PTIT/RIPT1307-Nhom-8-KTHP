@@ -178,6 +178,14 @@ const BorrowStatusDetail: React.FC = () => {
 		},
 	];
 
+	const responsiveColumns = columns.map(col => ({
+		...col,
+		onCell: (record: any) => ({
+			'data-label': col.title,
+			...(col.onCell ? col.onCell(record) : {})
+		})
+	}));
+
 	return (
 		<PageSkeleton
 			title='Chi tiết trạng thái phiếu mượn'
@@ -267,8 +275,9 @@ const BorrowStatusDetail: React.FC = () => {
 					</Form>
 
 					<Table
+						className='library-responsive-table'
 						dataSource={paginatedBorrows}
-						columns={columns}
+						columns={responsiveColumns}
 						rowKey='id'
 						loading={listLoading}
 						pagination={{

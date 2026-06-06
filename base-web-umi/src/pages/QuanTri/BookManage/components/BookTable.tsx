@@ -31,6 +31,7 @@ const BookTable: React.FC<BookTableProps> = ({
     {
       title: 'Đầu sách',
       key: 'book',
+      className: 'full-width-mobile-cell',
       render: (_: any, record: any) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Avatar shape="square" size={60} src={record.image} />
@@ -92,10 +93,19 @@ const BookTable: React.FC<BookTableProps> = ({
     },
   ];
 
+  const responsiveColumns = columns.map(col => ({
+    ...col,
+    onCell: (record: any) => ({
+      'data-label': col.title,
+      ...(col.onCell ? col.onCell(record) : {})
+    })
+  }));
+
   return (
     <Table
+      className="library-responsive-table"
       dataSource={books}
-      columns={columns}
+      columns={responsiveColumns}
       loading={loading}
       rowKey={(r: any) => String(r.id)}
       pagination={{

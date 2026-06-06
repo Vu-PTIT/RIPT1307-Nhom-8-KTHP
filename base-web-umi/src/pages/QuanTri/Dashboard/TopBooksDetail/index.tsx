@@ -82,6 +82,14 @@ const TopBooksDetail: React.FC = () => {
 		},
 	];
 
+	const responsiveColumns = columns.map(col => ({
+		...col,
+		onCell: (record: any) => ({
+			'data-label': col.title,
+			...(col.onCell ? col.onCell(record) : {})
+		})
+	}));
+
 	return (
 		<PageSkeleton
 			title='Chi tiết top tài liệu mượn nhiều nhất'
@@ -156,8 +164,9 @@ const TopBooksDetail: React.FC = () => {
 					</Form>
 
 					<Table
+						className='library-responsive-table'
 						dataSource={filteredBooks}
-						columns={columns}
+						columns={responsiveColumns}
 						rowKey='id'
 						loading={loading}
 						pagination={{

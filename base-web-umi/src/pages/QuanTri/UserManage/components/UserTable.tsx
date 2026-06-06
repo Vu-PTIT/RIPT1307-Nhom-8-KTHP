@@ -150,12 +150,22 @@ const UserTable: React.FC<UserTableProps> = ({
 		},
 	];
 
+	const responsiveColumns = columns.map(col => ({
+		...col,
+		onCell: (record: any) => ({
+			'data-label': col.title,
+			...(col.onCell ? col.onCell(record) : {})
+		})
+	}));
+
 	return (
 		<Table
+			className="library-responsive-table"
 			dataSource={users}
-			columns={columns}
+			columns={responsiveColumns}
 			loading={loading}
 			rowKey={(r: any) => String(r.id)}
+			scroll={{ x: 800 }}
 			pagination={{
 				current: page,
 				pageSize,

@@ -93,15 +93,25 @@ const SettingsTable: React.FC<SettingsTableProps> = ({ settings, loading, onEdit
 		},
 	];
 
+	const responsiveColumns = columns.map(col => ({
+		...col,
+		onCell: (record: any) => ({
+			'data-label': col.title,
+			...(col.onCell ? col.onCell(record) : {})
+		})
+	}));
+
 	return (
 		<Spin spinning={loading}>
 			{settings.length === 0 && !loading ? (
 				<Empty description='Không có cài đặt nào' style={{ padding: '48px 16px' }} />
 			) : (
 				<Table
+					className="library-responsive-table"
 					dataSource={settings}
-					columns={columns}
+					columns={responsiveColumns as any}
 					rowKey={(r: any) => String(r.key)}
+					scroll={{ x: 600 }}
 					pagination={settings.length > 10 ? { pageSize: 10 } : false}
 					size='middle'
 				/>

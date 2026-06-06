@@ -64,6 +64,14 @@ const OverdueDetail: React.FC = () => {
 		},
 	];
 
+	const responsiveColumns = columns.map(col => ({
+		...col,
+		onCell: (record: any) => ({
+			'data-label': col.title,
+			...(col.onCell ? col.onCell(record) : {})
+		})
+	}));
+
 	return (
 		<PageSkeleton
 			title='Chi tiết thống kê quá hạn'
@@ -153,8 +161,9 @@ const OverdueDetail: React.FC = () => {
 					</Form>
 
 					<Table
+						className='library-responsive-table'
 						dataSource={filteredItems}
-						columns={columns}
+						columns={responsiveColumns}
 						rowKey={(r: any) => r.borrow_id + '_' + r.document_title}
 						loading={loading}
 						pagination={{
