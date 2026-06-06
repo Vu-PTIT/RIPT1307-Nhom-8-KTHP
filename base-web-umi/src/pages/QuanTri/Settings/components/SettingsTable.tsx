@@ -18,6 +18,7 @@ const SettingsTable: React.FC<SettingsTableProps> = ({ settings, loading, onEdit
 			dataIndex: 'key',
 			key: 'key',
 			width: 220,
+			align: 'center',
 			render: (v: string, record: any) => {
 				const keyVal = v ?? record.setting_key ?? '';
 				return (
@@ -29,6 +30,7 @@ const SettingsTable: React.FC<SettingsTableProps> = ({ settings, loading, onEdit
 			title: 'Giá trị hiện tại',
 			dataIndex: 'value',
 			key: 'value',
+			align: 'center',
 			render: (v: string, record: any) => {
 				const val = v ?? record.setting_value ?? '';
 				return (
@@ -49,6 +51,7 @@ const SettingsTable: React.FC<SettingsTableProps> = ({ settings, loading, onEdit
 			title: 'Mô tả',
 			dataIndex: 'description',
 			key: 'description',
+			align: 'center',
 			render: (v: string) =>
 				v ? (
 					<Text type='secondary' style={{ fontSize: 13 }}>{v}</Text>
@@ -61,6 +64,7 @@ const SettingsTable: React.FC<SettingsTableProps> = ({ settings, loading, onEdit
 			dataIndex: 'updated_at',
 			key: 'updated_at',
 			width: 150,
+			align: 'center',
 			render: (v: string) =>
 				v ? (
 					<Text style={{ fontSize: 12 }}>{dayjs(v).format('DD/MM/YYYY HH:mm')}</Text>
@@ -72,6 +76,7 @@ const SettingsTable: React.FC<SettingsTableProps> = ({ settings, loading, onEdit
 			title: 'Thao tác',
 			key: 'action',
 			width: 100,
+			align: 'center',
 			render: (_: any, record: any) => (
 				<Tooltip title='Chỉnh sửa'>
 					<Button

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useModel } from 'umi';
+import { useModel, useAccess } from 'umi';
 import AvatarDropdown from './AvatarDropdown';
 import NoticeIconView from './NoticeIcon';
 import styles from './index.less';
@@ -8,6 +8,7 @@ export type SiderTheme = 'light' | 'dark';
 
 const GlobalHeaderRight: React.FC = () => {
 	const { initialState } = useModel('@@initialState');
+	const access = useAccess();
 
 	if (!initialState || !initialState.currentUser) {
 		return null;
@@ -17,7 +18,7 @@ const GlobalHeaderRight: React.FC = () => {
 		<div className={styles.right}>
 			{/* <ModuleSwitch /> */}
 
-			<NoticeIconView />
+			{!access.isAdmin && <NoticeIconView />}
 
 			{/* <Tooltip title='Giới thiệu chung' placement='bottom'>
 				<a onClick={() => history.push('/gioi-thieu')}>

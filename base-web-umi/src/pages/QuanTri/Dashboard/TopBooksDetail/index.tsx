@@ -162,7 +162,6 @@ const TopBooksDetail: React.FC = () => {
 						loading={loading}
 						pagination={{
 							pageSize: 10,
-							showTotal: (total) => `Hiển thị ${total} tài liệu`,
 						}}
 						style={{ borderRadius: 8, overflow: 'hidden' }}
 					/>

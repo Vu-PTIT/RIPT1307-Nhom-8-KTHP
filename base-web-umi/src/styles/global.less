@@ -412,6 +412,12 @@ canvas {
 		border-radius: 6px !important;
 	}
 
+	.ant-pagination-jump-prev .ant-pagination-item-container .ant-pagination-item-ellipsis,
+	.ant-pagination-jump-next .ant-pagination-item-container .ant-pagination-item-ellipsis {
+		white-space: nowrap;
+		word-break: keep-all;
+	}
+
 	.ant-pagination-item a,
 	.ant-pagination-item-link {
 		display: inline-flex !important;
@@ -420,6 +426,19 @@ canvas {
 		height: 100% !important;
 		padding: 0 6px !important;
 		font-size: 14px !important;
+	}
+
+	.ant-pagination-options {
+		.ant-select {
+			height: 36px !important;
+		}
+		.ant-select-selector {
+			height: 36px !important;
+			border-radius: 6px !important;
+		}
+		.ant-select-selection-item {
+			line-height: 34px !important;
+		}
 	}
 
 	.ant-pagination-prev,

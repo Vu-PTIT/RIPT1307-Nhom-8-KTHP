@@ -122,7 +122,6 @@ const CheckinLogs: React.FC = () => {
               setPageSize(s || 10);
             },
             showSizeChanger: false,
-            showTotal: (total) => `Tổng ${total} lượt`
           }}
         />
       </div>

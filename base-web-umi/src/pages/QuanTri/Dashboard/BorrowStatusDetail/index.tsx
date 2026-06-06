@@ -279,7 +279,6 @@ const BorrowStatusDetail: React.FC = () => {
 								setPage(p);
 								if (s) setPageSize(s);
 							},
-							showTotal: (total) => `Tổng số ${total} phiếu mượn`,
 						}}
 						style={{ borderRadius: 8, overflow: 'hidden' }}
 					/>

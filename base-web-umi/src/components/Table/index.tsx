@@ -549,25 +549,6 @@ const TableBase = (props: TableBaseProps) => {
 						total,
 						showSizeChanger: true,
 						pageSizeOptions: ['5', '10', '25', '50', '100'],
-						showTotal: (tongSo: number) => (
-							<Space>
-								{props?.rowSelection ? (
-									<>
-										<span>Đã chọn: {selectedIds?.length ?? 0}</span>
-										{selectedIds?.length > 0 ? (
-											<span>
-												(
-												<a href='#!' onClick={() => setSelectedIds(undefined)}>
-													Bỏ chọn tất cả
-												</a>
-												)
-											</span>
-										) : null}
-									</>
-								) : null}
-								<span>Tổng số: {tongSo}</span>
-							</Space>
-						),
 					}}
 					onChange={onChange}
 					dataSource={model?.[props.dataState || 'danhSach']?.map((item: any, index: number) => ({

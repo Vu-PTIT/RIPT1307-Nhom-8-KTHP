@@ -18,7 +18,6 @@ export default function LibraryPagination({
 	const defaultProps: PaginationProps = complex
 		? {
 				showSizeChanger: true,
-				showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} mục`,
 		  }
 		: {
 				showSizeChanger: false,

@@ -207,7 +207,6 @@ const CheckInDetail: React.FC = () => {
 								setPage(p);
 								if (s) setPageSize(s);
 							},
-							showTotal: (total) => `Tổng số ${total} lượt check-in`,
 						}}
 						style={{ borderRadius: 8, overflow: 'hidden' }}
 					/>

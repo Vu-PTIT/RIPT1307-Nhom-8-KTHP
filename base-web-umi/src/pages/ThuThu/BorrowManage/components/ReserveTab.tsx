@@ -138,21 +138,25 @@ const ReserveTab: React.FC = () => {
 									title: 'Mã vạch',
 									dataIndex: 'copy_code',
 									width: 120,
+									align: 'center',
 									render: (val: string) => <Tag color="blue">{val}</Tag>,
 								},
 								{
 									title: 'Tên sách',
 									dataIndex: 'document_title',
+									align: 'center',
 									render: (val: string) => <Text strong>{val}</Text>,
 								},
 								{
 									title: 'Thể loại',
 									dataIndex: 'category_name',
+									align: 'center',
 									render: (val: string) => val ? <Tag>{val}</Tag> : <Text type="secondary">—</Text>,
 								},
 								{
 									title: 'Tác giả',
 									dataIndex: 'author',
+									align: 'center',
 									render: (val: string) => val || <Text type="secondary">—</Text>,
 								}
 							]}

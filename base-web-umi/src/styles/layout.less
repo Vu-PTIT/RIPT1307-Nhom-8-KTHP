@@ -52,12 +52,18 @@
 
 	.ant-menu-submenu {
 		& > .ant-menu-submenu-title {
-			padding-right: 24px !important;
+			padding-right: 34px !important;
 			padding-left: 12px !important;
 			border-radius: 2px;
 
 			.ant-menu-submenu-arrow {
-				right: 10px;
+				right: 16px;
+				color: currentColor;
+				
+				&::before,
+				&::after {
+					background-color: currentColor !important;
+				}
 			}
 		}
 

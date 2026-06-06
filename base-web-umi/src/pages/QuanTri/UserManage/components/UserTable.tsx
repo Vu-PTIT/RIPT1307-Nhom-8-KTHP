@@ -161,7 +161,6 @@ const UserTable: React.FC<UserTableProps> = ({
 				pageSize,
 				total,
 				showSizeChanger: true,
-				showTotal: (t) => `Tổng ${t} người dùng`,
 				onChange: onPageChange,
 			}}
 			size='middle'

@@ -159,7 +159,6 @@ const OverdueDetail: React.FC = () => {
 						loading={loading}
 						pagination={{
 							pageSize: 10,
-							showTotal: (total) => `Tổng số ${total} tài liệu trễ hạn`,
 						}}
 						style={{ borderRadius: 8, overflow: 'hidden' }}
 					/>

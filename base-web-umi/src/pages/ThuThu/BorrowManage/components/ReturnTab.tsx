@@ -87,19 +87,21 @@ const ReturnTab: React.FC = () => {
 		}
 	};
 
-	const itemsColumns = [
-		{ title: 'Mã vạch', dataIndex: 'copy_code', key: 'copy_code', width: 120, render: (v: string) => <Tag>{v}</Tag> },
-		{ title: 'Tên sách', dataIndex: 'document_title', key: 'document_title' },
+	const itemsColumns: any = [
+		{ title: 'Mã vạch', dataIndex: 'copy_code', key: 'copy_code', width: 120, align: 'center', render: (v: string) => <Tag>{v}</Tag> },
+		{ title: 'Tên sách', dataIndex: 'document_title', key: 'document_title', align: 'center' },
 		{
 			title: 'Ngày mượn',
 			dataIndex: 'borrow_date',
 			key: 'borrow_date',
+			align: 'center',
 			render: (v: string) => dayjs(v).format('DD/MM/YYYY')
 		},
 		{
 			title: 'Trạng thái',
 			dataIndex: 'status',
 			key: 'status',
+			align: 'center',
 			render: (v: string) => {
 				return v === 'overdue' ? <Tag color="error">Quá hạn</Tag> : <Tag color="processing">Đang mượn</Tag>;
 			}
@@ -108,6 +110,7 @@ const ReturnTab: React.FC = () => {
 			title: 'Tình trạng trả',
 			key: 'condition',
 			width: 140,
+			align: 'center',
 			render: (_: any, record: any) => (
 				<Select
 					size="small"
@@ -124,12 +127,13 @@ const ReturnTab: React.FC = () => {
 		}
 	];
 
-	const returnColumns = [
-		{ title: 'Mã vạch', dataIndex: 'copy_code', key: 'copy_code', render: (v: string) => <Tag>{v}</Tag> },
-		{ title: 'Tên sách', dataIndex: 'document_title', key: 'document_title' },
+	const returnColumns: any = [
+		{ title: 'Mã vạch', dataIndex: 'copy_code', key: 'copy_code', align: 'center', render: (v: string) => <Tag>{v}</Tag> },
+		{ title: 'Tên sách', dataIndex: 'document_title', key: 'document_title', align: 'center' },
 		{ 
 			title: 'Độc giả', 
 			key: 'reader', 
+			align: 'center',
 			render: (_: any, record: any) => (
 				<div>
 					<div>{record.reader_name}</div>
@@ -141,6 +145,7 @@ const ReturnTab: React.FC = () => {
 			title: 'Tình trạng trả',
 			dataIndex: 'condition_on_return',
 			key: 'condition_on_return',
+			align: 'center',
 			render: (v: string) => {
 				const map: any = { good: { label: 'Tốt', color: 'success' }, damaged: { label: 'Hư hỏng', color: 'error' }, lost: { label: 'Mất', color: 'error' } };
 				return <Tag color={map[v]?.color || 'default'}>{map[v]?.label || v}</Tag>;
@@ -150,6 +155,7 @@ const ReturnTab: React.FC = () => {
 			title: 'Thời gian nhận trả',
 			dataIndex: 'return_date',
 			key: 'return_date',
+			align: 'center',
 			render: (v: string) => dayjs(v).format('DD/MM/YYYY HH:mm'),
 		},
 	];
@@ -251,7 +257,6 @@ const ReturnTab: React.FC = () => {
 							setPageSize(s || 10);
 						},
 						showSizeChanger: false,
-						showTotal: (total) => `Tổng ${total} bản ghi`
 					}}
 					size='small'
 					style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #f0f0f0' }}

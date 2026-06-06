@@ -150,14 +150,15 @@ const CheckoutTab: React.FC = () => {
 		}
 	};
 
-	const borrowColumns = [
-		{ title: 'Độc giả', dataIndex: 'reader_username', key: 'reader_username', render: (v: string) => <strong>{v}</strong> },
-		{ title: 'Email', dataIndex: 'reader_email', key: 'reader_email', render: (v: string) => <Text type='secondary'>{v}</Text> },
-		{ title: 'Ngày mượn', dataIndex: 'borrow_date', key: 'borrow_date', render: (v: string) => dayjs(v).format('DD/MM/YYYY') },
+	const borrowColumns: any = [
+		{ title: 'Độc giả', dataIndex: 'reader_username', key: 'reader_username', align: 'center', render: (v: string) => <strong>{v}</strong> },
+		{ title: 'Email', dataIndex: 'reader_email', key: 'reader_email', align: 'center', render: (v: string) => <Text type='secondary'>{v}</Text> },
+		{ title: 'Ngày mượn', dataIndex: 'borrow_date', key: 'borrow_date', align: 'center', render: (v: string) => dayjs(v).format('DD/MM/YYYY') },
 		{
 			title: 'Hạn trả',
 			dataIndex: 'due_date',
 			key: 'due_date',
+			align: 'center',
 			render: (v: string) => {
 				const isOverdue = dayjs(v).isBefore(dayjs());
 				return <span style={{ color: isOverdue ? '#ff4d4f' : 'inherit' }}>{dayjs(v).format('DD/MM/YYYY')}</span>;
@@ -167,12 +168,14 @@ const CheckoutTab: React.FC = () => {
 			title: 'Trạng thái',
 			dataIndex: 'status',
 			key: 'status',
+			align: 'center',
 			render: (v: string) => <Tag color={v === 'borrowed' ? 'processing' : 'default'}>{v === 'borrowed' ? 'Đang mượn' : v}</Tag>,
 		},
-		{ title: 'Số cuốn', dataIndex: 'item_count', key: 'item_count', render: (v: number) => `${v} cuốn` },
+		{ title: 'Số cuốn', dataIndex: 'item_count', key: 'item_count', align: 'center', render: (v: number) => `${v} cuốn` },
 		{
 			title: 'Hành động',
 			key: 'action',
+			align: 'center',
 			render: (_: any, record: any) => (
 				<Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record.id)}>
 					Chi tiết
@@ -181,23 +184,26 @@ const CheckoutTab: React.FC = () => {
 		}
 	];
 
-	const copiesColumns = [
+	const copiesColumns: any = [
 		{
 			title: 'Mã vạch',
 			dataIndex: 'copy_code',
 			key: 'copy_code',
 			width: 120,
+			align: 'center',
 			render: (val: string) => <Tag>{val}</Tag>,
 		},
 		{
 			title: 'Tên sách',
 			dataIndex: 'document_title',
 			key: 'document_title',
+			align: 'center',
 		},
 		{
 			title: 'Tác giả',
 			dataIndex: 'author',
 			key: 'author',
+			align: 'center',
 			render: (val?: string) => val || '—',
 		},
 		{
@@ -205,6 +211,7 @@ const CheckoutTab: React.FC = () => {
 			dataIndex: 'status',
 			key: 'status',
 			width: 120,
+			align: 'center',
 			render: (val: string) => (
 				<Tag color={val === 'available' ? 'success' : 'default'}>
 					{val === 'available' ? 'Khả dụng' : val}
@@ -456,11 +463,12 @@ const CheckoutTab: React.FC = () => {
 							size="small"
 							style={{ marginTop: 8 }}
 							columns={[
-								{ title: 'Mã vạch', dataIndex: 'copy_code', render: (v: string) => <Tag>{v}</Tag> },
-								{ title: 'Tên sách', dataIndex: 'document_title' },
+								{ title: 'Mã vạch', dataIndex: 'copy_code', align: 'center', render: (v: string) => <Tag>{v}</Tag> },
+								{ title: 'Tên sách', dataIndex: 'document_title', align: 'center' },
 								{
 									title: 'Trạng thái',
 									dataIndex: 'status',
+									align: 'center',
 									render: (v: string) => {
 										const map: any = {
 											borrowed: { label: 'Đang mượn', color: 'processing' },
@@ -473,6 +481,7 @@ const CheckoutTab: React.FC = () => {
 								{
 									title: 'Ngày trả',
 									dataIndex: 'return_date',
+									align: 'center',
 									render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '—'
 								}
 							]}

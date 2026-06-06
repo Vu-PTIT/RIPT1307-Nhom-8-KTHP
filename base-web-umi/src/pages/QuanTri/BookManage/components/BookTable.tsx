@@ -103,7 +103,6 @@ const BookTable: React.FC<BookTableProps> = ({
         pageSize,
         total,
         showSizeChanger: true,
-        showTotal: (t) => `Tổng ${t} đầu sách`,
         onChange: onPageChange,
       }}
       size='middle'

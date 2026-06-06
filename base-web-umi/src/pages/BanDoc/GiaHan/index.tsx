@@ -147,7 +147,7 @@ export default function RenewalsPage() {
 						<SyncOutlined />
 						<div>
 							<span>Yêu cầu gia hạn</span>
-							<strong>{items.length}</strong>
+							<strong>{items.filter((it: any) => it.status === 'pending').length}</strong>
 						</div>
 					</div>
 				</div>
