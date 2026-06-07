@@ -52,7 +52,8 @@ body {
 		border-radius: 7px;
 	}
 
-	.ant-menu-item-selected {
+	.ant-menu-item-selected,
+	.ant-menu-item-selected:hover {
 		color: var(--library-red) !important;
 		background: var(--library-red-soft) !important;
 		box-shadow: inset 4px 0 0 var(--library-red);
@@ -199,10 +200,12 @@ body {
 	cursor: pointer;
 	transition: box-shadow 0.12s ease, transform 0.06s ease, border-color 0.12s ease;
 }
+
 .library-stat.clickable:hover {
 	box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.3);
 	transform: translateY(-2px);
 }
+
 .library-stat.clickable.active {
 	background: linear-gradient(180deg, #fff, #fff);
 	border: 1px solid rgba(201, 0, 0, 0.18);
@@ -379,7 +382,7 @@ body {
 }
 
 /* make the right-hand tag group in detail header spread out a bit */
-.library-detail-header > div:last-child {
+.library-detail-header>div:last-child {
 	display: flex;
 	gap: 12px;
 	align-items: center;
@@ -391,6 +394,7 @@ body {
 	gap: 10px;
 	align-items: center;
 	margin-top: auto;
+
 	/* Make buttons equal size and visually consistent */
 	.ant-btn {
 		flex: 1 1 0;
@@ -400,6 +404,7 @@ body {
 		font-weight: 800;
 		border-radius: 14px;
 	}
+
 	/* keep primary button styles but ensure same height */
 	.ant-btn-primary {
 		height: 48px;
@@ -508,6 +513,7 @@ body {
 			color: var(--library-ink);
 			font-size: 15px;
 		}
+
 		.email {
 			color: var(--library-muted);
 			font-size: 13px;
@@ -524,8 +530,9 @@ body {
 	background: var(--library-red) !important;
 	border-color: var(--library-red) !important;
 	color: #ffffff !important;
-	
-	&:hover, &:focus {
+
+	&:hover,
+	&:focus {
 		background: #a30000 !important;
 		border-color: #a30000 !important;
 	}
@@ -659,14 +666,19 @@ body {
 			display: none;
 		}
 
-		.ant-table-wrapper, .ant-table, .ant-table-body, .ant-table-content, table, tbody {
+		.ant-table-wrapper,
+		.ant-table,
+		.ant-table-body,
+		.ant-table-content,
+		table,
+		tbody {
 			display: block !important;
 			min-width: 0 !important;
 			width: 100% !important;
 			overflow: hidden !important;
 		}
 
-		.ant-table-tbody > tr {
+		.ant-table-tbody>tr {
 			display: flex;
 			flex-direction: column;
 			margin-bottom: 16px;
@@ -681,7 +693,7 @@ body {
 			}
 		}
 
-		.ant-table-tbody > tr > td {
+		.ant-table-tbody>tr>td {
 			display: flex;
 			justify-content: space-between;
 			align-items: flex-start;
@@ -718,7 +730,7 @@ body {
 					display: none;
 				}
 
-				> div {
+				>div {
 					width: 100%;
 					justify-content: flex-start !important;
 				}
