@@ -13,19 +13,19 @@ const RandomUser = () => {
 
 	const columns: IColumn<RandomUser.Record>[] = [
 		{
-			title: 'Address',
+			title: 'Địa chỉ',
 			dataIndex: 'address',
 			key: 'name',
 			width: 200,
 		},
 		{
-			title: 'Balance',
+			title: 'Số dư',
 			dataIndex: 'balance',
 			key: 'age',
 			width: 100,
 		},
 		{
-			title: 'Action',
+			title: 'Thao tác',
 			width: 200,
 			align: 'center',
 			render: (record) => {
@@ -38,7 +38,7 @@ const RandomUser = () => {
 								setIsEdit(true);
 							}}
 						>
-							Edit
+							Sửa
 						</Button>
 						<Button
 							style={{ marginLeft: 10 }}
@@ -50,7 +50,7 @@ const RandomUser = () => {
 							}}
 							type='primary'
 						>
-							Delete
+							Xóa
 						</Button>
 					</div>
 				);
@@ -67,7 +67,7 @@ const RandomUser = () => {
 					setIsEdit(false);
 				}}
 			>
-				Add User
+				Thêm người dùng
 			</Button>
 
 			<Table dataSource={data} columns={columns} />
@@ -75,7 +75,7 @@ const RandomUser = () => {
 			<Modal
 				destroyOnClose
 				footer={false}
-				title={isEdit ? 'Edit User' : 'Add User'}
+				title={isEdit ? 'Sửa thông tin' : 'Thêm người dùng'}
 				visible={visible}
 				onOk={() => {}}
 				onCancel={() => {

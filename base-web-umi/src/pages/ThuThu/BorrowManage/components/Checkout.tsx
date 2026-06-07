@@ -177,7 +177,15 @@ const CheckoutTab: React.FC = () => {
 			dataIndex: 'status',
 			key: 'status',
 			align: 'center',
-			render: (v: string) => <Tag color={v === 'borrowed' ? 'processing' : 'default'}>{v === 'borrowed' ? 'Đang mượn' : v}</Tag>,
+			render: (v: string) => {
+				const map: any = {
+					borrowed: { label: 'Đang mượn', color: 'processing' },
+					returned: { label: 'Đã trả', color: 'success' },
+					pending: { label: 'Chờ duyệt', color: 'warning' },
+					overdue: { label: 'Quá hạn', color: 'error' }
+				};
+				return <Tag color={map[v]?.color || 'default'}>{map[v]?.label || v}</Tag>;
+			},
 		},
 		{ title: 'Số cuốn', dataIndex: 'item_count', key: 'item_count', align: 'center', render: (v: number) => `${v} cuốn` },
 		{
@@ -461,8 +469,16 @@ const CheckoutTab: React.FC = () => {
 							<Text type="secondary">Hạn trả:</Text> <Text strong style={{ color: '#d46b08' }}>{dayjs(borrowDetail.due_date).format('DD/MM/YYYY')}</Text>
 							<br />
 							<Text type="secondary">Trạng thái:</Text>{' '}
-							<Tag color={borrowDetail.status === 'borrowed' ? 'processing' : 'default'}>
-								{borrowDetail.status === 'borrowed' ? 'Đang mượn' : borrowDetail.status}
+							<Tag color={
+								borrowDetail.status === 'borrowed' ? 'processing' :
+								borrowDetail.status === 'returned' ? 'success' :
+								borrowDetail.status === 'pending' ? 'warning' :
+								borrowDetail.status === 'overdue' ? 'error' : 'default'
+							}>
+								{borrowDetail.status === 'borrowed' ? 'Đang mượn' :
+								 borrowDetail.status === 'returned' ? 'Đã trả' :
+								 borrowDetail.status === 'pending' ? 'Chờ duyệt' :
+								 borrowDetail.status === 'overdue' ? 'Quá hạn' : borrowDetail.status}
 							</Tag>
 						</div>
 

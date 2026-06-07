@@ -18,7 +18,10 @@ export default function TaiKhoanPage() {
 
   const displayName = user?.full_name || user?.fullName || user?.name || user?.username || 'Người dùng';
   const email = user?.email || 'Chưa cập nhật';
-  const roleName = user?.role?.name || user?.role_name || 'Thành viên';
+  let roleName = user?.role?.name || user?.role_name || 'Thành viên';
+  if (roleName.toLowerCase() === 'admin') roleName = 'Quản trị viên';
+  else if (roleName.toLowerCase() === 'librarian') roleName = 'Thủ thư';
+  else if (roleName.toLowerCase() === 'member') roleName = 'Độc giả';
   const avatarSrc = user?.avatar ? `${ipLibrary}/auth/avatars/${user.avatar}` : undefined;
 
   useEffect(() => {

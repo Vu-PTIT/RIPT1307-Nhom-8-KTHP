@@ -10,6 +10,15 @@ const statusClass = (status: string) => {
   return 'neutral';
 };
 
+const statusLabel = (status: string) => {
+  const v = String(status || '').toLowerCase();
+  if (v.includes('return') || v.includes('done')) return 'Đã trả';
+  if (v.includes('over') || v.includes('late')) return 'Quá hạn';
+  if (v.includes('pending')) return 'Chờ duyệt';
+  if (v.includes('borrow') || v.includes('active')) return 'Đang mượn';
+  return status || 'Đang cập nhật';
+};
+
 interface BorrowRecord {
   id: string;
   borrow_date?: string;
@@ -37,7 +46,7 @@ const BorrowHistoryList: React.FC<Props> = ({ items, loading }) => (
           description={`Ngày mượn: ${it.borrow_date || 'Không rõ'} | Hạn trả: ${it.due_date || 'Không rõ'}`}
         />
         <Tag className={`library-status-tag ${statusClass(it.status || '')}`}>
-          {it.status || 'Đang cập nhật'}
+          {statusLabel(it.status || '')}
         </Tag>
       </List.Item>
     )}

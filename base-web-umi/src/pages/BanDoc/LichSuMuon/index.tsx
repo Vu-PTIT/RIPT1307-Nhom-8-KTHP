@@ -39,8 +39,17 @@ export default function BorrowHistoryPage() {
 		const value = String(status || '').toLowerCase();
 		if (value.includes('return') || value.includes('trả') || value.includes('done')) return 'success';
 		if (value.includes('over') || value.includes('late') || value.includes('quá')) return 'danger';
-		if (value.includes('borrow') || value.includes('mượn') || value.includes('active')) return 'warning';
+		if (value.includes('borrow') || value.includes('mượn') || value.includes('active') || value.includes('pending')) return 'warning';
 		return 'neutral';
+	};
+
+	const statusLabel = (status: string) => {
+		const v = String(status || '').toLowerCase();
+		if (v.includes('return') || v.includes('done')) return 'Đã trả';
+		if (v.includes('over') || v.includes('late')) return 'Quá hạn';
+		if (v.includes('pending')) return 'Chờ duyệt';
+		if (v.includes('borrow') || v.includes('active')) return 'Đang mượn';
+		return status || 'Đang cập nhật';
 	};
 
 	return (
@@ -102,7 +111,7 @@ export default function BorrowHistoryPage() {
 									}
 								/>
 								<div style={{ alignSelf: 'flex-start', marginTop: 4 }}>
-									<Tag className={`library-status-tag ${statusClass(it.status)}`}>{it.status || 'Đang cập nhật'}</Tag>
+									<Tag className={`library-status-tag ${statusClass(it.status)}`}>{statusLabel(it.status)}</Tag>
 								</div>
 							</List.Item>
 						)}

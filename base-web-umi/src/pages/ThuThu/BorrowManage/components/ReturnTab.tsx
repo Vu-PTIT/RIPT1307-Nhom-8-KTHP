@@ -111,7 +111,12 @@ const ReturnTab: React.FC = () => {
 			key: 'status',
 			align: 'center',
 			render: (v: string) => {
-				return v === 'overdue' ? <Tag color="error">Quá hạn</Tag> : <Tag color="processing">Đang mượn</Tag>;
+				const map: any = {
+					borrowed: { label: 'Đang mượn', color: 'processing' },
+					pending: { label: 'Chờ duyệt', color: 'warning' },
+					overdue: { label: 'Quá hạn', color: 'error' }
+				};
+				return <Tag color={map[v]?.color || 'default'}>{map[v]?.label || 'Đang mượn'}</Tag>;
 			}
 		},
 		{

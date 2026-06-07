@@ -6,13 +6,13 @@ export default [
 			{
 				path: '/user/login',
 				layout: false,
-				name: 'login',
+				name: 'Đăng nhập',
 				component: './user/Login',
 			},
 			{
 				path: '/user/register',
 				layout: false,
-				name: 'register',
+				name: 'Đăng ký',
 				component: './user/Register',
 			},
 			{
@@ -197,13 +197,13 @@ export default [
 
 	{
 		path: '/gioi-thieu',
-		name: 'About',
+		name: 'Giới thiệu',
 		component: './TienIch/GioiThieu',
 		hideInMenu: true,
 	},
 	{
 		path: '/random-user',
-		name: 'RandomUser',
+		name: 'Ngẫu nhiên',
 		component: './RandomUser',
 		icon: 'ArrowsAltOutlined',
 		hideInMenu: true,

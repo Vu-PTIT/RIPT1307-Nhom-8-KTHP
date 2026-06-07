@@ -8,6 +8,8 @@ import * as MuonSach from '@/services/MuonSach';
 
 const RecordStatus: Record<string, { className: string; label: string }> = {
 	active: { className: 'warning', label: 'Đang mượn' },
+	borrowed: { className: 'warning', label: 'Đang mượn' },
+	pending: { className: 'warning', label: 'Chờ duyệt' },
 	returned: { className: 'success', label: 'Đã trả hết' },
 	overdue: { className: 'danger', label: 'Quá hạn' },
 	completed: { className: 'success', label: 'Hoàn thành' },
