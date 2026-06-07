@@ -1,4 +1,4 @@
-import Footer from '@/components/Footer';
+
 import { adminlogin, getUserInfo } from '@/services/base/api';
 import rules from '@/utils/rules';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
@@ -97,8 +97,6 @@ const Login: React.FC = () => {
 					</div>
 				</Card>
 			</div>
-
-			<Footer />
 		</div>
 	);
 };

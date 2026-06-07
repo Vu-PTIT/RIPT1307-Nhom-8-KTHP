@@ -14,7 +14,7 @@ const Settings: LayoutSettings & {
 	fixedHeader: false,
 	fixSiderbar: true,
 	colorWeak: false,
-	title: 'Library System',
+	title: 'Thư viện PTIT',
 	pwa: false,
 	logo: '/logo.png',
 	iconfontUrl: '',

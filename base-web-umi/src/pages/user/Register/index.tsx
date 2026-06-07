@@ -1,4 +1,4 @@
-import Footer from '@/components/Footer';
+
 import { register } from '@/services/base/api';
 import { MailOutlined, LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Form, Input, message, Card, Typography } from 'antd';
@@ -102,8 +102,6 @@ const Register: React.FC = () => {
 					</div>
 				</Card>
 			</div>
-
-			<Footer />
 		</div>
 	);
 };

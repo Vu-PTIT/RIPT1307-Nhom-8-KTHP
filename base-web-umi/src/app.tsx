@@ -102,6 +102,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
 		noFound: <NotFoundContent />,
 		rightContentRender: () => <RightContent />,
 		disableContentMargin: false,
+		pageTitleRender: () => 'Thư viện PTIT',
 
 		footerRender: false,
 
