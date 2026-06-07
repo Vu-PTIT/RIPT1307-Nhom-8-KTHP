@@ -2,11 +2,26 @@
 <style>
 #erd { overflow-x: auto; padding: 8px 0; }
 #erd svg { min-width: 900px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 </style>
-<h2 class="sr-only">Sơ đồ cơ sở dữ liệu hệ thống quản lý thư viện (không có member_cards)</h2>
+<h2 class="sr-only">Sơ đồ cơ sở dữ liệu hệ thống quản lý thư viện</h2>
 <div id="erd"></div>
+<script>
+window.addEventListener('error', function(e) {
+  document.body.innerHTML += `<div style="color: red; padding: 20px; font-family: sans-serif;">
+    <h3>Global Error</h3>
+    <pre>${e.message} at ${e.filename}:${e.lineno}</pre>
+  </div>`;
+});
+window.addEventListener('unhandledrejection', function(e) {
+  document.body.innerHTML += `<div style="color: red; padding: 20px; font-family: sans-serif;">
+    <h3>Unhandled Promise Rejection</h3>
+    <pre>${e.reason}</pre>
+  </div>`;
+});
+</script>
 <script type="module">
-import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 const dark = matchMedia('(prefers-color-scheme: dark)').matches;
 await document.fonts.ready;
 mermaid.initialize({
@@ -125,6 +140,8 @@ const diagram = `erDiagram
     string method
     string handled_by_id FK
     timestamp check_time
+    timestamp checkout_time
+    timestamp updated_at
   }
   library_settings {
     string id PK
@@ -133,6 +150,15 @@ const diagram = `erDiagram
     string description
     string updated_by_id FK
     timestamp updated_at
+  }
+  notifications {
+    string id PK
+    string user_id FK
+    string title
+    string message
+    string notification_type
+    boolean is_read
+    timestamp created_at
   }
 
   roles ||--o{ users : "has"
@@ -146,6 +172,7 @@ const diagram = `erDiagram
   users ||--o{ renewal_requests : "requested by"
   users ||--o{ renewal_requests : "reviewed by"
   users ||--o{ library_settings : "updated by"
+  users ||--o{ notifications : "receives"
   categories ||--o{ categories : "parent of"
   categories ||--o{ documents : "classifies"
   documents ||--o{ document_copies : "has"
@@ -154,8 +181,9 @@ const diagram = `erDiagram
   document_copies ||--o{ borrow_record_items : "lent via"
   borrow_records ||--o{ borrow_record_items : "contains"
   borrow_record_items ||--o{ renewal_requests : "requests"
-\`;
+`;
 
+try {
 const { svg } = await mermaid.render('erd-svg', diagram);
 document.getElementById('erd').innerHTML = svg;
 
@@ -182,4 +210,11 @@ document.querySelectorAll('#erd svg.erDiagram .node').forEach(node => {
 document.querySelectorAll('#erd svg.erDiagram .row-rect-odd path, #erd svg.erDiagram .row-rect-even path').forEach(p => {
   p.setAttribute('stroke', 'none');
 });
+} catch (error) {
+  document.getElementById('erd').innerHTML = `<div style="color: red; padding: 20px; font-family: sans-serif;">
+    <h3>Error rendering Mermaid diagram</h3>
+    <pre>${error.message || error}</pre>
+  </div>`;
+  console.error(error);
+}
 </script>
